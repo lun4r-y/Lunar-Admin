@@ -1399,6 +1399,120 @@ task.spawn(function()
 	end)
 end)
 -- ═══════════════════════════════════════════════════════════
+-- Flashlight
+-- ═══════════════════════════════════════════════════════════
+
+LunarFlashlight = {
+	enabled = false,
+	lightPart = nil,
+	spotLight = nil,
+	openSound = nil,
+	closeSound = nil,
+	tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+	renderConn = nil,
+	inputConn = nil
+}
+
+function LunarFlashlight:Init()
+	if self.lightPart then return end
+
+	self.lightPart = Instance.new("Part")
+	self.lightPart.Size = Vector3.new(0.2, 0.2, 0.2)
+	self.lightPart.Anchored = true
+	self.lightPart.CanCollide = false
+	self.lightPart.Transparency = 1
+	self.lightPart.Parent = workspace
+
+	self.spotLight = Instance.new("SpotLight")
+	self.spotLight.Enabled = false
+	self.spotLight.Brightness = 3
+	self.spotLight.Range = 70
+	self.spotLight.Angle = 80
+	self.spotLight.Parent = self.lightPart
+
+	self.openSound = Instance.new("Sound")
+	self.openSound.SoundId = "rbxassetid://198914875"
+	self.openSound.Volume = 1
+	self.openSound.Parent = self.lightPart
+
+	self.closeSound = Instance.new("Sound")
+	self.closeSound.SoundId = "rbxassetid://198915223"
+	self.closeSound.Volume = 1
+	self.closeSound.Parent = self.lightPart
+
+	-- Follow camera
+	self.renderConn = RunService.RenderStepped:Connect(function()
+		if self.enabled and self.lightPart then
+			local cam = workspace.CurrentCamera
+			if cam then
+				local target = cam.CFrame * CFrame.new(0, 0, -1)
+				TweenService:Create(self.lightPart, self.tweenInfo, {CFrame = target}):Play()
+			end
+		end
+	end)
+
+	-- F key toggle
+	self.inputConn = UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then return end
+		if input.KeyCode == Enum.KeyCode.F then
+			self:Toggle()
+		end
+	end)
+end
+
+function LunarFlashlight:Toggle()
+	if not self.lightPart then self:Init() end
+	self.enabled = not self.enabled
+	self.spotLight.Enabled = self.enabled
+	if self.enabled then
+		self.openSound:Play()
+	else
+		self.closeSound:Play()
+	end
+end
+
+function LunarFlashlight:TurnOn()
+	if not self.lightPart then self:Init() end
+	if not self.enabled then
+		self.enabled = true
+		self.spotLight.Enabled = true
+		self.openSound:Play()
+	end
+end
+
+function LunarFlashlight:TurnOff()
+	if self.lightPart and self.enabled then
+		self.enabled = false
+		self.spotLight.Enabled = false
+		self.closeSound:Play()
+	end
+end
+
+function LunarFlashlight:Cleanup()
+	if self.renderConn then self.renderConn:Disconnect() end
+	if self.inputConn then self.inputConn:Disconnect() end
+	if self.lightPart then self.lightPart:Destroy() end
+	self.lightPart = nil
+	self.spotLight = nil
+	self.openSound = nil
+	self.closeSound = nil
+	self.enabled = false
+	self.renderConn = nil
+	self.inputConn = nil
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- COMMAND ENTRY POINTS — Add these to your command processor
+-- ═══════════════════════════════════════════════════════════
+function openFlashlight()
+	LunarFlashlight:TurnOn()
+end
+
+function closeFlashlight()
+	LunarFlashlight:TurnOff()
+end
+
+-- ═══════════════════════════════════════════════════════════
 -- mm2 esp
 -- ═══════════════════════════════════════════════════════════
 
@@ -2057,7 +2171,7 @@ end
 -- ═══════════════════════════════════════════════════════════
 -- COMMAND ENTRY POINT
 -- ═══════════════════════════════════════════════════════════
-function openMM2ESP()
+function openmm2esp()
 	MM2ESP:Open()
 end
 -- ============================================
@@ -10520,6 +10634,12 @@ function processCmd(msg)
 			Duration = 3
 		})
 		
+	elseif cmd == "flashlight" then
+    	openFlashlight()
+
+	elseif cmd == "unflashlight" then
+   	 	closeFlashlight()
+
 	elseif cmd == "fly" then
 		fly(target, args[2])
 		
@@ -10527,7 +10647,7 @@ function processCmd(msg)
 		enableFreecam()
 
    	elseif cmd == "mm2" then
-    	openMM2ESP()
+    	openmm2esp()
 		
 	elseif cmd == "freeze" then
 		freeze(target)
@@ -10983,11 +11103,11 @@ cmdDesc = {
 	["!boombox"] = "Enables client sided boombox",
 	["!clicktp"] = "Click to teleport", ["!cmdbar"] = "Toggle command bar",
 	["!console"] = "Opens dev console", ["!crosshair"] = "Loads custom crosshair",
-	["!!unload"] = "Closes script",
+	["!unload"] = "Closes script",
 	["!disablefalldamage"] = "WIP", ["!enable inventory"] = "Toggle backpack",
 	["!enable playerlist"] = "Toggle player list", ["!esp [plr/all]"] = "Enable esp on player or all",
 	["!explode [plr]"] = "Explodes player", ["!fire [plr]"] = "Sets player on fire",
-	["!firstp"] = "First person mode", ["!fling"] = "Opens fling GUI",
+	["!firstp"] = "First person mode", ["!fling"] = "Opens fling GUI", ["!flashlight"] = "Turns on flashlight",
 	["!fly"] = "Opens fly panel", ["!flyspeed [num]"] = "Set fly speed",
 	["!freecam"] = "Free camera mode", ["!freeze [plr]"] = "Freezes player",
 	["!infjump"] = "Infinite jump toggle", ["!joinlogs"] = "Show join/leave logs",
@@ -11004,7 +11124,7 @@ cmdDesc = {
 	["!trip [plr]"] = "Makes player trip", ["!tracers"] = "Show player tracers",
 	["!uncrosshair"] = "Remove crosshair", ["!unautoexec"] = "Disables auto-run",
 	["!unesp [plr/all]"] = "Disable esp on player or all", ["!unfire [plr]"] = "Extinguish player",
-	["!unfling"] = "Close fling GUI", ["!unfly"] = "Stop flying",
+	["!unfling"] = "Close fling GUI", ["!unflashlight"] = "Turns off flashlight", ["!unfly"] = "Stop flying",
 	["!unfreecam"] = "Disable freecam", ["!unfreeze [plr]"] = "Unfreeze player",
 	["!uninfjump"] = "Disable infinite jump", ["!unnoclip [plr]"] = "Disable noclip",
 	["!unragdoll"] = "Stop ragdoll", ["!unrainbow [plr]"] = "Stop rainbow",
@@ -11018,12 +11138,12 @@ cmdDesc = {
 cmds = {
 	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair",
 	"!!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
-	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!fly",
+	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
 	"!flyspeed [num]", "!freecam", "!freeze [plr]", "!infjump", "!joinlogs", "!jump [power]",
 	"!kill [plr/all/me]", "!lay", "!leave", "!logs", "!noclip [plr]", "!mm2", "!ping", "!ragdoll",
 	"!rainbow [plr]", "!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
 	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip [plr]", "!tracers",
-	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unfly",
+	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
 	"!unfreecam", "!unfreeze [plr]", "!uninfjump", "!unnoclip [plr]", "!unragdoll",
 	"!unrainbow [plr]", "!unspin", "!untracers", "!unview", "!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
 	"!fov [1-120]", "!kick [plr]", "!unlockmouse"
