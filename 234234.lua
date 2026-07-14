@@ -1399,7 +1399,7 @@ task.spawn(function()
 	end)
 end)
 -- ═══════════════════════════════════════════════════════════
--- MM2 esp 
+-- mm2 esp
 -- ═══════════════════════════════════════════════════════════
 
 MM2ESP = {
@@ -1416,35 +1416,43 @@ MM2ESP = {
 	mainFrame = nil,
 	shadow = nil,
 	content = nil,
+	tracerContainer = nil,
+	contentLayout = nil,
 	heartbeatConn = nil,
-	isMobile = false
+	isMobile = false,
+	-- UI refs stored on table
+	minBtn = nil,
+	closeBtn = nil,
+	topBar = nil,
+	-- Dimensions
+	W = 260,
+	TOP_H = 36,
+	TOG_H = 44,
+	PAD = 12,
+	SPACING = 6
 }
 
 -- Detect mobile
-local cam = workspace.CurrentCamera
-local viewSize = cam and cam.ViewportSize or Vector2.new(1920, 1080)
-if UserInputService.TouchEnabled and (not UserInputService.KeyboardEnabled or viewSize.X < 700 or viewSize.Y < 500) then
-	MM2ESP.isMobile = true
+MM2ESP.isMobile = UserInputService.TouchEnabled and (not UserInputService.KeyboardEnabled or workspace.CurrentCamera.ViewportSize.X < 700)
+if MM2ESP.isMobile then
+	MM2ESP.W = 220
+	MM2ESP.TOP_H = 32
+	MM2ESP.TOG_H = 38
+	MM2ESP.PAD = 8
+	MM2ESP.SPACING = 4
 end
 
--- Colors
-local COL_MURDERER = Color3.fromRGB(255, 0, 0)
-local COL_SHERIFF = Color3.fromRGB(0, 120, 255)
-local COL_INNOCENT = Color3.fromRGB(0, 255, 80)
-local COL_BG = Color3.fromRGB(25, 25, 30)
-local COL_TOP = Color3.fromRGB(35, 35, 42)
-local COL_TEXT = Color3.fromRGB(230, 230, 230)
-local COL_SUB = Color3.fromRGB(150, 150, 160)
-local COL_ACCENT = Color3.fromRGB(100, 80, 220)
-local COL_OFF = Color3.fromRGB(60, 60, 70)
-local COL_BTN = Color3.fromRGB(40, 40, 48)
-
--- Dimensions
-local W = MM2ESP.isMobile and 220 or 260
-local TOP_H = MM2ESP.isMobile and 32 or 36
-local TOG_H = MM2ESP.isMobile and 38 or 44
-local PAD = MM2ESP.isMobile and 8 or 12
-local SPACING = MM2ESP.isMobile and 4 or 6
+-- Colors (stored on module)
+MM2ESP.COL_MURDERER = Color3.fromRGB(255, 0, 0)
+MM2ESP.COL_SHERIFF = Color3.fromRGB(0, 120, 255)
+MM2ESP.COL_INNOCENT = Color3.fromRGB(0, 255, 80)
+MM2ESP.COL_BG = Color3.fromRGB(25, 25, 30)
+MM2ESP.COL_TOP = Color3.fromRGB(35, 35, 42)
+MM2ESP.COL_TEXT = Color3.fromRGB(230, 230, 230)
+MM2ESP.COL_SUB = Color3.fromRGB(150, 150, 160)
+MM2ESP.COL_ACCENT = Color3.fromRGB(100, 80, 220)
+MM2ESP.COL_OFF = Color3.fromRGB(60, 60, 70)
+MM2ESP.COL_BTN = Color3.fromRGB(40, 40, 48)
 
 function MM2ESP:GetRole(player)
 	local char = player.Character
@@ -1458,9 +1466,9 @@ function MM2ESP:GetRole(player)
 end
 
 function MM2ESP:GetRoleColor(role)
-	if role == "Murderer" then return COL_MURDERER end
-	if role == "Sheriff" then return COL_SHERIFF end
-	return COL_INNOCENT
+	if role == "Murderer" then return self.COL_MURDERER end
+	if role == "Sheriff" then return self.COL_SHERIFF end
+	return self.COL_INNOCENT
 end
 
 function MM2ESP:CreateESP(player)
@@ -1471,12 +1479,10 @@ function MM2ESP:CreateESP(player)
 		self.ESPs[player] = nil
 	end
 	if not self.ESP_Enabled then return end
-	local role = self:GetRole(player)
-	local col = self:GetRoleColor(role)
 	local hl = Instance.new("Highlight")
 	hl.Name = "MM2ESP"
-	hl.FillColor = col
-	hl.OutlineColor = col
+	hl.FillColor = self:GetRoleColor(self:GetRole(player))
+	hl.OutlineColor = hl.FillColor
 	hl.FillTransparency = 0.6
 	hl.OutlineTransparency = 0
 	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -1495,8 +1501,7 @@ function MM2ESP:UpdateAllESP()
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character then
 			local cur = player.Character:FindFirstChild("MM2ESP")
-			local role = self:GetRole(player)
-			local expected = self:GetRoleColor(role)
+			local expected = self:GetRoleColor(self:GetRole(player))
 			if not cur or cur.FillColor ~= expected then
 				self:CreateESP(player)
 			end
@@ -1611,19 +1616,19 @@ end
 function MM2ESP:UpdateHeight()
 	if self.IsMinimized then
 		TweenService:Create(self.mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(0, W, 0, TOP_H)
+			Size = UDim2.new(0, self.W, 0, self.TOP_H)
 		}):Play()
 		TweenService:Create(self.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(0, W + 8, 0, TOP_H + 8)
+			Size = UDim2.new(0, self.W + 8, 0, self.TOP_H + 8)
 		}):Play()
 	else
-		local contentHeight = self.contentLayout.AbsoluteContentSize.Y + PAD * 2
-		local totalHeight = TOP_H + contentHeight
+		local contentHeight = self.contentLayout.AbsoluteContentSize.Y + self.PAD * 2
+		local totalHeight = self.TOP_H + contentHeight
 		TweenService:Create(self.mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(0, W, 0, totalHeight)
+			Size = UDim2.new(0, self.W, 0, totalHeight)
 		}):Play()
 		TweenService:Create(self.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(0, W + 8, 0, totalHeight + 8)
+			Size = UDim2.new(0, self.W + 8, 0, totalHeight + 8)
 		}):Play()
 	end
 end
@@ -1665,10 +1670,11 @@ function MM2ESP:Cleanup()
 	self.Dragging = false
 end
 
-function MM2ESP:Open()
-	self:Cleanup()
+-- ═══════════════════════════════════════════════════════════
+-- GUI SUB-FUNCTIONS (split to avoid too many locals)
+-- ═══════════════════════════════════════════════════════════
 
-	-- Tracer GUI (CoreGui)
+function MM2ESP:CreateTracerGUI()
 	local tGui = Instance.new("ScreenGui")
 	tGui.Name = "MM2Tracers"
 	tGui.ResetOnSpawn = false
@@ -1689,13 +1695,14 @@ function MM2ESP:Open()
 	tContainer.BackgroundTransparency = 1
 	tContainer.Parent = tGui
 	self.tracerContainer = tContainer
+end
 
-	-- Main GUI (CoreGui)
+function MM2ESP:CreateMainFrame()
 	local mGui = Instance.new("ScreenGui")
 	mGui.Name = "MM2ESP_GUI"
 	mGui.ResetOnSpawn = false
 	mGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	ok = pcall(function()
+	local ok = pcall(function()
 		mGui.Parent = game:GetService("CoreGui")
 	end)
 	if not ok then
@@ -1703,10 +1710,9 @@ function MM2ESP:Open()
 	end
 	self.panel = mGui
 
-	-- Shadow
 	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
-	shadow.Size = UDim2.new(0, W + 8, 0, 200)
+	shadow.Size = UDim2.new(0, self.W + 8, 0, 200)
 	shadow.Position = UDim2.new(0, 50, 0, 50)
 	shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	shadow.BackgroundTransparency = 0.7
@@ -1715,202 +1721,191 @@ function MM2ESP:Open()
 	self.shadow = shadow
 	Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 16)
 
-	-- Main Panel
 	local main = Instance.new("Frame")
 	main.Name = "MainPanel"
-	main.Size = UDim2.new(0, W, 0, 200)
+	main.Size = UDim2.new(0, self.W, 0, 200)
 	main.Position = UDim2.new(0, 4, 0, 4)
-	main.BackgroundColor3 = COL_BG
+	main.BackgroundColor3 = self.COL_BG
 	main.BorderSizePixel = 0
 	main.ClipsDescendants = true
 	main.Parent = shadow
 	self.mainFrame = main
 	Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+end
 
-	-- Top Bar
+function MM2ESP:CreateTopBar()
 	local topBar = Instance.new("Frame")
 	topBar.Name = "TopBar"
-	topBar.Size = UDim2.new(1, 0, 0, TOP_H)
-	topBar.BackgroundColor3 = COL_TOP
+	topBar.Size = UDim2.new(1, 0, 0, self.TOP_H)
+	topBar.BackgroundColor3 = self.COL_TOP
 	topBar.BorderSizePixel = 0
-	topBar.Parent = main
+	topBar.Parent = self.mainFrame
 	Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 12)
+	self.topBar = topBar
 
-	-- Title
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -100, 1, 0)
 	title.Position = UDim2.new(0, 14, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Text = "MM2 ESP"
-	title.TextColor3 = COL_TEXT
-	title.TextSize = MM2ESP.isMobile and 14 or 16
+	title.TextColor3 = self.COL_TEXT
+	title.TextSize = self.isMobile and 14 or 16
 	title.Font = Enum.Font.GothamBold
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = topBar
 
-	-- Minimize Button
 	local minBtn = Instance.new("TextButton")
 	minBtn.Name = "Minimize"
 	minBtn.Size = UDim2.new(0, 28, 0, 28)
 	minBtn.Position = UDim2.new(1, -66, 0.5, -14)
-	minBtn.BackgroundColor3 = COL_OFF
+	minBtn.BackgroundColor3 = self.COL_OFF
 	minBtn.Text = "−"
-	minBtn.TextColor3 = COL_TEXT
+	minBtn.TextColor3 = self.COL_TEXT
 	minBtn.TextSize = 18
 	minBtn.Font = Enum.Font.GothamBold
 	minBtn.BorderSizePixel = 0
 	minBtn.Parent = topBar
 	Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
+	self.minBtn = minBtn
 
-	-- Close Button
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Name = "Close"
 	closeBtn.Size = UDim2.new(0, 28, 0, 28)
 	closeBtn.Position = UDim2.new(1, -34, 0.5, -14)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
 	closeBtn.Text = "×"
-	closeBtn.TextColor3 = COL_TEXT
+	closeBtn.TextColor3 = self.COL_TEXT
 	closeBtn.TextSize = 18
 	closeBtn.Font = Enum.Font.GothamBold
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Parent = topBar
 	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+	self.closeBtn = closeBtn
+end
 
-	-- Content
+function MM2ESP:CreateContentArea()
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Size = UDim2.new(1, 0, 1, -TOP_H)
-	content.Position = UDim2.new(0, 0, 0, TOP_H)
+	content.Size = UDim2.new(1, 0, 1, -self.TOP_H)
+	content.Position = UDim2.new(0, 0, 0, self.TOP_H)
 	content.BackgroundTransparency = 1
-	content.Parent = main
+	content.Parent = self.mainFrame
 	self.content = content
 
 	local cPad = Instance.new("UIPadding")
-	cPad.PaddingLeft = UDim.new(0, PAD)
-	cPad.PaddingRight = UDim.new(0, PAD)
-	cPad.PaddingTop = UDim.new(0, PAD)
-	cPad.PaddingBottom = UDim.new(0, PAD)
+	cPad.PaddingLeft = UDim.new(0, self.PAD)
+	cPad.PaddingRight = UDim.new(0, self.PAD)
+	cPad.PaddingTop = UDim.new(0, self.PAD)
+	cPad.PaddingBottom = UDim.new(0, self.PAD)
 	cPad.Parent = content
 
 	local cLayout = Instance.new("UIListLayout")
 	cLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	cLayout.Padding = UDim.new(0, SPACING)
+	cLayout.Padding = UDim.new(0, self.SPACING)
 	cLayout.Parent = content
 	self.contentLayout = cLayout
+end
 
-	-- Toggle creator
-	local function makeToggle(name, label, defaultState, onToggle)
-		local frame = Instance.new("Frame")
-		frame.Name = name .. "Toggle"
-		frame.Size = UDim2.new(1, 0, 0, TOG_H)
-		frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-		frame.BorderSizePixel = 0
-		frame.Parent = content
-		Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+function MM2ESP:MakeToggle(name, label, defaultState, onToggle)
+	local frame = Instance.new("Frame")
+	frame.Name = name .. "Toggle"
+	frame.Size = UDim2.new(1, 0, 0, self.TOG_H)
+	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+	frame.BorderSizePixel = 0
+	frame.Parent = self.content
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 
-		local lbl = Instance.new("TextLabel")
-		lbl.Name = "Label"
-		lbl.Size = UDim2.new(1, -70, 1, 0)
-		lbl.Position = UDim2.new(0, 14, 0, 0)
-		lbl.BackgroundTransparency = 1
-		lbl.Text = label
-		lbl.TextColor3 = COL_TEXT
-		lbl.TextSize = MM2ESP.isMobile and 12 or 14
-		lbl.Font = Enum.Font.GothamSemibold
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-		lbl.Parent = frame
+	local lbl = Instance.new("TextLabel")
+	lbl.Name = "Label"
+	lbl.Size = UDim2.new(1, -70, 1, 0)
+	lbl.Position = UDim2.new(0, 14, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = label
+	lbl.TextColor3 = self.COL_TEXT
+	lbl.TextSize = self.isMobile and 12 or 14
+	lbl.Font = Enum.Font.GothamSemibold
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Parent = frame
 
-		local status = Instance.new("TextLabel")
-		status.Name = "Status"
-		status.Size = UDim2.new(0, 40, 0, 20)
-		status.Position = UDim2.new(1, -54, 0.5, -10)
-		status.BackgroundTransparency = 1
-		status.Text = defaultState and "ON" or "OFF"
-		status.TextColor3 = defaultState and COL_ACCENT or COL_SUB
-		status.TextSize = 11
-		status.Font = Enum.Font.GothamBold
-		status.Parent = frame
+	local status = Instance.new("TextLabel")
+	status.Name = "Status"
+	status.Size = UDim2.new(0, 40, 0, 20)
+	status.Position = UDim2.new(1, -54, 0.5, -10)
+	status.BackgroundTransparency = 1
+	status.Text = defaultState and "ON" or "OFF"
+	status.TextColor3 = defaultState and self.COL_ACCENT or self.COL_SUB
+	status.TextSize = 11
+	status.Font = Enum.Font.GothamBold
+	status.Parent = frame
 
-		local switch = Instance.new("Frame")
-		switch.Name = "Switch"
-		switch.Size = UDim2.new(0, 44, 0, 24)
-		switch.Position = UDim2.new(1, -56, 0.5, -12)
-		switch.BackgroundColor3 = defaultState and COL_ACCENT or COL_OFF
-		switch.BorderSizePixel = 0
-		switch.Parent = frame
-		Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+	local switch = Instance.new("Frame")
+	switch.Name = "Switch"
+	switch.Size = UDim2.new(0, 44, 0, 24)
+	switch.Position = UDim2.new(1, -56, 0.5, -12)
+	switch.BackgroundColor3 = defaultState and self.COL_ACCENT or self.COL_OFF
+	switch.BorderSizePixel = 0
+	switch.Parent = frame
+	Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
 
-		local knob = Instance.new("Frame")
-		knob.Name = "Knob"
-		knob.Size = UDim2.new(0, 18, 0, 18)
-		knob.Position = defaultState and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
-		knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		knob.BorderSizePixel = 0
-		knob.Parent = switch
-		Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+	local knob = Instance.new("Frame")
+	knob.Name = "Knob"
+	knob.Size = UDim2.new(0, 18, 0, 18)
+	knob.Position = defaultState and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.BorderSizePixel = 0
+	knob.Parent = switch
+	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 
-		local clickArea = Instance.new("TextButton")
-		clickArea.Name = "ClickArea"
-		clickArea.Size = UDim2.new(1, 0, 1, 0)
-		clickArea.BackgroundTransparency = 1
-		clickArea.Text = ""
-		clickArea.Parent = frame
+	local clickArea = Instance.new("TextButton")
+	clickArea.Name = "ClickArea"
+	clickArea.Size = UDim2.new(1, 0, 1, 0)
+	clickArea.BackgroundTransparency = 1
+	clickArea.Text = ""
+	clickArea.Parent = frame
 
-		local isOn = defaultState
+	local isOn = defaultState
 
-		local function animate(newState)
-			isOn = newState
-			TweenService:Create(switch, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				BackgroundColor3 = newState and COL_ACCENT or COL_OFF
-			}):Play()
-			TweenService:Create(knob, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Position = newState and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
-			}):Play()
-			status.Text = newState and "ON" or "OFF"
-			status.TextColor3 = newState and COL_ACCENT or COL_SUB
-			onToggle(newState)
-		end
-
-		clickArea.MouseButton1Click:Connect(function()
-			animate(not isOn)
-		end)
-
-		clickArea.MouseEnter:Connect(function()
-			TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(45, 45, 55)}):Play()
-		end)
-		clickArea.MouseLeave:Connect(function()
-			TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 42)}):Play()
-		end)
-
-		return {SetState = animate, GetState = function() return isOn end}
+	local function animate(newState)
+		isOn = newState
+		TweenService:Create(switch, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			BackgroundColor3 = newState and self.COL_ACCENT or self.COL_OFF
+		}):Play()
+		TweenService:Create(knob, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Position = newState and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+		}):Play()
+		status.Text = newState and "ON" or "OFF"
+		status.TextColor3 = newState and self.COL_ACCENT or self.COL_SUB
+		onToggle(newState)
 	end
 
-	-- ESP Toggle
-	local espTog = makeToggle("ESP", "ESP Highlights", true, function(state)
-		self:ToggleESP(state)
+	clickArea.MouseButton1Click:Connect(function()
+		animate(not isOn)
 	end)
-	self.espToggle = espTog
 
-	-- Tracers Toggle
-	local tracTog = makeToggle("Tracers", "Tracers", true, function(state)
-		self:ToggleTracers(state)
+	clickArea.MouseEnter:Connect(function()
+		TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(45, 45, 55)}):Play()
 	end)
-	self.tracerToggle = tracTog
+	clickArea.MouseLeave:Connect(function()
+		TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 42)}):Play()
+	end)
 
-	-- Legend
+	return {SetState = animate, GetState = function() return isOn end}
+end
+
+function MM2ESP:CreateLegend()
 	local div = Instance.new("Frame")
 	div.Name = "Divider"
 	div.Size = UDim2.new(1, 0, 0, 1)
 	div.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	div.BorderSizePixel = 0
-	div.Parent = content
+	div.Parent = self.content
 
 	local legend = Instance.new("Frame")
 	legend.Name = "Legend"
 	legend.Size = UDim2.new(1, 0, 0, 80)
 	legend.BackgroundTransparency = 1
-	legend.Parent = content
+	legend.Parent = self.content
 
 	local legLayout = Instance.new("UIListLayout")
 	legLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1936,31 +1931,26 @@ function MM2ESP:Open()
 		lbl.Position = UDim2.new(0, 22, 0, 0)
 		lbl.BackgroundTransparency = 1
 		lbl.Text = text
-		lbl.TextColor3 = COL_SUB
+		lbl.TextColor3 = self.COL_SUB
 		lbl.TextSize = 12
 		lbl.Font = Enum.Font.Gotham
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = item
 	end
 
-	makeLegend("Murderer — Red", COL_MURDERER)
-	makeLegend("Sheriff — Blue", COL_SHERIFF)
-	makeLegend("Innocent — Green", COL_INNOCENT)
+	makeLegend("Murderer — Red", self.COL_MURDERER)
+	makeLegend("Sheriff — Blue", self.COL_SHERIFF)
+	makeLegend("Innocent — Green", self.COL_INNOCENT)
+end
 
-	-- Auto-fit height
-	cLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		self:UpdateHeight()
-	end)
-	self:UpdateHeight()
-
-	-- Dragging (mouse + touch)
+function MM2ESP:SetupDragging()
 	local dragStart = nil
 	local startPos = nil
-	topBar.InputBegan:Connect(function(input)
+	self.topBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			self.Dragging = true
 			dragStart = input.Position
-			startPos = shadow.Position
+			startPos = self.shadow.Position
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					self.Dragging = false
@@ -1972,48 +1962,49 @@ function MM2ESP:Open()
 	UserInputService.InputChanged:Connect(function(input)
 		if self.Dragging and dragStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			local delta = input.Position - dragStart
-			shadow.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+			self.shadow.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
 		end
 	end)
+end
 
-	-- Minimize
-	minBtn.MouseButton1Click:Connect(function()
+function MM2ESP:SetupButtons()
+	self.minBtn.MouseButton1Click:Connect(function()
 		self.IsMinimized = not self.IsMinimized
-		minBtn.Text = self.IsMinimized and "+" or "−"
+		self.minBtn.Text = self.IsMinimized and "+" or "−"
 		self:UpdateHeight()
 	end)
-	minBtn.MouseEnter:Connect(function()
-		TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(80, 80, 90)}):Play()
+	self.minBtn.MouseEnter:Connect(function()
+		TweenService:Create(self.minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(80, 80, 90)}):Play()
 	end)
-	minBtn.MouseLeave:Connect(function()
-		TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = COL_OFF}):Play()
+	self.minBtn.MouseLeave:Connect(function()
+		TweenService:Create(self.minBtn, TweenInfo.new(0.15), {BackgroundColor3 = self.COL_OFF}):Play()
 	end)
 
-	-- Close
-	closeBtn.MouseButton1Click:Connect(function()
+	self.closeBtn.MouseButton1Click:Connect(function()
 		self.IsClosed = true
-		tGui.Enabled = false
-		TweenService:Create(shadow, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-		TweenService:Create(main, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-		for _, child in ipairs(main:GetDescendants()) do
+		self.tracerGui.Enabled = false
+		TweenService:Create(self.shadow, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(self.mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		for _, child in ipairs(self.mainFrame:GetDescendants()) do
 			if child:IsA("TextLabel") or child:IsA("TextButton") then
 				TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
-			elseif child:IsA("Frame") and child ~= main and child ~= topBar then
+			elseif child:IsA("Frame") and child ~= self.mainFrame and child ~= self.topBar then
 				TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
 			end
 		end
 		task.delay(0.35, function()
-			mGui.Enabled = false
+			self.panel.Enabled = false
 		end)
 	end)
-	closeBtn.MouseEnter:Connect(function()
-		TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(230, 70, 70)}):Play()
+	self.closeBtn.MouseEnter:Connect(function()
+		TweenService:Create(self.closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(230, 70, 70)}):Play()
 	end)
-	closeBtn.MouseLeave:Connect(function()
-		TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(200, 60, 60)}):Play()
+	self.closeBtn.MouseLeave:Connect(function()
+		TweenService:Create(self.closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(200, 60, 60)}):Play()
 	end)
+end
 
-	-- Setup players
+function MM2ESP:SetupPlayers()
 	for _, player in ipairs(Players:GetPlayers()) do
 		self:OnPlayerAdded(player)
 	end
@@ -2022,8 +2013,9 @@ function MM2ESP:Open()
 		self:RemoveESP(player)
 		self:RemoveTracer(player)
 	end)
+end
 
-	-- Main loop
+function MM2ESP:SetupLoop()
 	self.heartbeatConn = RunService.Heartbeat:Connect(function()
 		if self.IsClosed then return end
 		if self.ESP_Enabled then self:UpdateAllESP() end
@@ -2031,6 +2023,40 @@ function MM2ESP:Open()
 	end)
 end
 
+-- ═══════════════════════════════════════════════════════════
+-- MAIN OPEN FUNCTION
+-- ═══════════════════════════════════════════════════════════
+
+function MM2ESP:Open()
+	self:Cleanup()
+	self:CreateTracerGUI()
+	self:CreateMainFrame()
+	self:CreateTopBar()
+	self:CreateContentArea()
+
+	self.espToggle = self:MakeToggle("ESP", "ESP", true, function(state)
+		self:ToggleESP(state)
+	end)
+	self.tracerToggle = self:MakeToggle("Tracers", "Tracers - Broken", true, function(state)
+		self:ToggleTracers(state)
+	end)
+
+	self:CreateLegend()
+
+	self.contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		self:UpdateHeight()
+	end)
+	self:UpdateHeight()
+
+	self:SetupDragging()
+	self:SetupButtons()
+	self:SetupPlayers()
+	self:SetupLoop()
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- COMMAND ENTRY POINT
+-- ═══════════════════════════════════════════════════════════
 function openMM2ESP()
 	MM2ESP:Open()
 end
