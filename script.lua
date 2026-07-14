@@ -1398,6 +1398,782 @@ task.spawn(function()
 		end
 	end)
 end)
+-- ═══════════════════════════════════════════════════════════
+-- Flashlight
+-- ═══════════════════════════════════════════════════════════
+
+LunarFlashlight = {
+	enabled = false,
+	lightPart = nil,
+	spotLight = nil,
+	openSound = nil,
+	closeSound = nil,
+	tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+	renderConn = nil,
+	inputConn = nil
+}
+
+function LunarFlashlight:Init()
+	if self.lightPart then return end
+
+	self.lightPart = Instance.new("Part")
+	self.lightPart.Size = Vector3.new(0.2, 0.2, 0.2)
+	self.lightPart.Anchored = true
+	self.lightPart.CanCollide = false
+	self.lightPart.Transparency = 1
+	self.lightPart.Parent = workspace
+
+	self.spotLight = Instance.new("SpotLight")
+	self.spotLight.Enabled = false
+	self.spotLight.Brightness = 3
+	self.spotLight.Range = 70
+	self.spotLight.Angle = 80
+	self.spotLight.Parent = self.lightPart
+
+	self.openSound = Instance.new("Sound")
+	self.openSound.SoundId = "rbxassetid://198914875"
+	self.openSound.Volume = 1
+	self.openSound.Parent = self.lightPart
+
+	self.closeSound = Instance.new("Sound")
+	self.closeSound.SoundId = "rbxassetid://198915223"
+	self.closeSound.Volume = 1
+	self.closeSound.Parent = self.lightPart
+
+	-- Follow camera
+	self.renderConn = RunService.RenderStepped:Connect(function()
+		if self.enabled and self.lightPart then
+			local cam = workspace.CurrentCamera
+			if cam then
+				local target = cam.CFrame * CFrame.new(0, 0, -1)
+				TweenService:Create(self.lightPart, self.tweenInfo, {CFrame = target}):Play()
+			end
+		end
+	end)
+
+	-- F key toggle
+	self.inputConn = UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then return end
+		if input.KeyCode == Enum.KeyCode.F then
+			self:Toggle()
+		end
+	end)
+end
+
+function LunarFlashlight:Toggle()
+	if not self.lightPart then self:Init() end
+	self.enabled = not self.enabled
+	self.spotLight.Enabled = self.enabled
+	if self.enabled then
+		self.openSound:Play()
+	else
+		self.closeSound:Play()
+	end
+end
+
+function LunarFlashlight:TurnOn()
+	if not self.lightPart then self:Init() end
+	if not self.enabled then
+		self.enabled = true
+		self.spotLight.Enabled = true
+		self.openSound:Play()
+	end
+end
+
+function LunarFlashlight:TurnOff()
+	if self.lightPart and self.enabled then
+		self.enabled = false
+		self.spotLight.Enabled = false
+		self.closeSound:Play()
+	end
+end
+
+function LunarFlashlight:Cleanup()
+	if self.renderConn then self.renderConn:Disconnect() end
+	if self.inputConn then self.inputConn:Disconnect() end
+	if self.lightPart then self.lightPart:Destroy() end
+	self.lightPart = nil
+	self.spotLight = nil
+	self.openSound = nil
+	self.closeSound = nil
+	self.enabled = false
+	self.renderConn = nil
+	self.inputConn = nil
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- COMMAND ENTRY POINTS — Add these to your command processor
+-- ═══════════════════════════════════════════════════════════
+function openFlashlight()
+	LunarFlashlight:TurnOn()
+end
+
+function closeFlashlight()
+	LunarFlashlight:TurnOff()
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- mm2 esp
+-- ═══════════════════════════════════════════════════════════
+
+MM2ESP = {
+	ESP_Enabled = true,
+	Tracers_Enabled = true,
+	IsMinimized = false,
+	IsClosed = false,
+	Dragging = false,
+	DragOffset = Vector2.new(0, 0),
+	ESPs = {},
+	Tracers = {},
+	panel = nil,
+	tracerGui = nil,
+	mainFrame = nil,
+	shadow = nil,
+	content = nil,
+	tracerContainer = nil,
+	contentLayout = nil,
+	heartbeatConn = nil,
+	isMobile = false,
+	-- UI refs stored on table
+	minBtn = nil,
+	closeBtn = nil,
+	topBar = nil,
+	-- Dimensions
+	W = 260,
+	TOP_H = 36,
+	TOG_H = 44,
+	PAD = 12,
+	SPACING = 6
+}
+
+-- Detect mobile
+MM2ESP.isMobile = UserInputService.TouchEnabled and (not UserInputService.KeyboardEnabled or workspace.CurrentCamera.ViewportSize.X < 700)
+if MM2ESP.isMobile then
+	MM2ESP.W = 220
+	MM2ESP.TOP_H = 32
+	MM2ESP.TOG_H = 38
+	MM2ESP.PAD = 8
+	MM2ESP.SPACING = 4
+end
+
+-- Colors (stored on module)
+MM2ESP.COL_MURDERER = Color3.fromRGB(255, 0, 0)
+MM2ESP.COL_SHERIFF = Color3.fromRGB(0, 120, 255)
+MM2ESP.COL_INNOCENT = Color3.fromRGB(0, 255, 80)
+MM2ESP.COL_BG = Color3.fromRGB(25, 25, 30)
+MM2ESP.COL_TOP = Color3.fromRGB(35, 35, 42)
+MM2ESP.COL_TEXT = Color3.fromRGB(230, 230, 230)
+MM2ESP.COL_SUB = Color3.fromRGB(150, 150, 160)
+MM2ESP.COL_ACCENT = Color3.fromRGB(100, 80, 220)
+MM2ESP.COL_OFF = Color3.fromRGB(60, 60, 70)
+MM2ESP.COL_BTN = Color3.fromRGB(40, 40, 48)
+
+function MM2ESP:GetRole(player)
+	local char = player.Character
+	if not char then return "Innocent" end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum and hum.Health <= 0 then return "Innocent" end
+	local bp = player:FindFirstChild("Backpack")
+	if char:FindFirstChild("Knife") or (bp and bp:FindFirstChild("Knife")) then return "Murderer" end
+	if char:FindFirstChild("Gun") or (bp and bp:FindFirstChild("Gun")) then return "Sheriff" end
+	return "Innocent"
+end
+
+function MM2ESP:GetRoleColor(role)
+	if role == "Murderer" then return self.COL_MURDERER end
+	if role == "Sheriff" then return self.COL_SHERIFF end
+	return self.COL_INNOCENT
+end
+
+function MM2ESP:CreateESP(player)
+	if player == LocalPlayer then return end
+	if not player.Character then return end
+	if self.ESPs[player] then
+		self.ESPs[player]:Destroy()
+		self.ESPs[player] = nil
+	end
+	if not self.ESP_Enabled then return end
+	local hl = Instance.new("Highlight")
+	hl.Name = "MM2ESP"
+	hl.FillColor = self:GetRoleColor(self:GetRole(player))
+	hl.OutlineColor = hl.FillColor
+	hl.FillTransparency = 0.6
+	hl.OutlineTransparency = 0
+	hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	hl.Parent = player.Character
+	self.ESPs[player] = hl
+end
+
+function MM2ESP:RemoveESP(player)
+	if self.ESPs[player] then
+		self.ESPs[player]:Destroy()
+		self.ESPs[player] = nil
+	end
+end
+
+function MM2ESP:UpdateAllESP()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local cur = player.Character:FindFirstChild("MM2ESP")
+			local expected = self:GetRoleColor(self:GetRole(player))
+			if not cur or cur.FillColor ~= expected then
+				self:CreateESP(player)
+			end
+		end
+	end
+end
+
+function MM2ESP:CreateTracer(player)
+	if player == LocalPlayer then return end
+	if self.Tracers[player] then
+		self.Tracers[player]:Destroy()
+		self.Tracers[player] = nil
+	end
+	if not self.Tracers_Enabled then return end
+	local line = Instance.new("Frame")
+	line.Name = "Tracer_" .. player.Name
+	line.BorderSizePixel = 0
+	line.AnchorPoint = Vector2.new(0, 0.5)
+	line.ZIndex = 10
+	line.Parent = self.tracerContainer
+	self.Tracers[player] = line
+end
+
+function MM2ESP:RemoveTracer(player)
+	if self.Tracers[player] then
+		self.Tracers[player]:Destroy()
+		self.Tracers[player] = nil
+	end
+end
+
+function MM2ESP:UpdateTracers()
+	if not self.Tracers_Enabled then
+		for _, line in pairs(self.Tracers) do
+			line.Visible = false
+		end
+		return
+	end
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	local vSize = camera.ViewportSize
+	local screenBottom = Vector2.new(vSize.X / 2, vSize.Y)
+	for player, line in pairs(self.Tracers) do
+		if not player or not player.Parent then
+			line.Visible = false
+			continue
+		end
+		local char = player.Character
+		if not char then
+			line.Visible = false
+			continue
+		end
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if not hrp then
+			line.Visible = false
+			continue
+		end
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health <= 0 then
+			line.Visible = false
+			continue
+		end
+		local myChar = LocalPlayer.Character
+		if myChar then
+			local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+			if myHrp and (hrp.Position - myHrp.Position).Magnitude > 500 then
+				line.Visible = false
+				continue
+			end
+		end
+		local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+		if onScreen then
+			local targetPos = Vector2.new(pos.X, pos.Y)
+			local dir = targetPos - screenBottom
+			local dist = dir.Magnitude
+			if dist < 5 then
+				line.Visible = false
+				continue
+			end
+			local angle = math.atan2(dir.Y, dir.X)
+			line.Size = UDim2.new(0, dist, 0, 1.5)
+			line.Position = UDim2.new(0, screenBottom.X, 0, screenBottom.Y)
+			line.Rotation = math.deg(angle)
+			line.BackgroundColor3 = self:GetRoleColor(self:GetRole(player))
+			line.BackgroundTransparency = 0.2
+			line.Visible = true
+		else
+			line.Visible = false
+		end
+	end
+end
+
+function MM2ESP:ToggleESP(state)
+	self.ESP_Enabled = state
+	if state then
+		self:UpdateAllESP()
+	else
+		for player, _ in pairs(self.ESPs) do
+			self:RemoveESP(player)
+		end
+	end
+end
+
+function MM2ESP:ToggleTracers(state)
+	self.Tracers_Enabled = state
+	if not state then
+		for _, line in pairs(self.Tracers) do
+			line.Visible = false
+		end
+	end
+end
+
+function MM2ESP:UpdateHeight()
+	if self.IsMinimized then
+		TweenService:Create(self.mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, self.W, 0, self.TOP_H)
+		}):Play()
+		TweenService:Create(self.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, self.W + 8, 0, self.TOP_H + 8)
+		}):Play()
+	else
+		local contentHeight = self.contentLayout.AbsoluteContentSize.Y + self.PAD * 2
+		local totalHeight = self.TOP_H + contentHeight
+		TweenService:Create(self.mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, self.W, 0, totalHeight)
+		}):Play()
+		TweenService:Create(self.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, self.W + 8, 0, totalHeight + 8)
+		}):Play()
+	end
+end
+
+function MM2ESP:OnPlayerAdded(player)
+	if player == LocalPlayer then return end
+	player.CharacterAdded:Connect(function()
+		task.wait(0.5)
+		self:CreateESP(player)
+		self:CreateTracer(player)
+	end)
+	player.CharacterRemoving:Connect(function()
+		self:RemoveESP(player)
+		self:RemoveTracer(player)
+	end)
+	if player.Character then
+		task.wait(0.5)
+		self:CreateESP(player)
+		self:CreateTracer(player)
+	end
+end
+
+function MM2ESP:Cleanup()
+	if self.panel then self.panel:Destroy() end
+	if self.tracerGui then self.tracerGui:Destroy() end
+	if self.heartbeatConn then self.heartbeatConn:Disconnect() end
+	for player, _ in pairs(self.ESPs) do
+		self:RemoveESP(player)
+	end
+	for player, _ in pairs(self.Tracers) do
+		self:RemoveTracer(player)
+	end
+	self.ESPs = {}
+	self.Tracers = {}
+	self.ESP_Enabled = true
+	self.Tracers_Enabled = true
+	self.IsMinimized = false
+	self.IsClosed = false
+	self.Dragging = false
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- GUI SUB-FUNCTIONS (split to avoid too many locals)
+-- ═══════════════════════════════════════════════════════════
+
+function MM2ESP:CreateTracerGUI()
+	local tGui = Instance.new("ScreenGui")
+	tGui.Name = "MM2Tracers"
+	tGui.ResetOnSpawn = false
+	tGui.IgnoreGuiInset = true
+	tGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	tGui.ScreenInsets = Enum.ScreenInsets.None
+	local ok = pcall(function()
+		tGui.Parent = game:GetService("CoreGui")
+	end)
+	if not ok then
+		tGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	end
+	self.tracerGui = tGui
+
+	local tContainer = Instance.new("Frame")
+	tContainer.Name = "TracerContainer"
+	tContainer.Size = UDim2.new(1, 0, 1, 0)
+	tContainer.BackgroundTransparency = 1
+	tContainer.Parent = tGui
+	self.tracerContainer = tContainer
+end
+
+function MM2ESP:CreateMainFrame()
+	local mGui = Instance.new("ScreenGui")
+	mGui.Name = "MM2ESP_GUI"
+	mGui.ResetOnSpawn = false
+	mGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	local ok = pcall(function()
+		mGui.Parent = game:GetService("CoreGui")
+	end)
+	if not ok then
+		mGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	end
+	self.panel = mGui
+
+	local shadow = Instance.new("Frame")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(0, self.W + 8, 0, 200)
+	shadow.Position = UDim2.new(0, 50, 0, 50)
+	shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	shadow.BackgroundTransparency = 0.7
+	shadow.BorderSizePixel = 0
+	shadow.Parent = mGui
+	self.shadow = shadow
+	Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 16)
+
+	local main = Instance.new("Frame")
+	main.Name = "MainPanel"
+	main.Size = UDim2.new(0, self.W, 0, 200)
+	main.Position = UDim2.new(0, 4, 0, 4)
+	main.BackgroundColor3 = self.COL_BG
+	main.BorderSizePixel = 0
+	main.ClipsDescendants = true
+	main.Parent = shadow
+	self.mainFrame = main
+	Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+end
+
+function MM2ESP:CreateTopBar()
+	local topBar = Instance.new("Frame")
+	topBar.Name = "TopBar"
+	topBar.Size = UDim2.new(1, 0, 0, self.TOP_H)
+	topBar.BackgroundColor3 = self.COL_TOP
+	topBar.BorderSizePixel = 0
+	topBar.Parent = self.mainFrame
+	Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 12)
+	self.topBar = topBar
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.Size = UDim2.new(1, -100, 1, 0)
+	title.Position = UDim2.new(0, 14, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = "MM2 ESP"
+	title.TextColor3 = self.COL_TEXT
+	title.TextSize = self.isMobile and 14 or 16
+	title.Font = Enum.Font.GothamBold
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Parent = topBar
+
+	local minBtn = Instance.new("TextButton")
+	minBtn.Name = "Minimize"
+	minBtn.Size = UDim2.new(0, 28, 0, 28)
+	minBtn.Position = UDim2.new(1, -66, 0.5, -14)
+	minBtn.BackgroundColor3 = self.COL_OFF
+	minBtn.Text = "−"
+	minBtn.TextColor3 = self.COL_TEXT
+	minBtn.TextSize = 18
+	minBtn.Font = Enum.Font.GothamBold
+	minBtn.BorderSizePixel = 0
+	minBtn.Parent = topBar
+	Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
+	self.minBtn = minBtn
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "Close"
+	closeBtn.Size = UDim2.new(0, 28, 0, 28)
+	closeBtn.Position = UDim2.new(1, -34, 0.5, -14)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+	closeBtn.Text = "×"
+	closeBtn.TextColor3 = self.COL_TEXT
+	closeBtn.TextSize = 18
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.BorderSizePixel = 0
+	closeBtn.Parent = topBar
+	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+	self.closeBtn = closeBtn
+end
+
+function MM2ESP:CreateContentArea()
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, 0, 1, -self.TOP_H)
+	content.Position = UDim2.new(0, 0, 0, self.TOP_H)
+	content.BackgroundTransparency = 1
+	content.Parent = self.mainFrame
+	self.content = content
+
+	local cPad = Instance.new("UIPadding")
+	cPad.PaddingLeft = UDim.new(0, self.PAD)
+	cPad.PaddingRight = UDim.new(0, self.PAD)
+	cPad.PaddingTop = UDim.new(0, self.PAD)
+	cPad.PaddingBottom = UDim.new(0, self.PAD)
+	cPad.Parent = content
+
+	local cLayout = Instance.new("UIListLayout")
+	cLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	cLayout.Padding = UDim.new(0, self.SPACING)
+	cLayout.Parent = content
+	self.contentLayout = cLayout
+end
+
+function MM2ESP:MakeToggle(name, label, defaultState, onToggle)
+	local frame = Instance.new("Frame")
+	frame.Name = name .. "Toggle"
+	frame.Size = UDim2.new(1, 0, 0, self.TOG_H)
+	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+	frame.BorderSizePixel = 0
+	frame.Parent = self.content
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Name = "Label"
+	lbl.Size = UDim2.new(1, -70, 1, 0)
+	lbl.Position = UDim2.new(0, 14, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = label
+	lbl.TextColor3 = self.COL_TEXT
+	lbl.TextSize = self.isMobile and 12 or 14
+	lbl.Font = Enum.Font.GothamSemibold
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.Parent = frame
+
+	local status = Instance.new("TextLabel")
+	status.Name = "Status"
+	status.Size = UDim2.new(0, 40, 0, 20)
+	status.Position = UDim2.new(1, -54, 0.5, -10)
+	status.BackgroundTransparency = 1
+	status.Text = defaultState and "ON" or "OFF"
+	status.TextColor3 = defaultState and self.COL_ACCENT or self.COL_SUB
+	status.TextSize = 11
+	status.Font = Enum.Font.GothamBold
+	status.Parent = frame
+
+	local switch = Instance.new("Frame")
+	switch.Name = "Switch"
+	switch.Size = UDim2.new(0, 44, 0, 24)
+	switch.Position = UDim2.new(1, -56, 0.5, -12)
+	switch.BackgroundColor3 = defaultState and self.COL_ACCENT or self.COL_OFF
+	switch.BorderSizePixel = 0
+	switch.Parent = frame
+	Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+
+	local knob = Instance.new("Frame")
+	knob.Name = "Knob"
+	knob.Size = UDim2.new(0, 18, 0, 18)
+	knob.Position = defaultState and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.BorderSizePixel = 0
+	knob.Parent = switch
+	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+	local clickArea = Instance.new("TextButton")
+	clickArea.Name = "ClickArea"
+	clickArea.Size = UDim2.new(1, 0, 1, 0)
+	clickArea.BackgroundTransparency = 1
+	clickArea.Text = ""
+	clickArea.Parent = frame
+
+	local isOn = defaultState
+
+	local function animate(newState)
+		isOn = newState
+		TweenService:Create(switch, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			BackgroundColor3 = newState and self.COL_ACCENT or self.COL_OFF
+		}):Play()
+		TweenService:Create(knob, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Position = newState and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+		}):Play()
+		status.Text = newState and "ON" or "OFF"
+		status.TextColor3 = newState and self.COL_ACCENT or self.COL_SUB
+		onToggle(newState)
+	end
+
+	clickArea.MouseButton1Click:Connect(function()
+		animate(not isOn)
+	end)
+
+	clickArea.MouseEnter:Connect(function()
+		TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(45, 45, 55)}):Play()
+	end)
+	clickArea.MouseLeave:Connect(function()
+		TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 42)}):Play()
+	end)
+
+	return {SetState = animate, GetState = function() return isOn end}
+end
+
+function MM2ESP:CreateLegend()
+	local div = Instance.new("Frame")
+	div.Name = "Divider"
+	div.Size = UDim2.new(1, 0, 0, 1)
+	div.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	div.BorderSizePixel = 0
+	div.Parent = self.content
+
+	local legend = Instance.new("Frame")
+	legend.Name = "Legend"
+	legend.Size = UDim2.new(1, 0, 0, 80)
+	legend.BackgroundTransparency = 1
+	legend.Parent = self.content
+
+	local legLayout = Instance.new("UIListLayout")
+	legLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	legLayout.Padding = UDim.new(0, 6)
+	legLayout.Parent = legend
+
+	local function makeLegend(text, color)
+		local item = Instance.new("Frame")
+		item.Size = UDim2.new(1, 0, 0, 20)
+		item.BackgroundTransparency = 1
+		item.Parent = legend
+
+		local dot = Instance.new("Frame")
+		dot.Size = UDim2.new(0, 10, 0, 10)
+		dot.Position = UDim2.new(0, 4, 0.5, -5)
+		dot.BackgroundColor3 = color
+		dot.BorderSizePixel = 0
+		dot.Parent = item
+		Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(1, -24, 1, 0)
+		lbl.Position = UDim2.new(0, 22, 0, 0)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = text
+		lbl.TextColor3 = self.COL_SUB
+		lbl.TextSize = 12
+		lbl.Font = Enum.Font.Gotham
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.Parent = item
+	end
+
+	makeLegend("Murderer — Red", self.COL_MURDERER)
+	makeLegend("Sheriff — Blue", self.COL_SHERIFF)
+	makeLegend("Innocent — Green", self.COL_INNOCENT)
+end
+
+function MM2ESP:SetupDragging()
+	local dragStart = nil
+	local startPos = nil
+	self.topBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			self.Dragging = true
+			dragStart = input.Position
+			startPos = self.shadow.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					self.Dragging = false
+					dragStart = nil
+				end
+			end)
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if self.Dragging and dragStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			self.shadow.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
+function MM2ESP:SetupButtons()
+	self.minBtn.MouseButton1Click:Connect(function()
+		self.IsMinimized = not self.IsMinimized
+		self.minBtn.Text = self.IsMinimized and "+" or "−"
+		self:UpdateHeight()
+	end)
+	self.minBtn.MouseEnter:Connect(function()
+		TweenService:Create(self.minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(80, 80, 90)}):Play()
+	end)
+	self.minBtn.MouseLeave:Connect(function()
+		TweenService:Create(self.minBtn, TweenInfo.new(0.15), {BackgroundColor3 = self.COL_OFF}):Play()
+	end)
+
+	self.closeBtn.MouseButton1Click:Connect(function()
+		self.IsClosed = true
+		self.tracerGui.Enabled = false
+		TweenService:Create(self.shadow, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(self.mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		for _, child in ipairs(self.mainFrame:GetDescendants()) do
+			if child:IsA("TextLabel") or child:IsA("TextButton") then
+				TweenService:Create(child, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+			elseif child:IsA("Frame") and child ~= self.mainFrame and child ~= self.topBar then
+				TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+			end
+		end
+		task.delay(0.35, function()
+			self.panel.Enabled = false
+		end)
+	end)
+	self.closeBtn.MouseEnter:Connect(function()
+		TweenService:Create(self.closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(230, 70, 70)}):Play()
+	end)
+	self.closeBtn.MouseLeave:Connect(function()
+		TweenService:Create(self.closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(200, 60, 60)}):Play()
+	end)
+end
+
+function MM2ESP:SetupPlayers()
+	for _, player in ipairs(Players:GetPlayers()) do
+		self:OnPlayerAdded(player)
+	end
+	Players.PlayerAdded:Connect(function(player) self:OnPlayerAdded(player) end)
+	Players.PlayerRemoving:Connect(function(player)
+		self:RemoveESP(player)
+		self:RemoveTracer(player)
+	end)
+end
+
+function MM2ESP:SetupLoop()
+	self.heartbeatConn = RunService.Heartbeat:Connect(function()
+		if self.IsClosed then return end
+		if self.ESP_Enabled then self:UpdateAllESP() end
+		if self.Tracers_Enabled then self:UpdateTracers() end
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- MAIN OPEN FUNCTION
+-- ═══════════════════════════════════════════════════════════
+
+function MM2ESP:Open()
+	self:Cleanup()
+	self:CreateTracerGUI()
+	self:CreateMainFrame()
+	self:CreateTopBar()
+	self:CreateContentArea()
+
+	self.espToggle = self:MakeToggle("ESP", "ESP", true, function(state)
+		self:ToggleESP(state)
+	end)
+	self.tracerToggle = self:MakeToggle("Tracers", "Tracers - Broken", true, function(state)
+		self:ToggleTracers(state)
+	end)
+
+	self:CreateLegend()
+
+	self.contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		self:UpdateHeight()
+	end)
+	self:UpdateHeight()
+
+	self:SetupDragging()
+	self:SetupButtons()
+	self:SetupPlayers()
+	self:SetupLoop()
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- COMMAND ENTRY POINT
+-- ═══════════════════════════════════════════════════════════
+function openmm2esp()
+	MM2ESP:Open()
+end
 -- ============================================
 -- AUTOEXEC COMMANDS
 -- ============================================
@@ -7012,7 +7788,7 @@ local function toggleCmdBar()
 		"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair", "!unload",
 		"!disablefalldamage", "!enable inventory", "!enable playerlist", "!esp all", "!explode", "!fire",
 		"!firstp", "!fling", "!fly", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump", "!kill",
-		"!lay", "!leave", "!logs", "!noclip", "!ping", "!ragdoll", "!rainbow", "!rejoin", "!removewaypoint",
+		"!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll", "!rainbow", "!rejoin", "!removewaypoint",
 		"!resetspeed", "!sit", "!speed", "!serverhop", "!spin", "!stopwatch", "!thirdp", "!to", "!trip", "!tracers",
 		"!uncrosshair", "!unautoexec", "!unesp all", "!unfire", "!unfly", "!unfreecam", "!unfreeze",
 		"!sunglare", "!unsunglare", "!uninfjump", "!unnoclip", "!unragdoll", "!unrainbow", "!unspin",
@@ -9858,11 +10634,20 @@ function processCmd(msg)
 			Duration = 3
 		})
 		
+	elseif cmd == "flashlight" then
+    	openFlashlight()
+
+	elseif cmd == "unflashlight" then
+   	 	closeFlashlight()
+
 	elseif cmd == "fly" then
 		fly(target, args[2])
 		
 	elseif cmd == "freecam" then
 		enableFreecam()
+
+   	elseif cmd == "mm2" then
+    	openmm2esp()
 		
 	elseif cmd == "freeze" then
 		freeze(target)
@@ -10318,17 +11103,17 @@ cmdDesc = {
 	["!boombox"] = "Enables client sided boombox",
 	["!clicktp"] = "Click to teleport", ["!cmdbar"] = "Toggle command bar",
 	["!console"] = "Opens dev console", ["!crosshair"] = "Loads custom crosshair",
-	["!!unload"] = "Closes script",
+	["!unload"] = "Closes script",
 	["!disablefalldamage"] = "WIP", ["!enable inventory"] = "Toggle backpack",
 	["!enable playerlist"] = "Toggle player list", ["!esp [plr/all]"] = "Enable esp on player or all",
 	["!explode [plr]"] = "Explodes player", ["!fire [plr]"] = "Sets player on fire",
-	["!firstp"] = "First person mode", ["!fling"] = "Opens fling GUI",
+	["!firstp"] = "First person mode", ["!fling"] = "Opens fling GUI", ["!flashlight"] = "Turns on flashlight",
 	["!fly"] = "Opens fly panel", ["!flyspeed [num]"] = "Set fly speed",
 	["!freecam"] = "Free camera mode", ["!freeze [plr]"] = "Freezes player",
 	["!infjump"] = "Infinite jump toggle", ["!joinlogs"] = "Show join/leave logs",
 	["!jump [power]"] = "Set jump power", ["!kill [plr/all/me]"] = "Kill player/self/all",
 	["!lay"] = "Makes character lay down", ["!leave"] = "Leave game",
-	["!logs"] = "Open chat logs", ["!noclip [plr]"] = "Walk through walls",
+	["!logs"] = "Open chat logs", ["!noclip [plr]"] = "Walk through walls", ["!mm2"] = "Enables mm2 esp by lunar",
 	["!ping"] = "Show ping", ["!ragdoll"] = "Ragdoll character",
 	["!rainbow [plr]"] = "Rainbow color cycle", ["!rejoin"] = "Rejoin server",
 	["!removewaypoint"] = "Remove last waypoint", ["!sunglare"] = "Enable sun glare effect",
@@ -10339,7 +11124,7 @@ cmdDesc = {
 	["!trip [plr]"] = "Makes player trip", ["!tracers"] = "Show player tracers",
 	["!uncrosshair"] = "Remove crosshair", ["!unautoexec"] = "Disables auto-run",
 	["!unesp [plr/all]"] = "Disable esp on player or all", ["!unfire [plr]"] = "Extinguish player",
-	["!unfling"] = "Close fling GUI", ["!unfly"] = "Stop flying",
+	["!unfling"] = "Close fling GUI", ["!unflashlight"] = "Turns off flashlight", ["!unfly"] = "Stop flying",
 	["!unfreecam"] = "Disable freecam", ["!unfreeze [plr]"] = "Unfreeze player",
 	["!uninfjump"] = "Disable infinite jump", ["!unnoclip [plr]"] = "Disable noclip",
 	["!unragdoll"] = "Stop ragdoll", ["!unrainbow [plr]"] = "Stop rainbow",
@@ -10353,12 +11138,12 @@ cmdDesc = {
 cmds = {
 	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair",
 	"!!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
-	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!fly",
+	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
 	"!flyspeed [num]", "!freecam", "!freeze [plr]", "!infjump", "!joinlogs", "!jump [power]",
-	"!kill [plr/all/me]", "!lay", "!leave", "!logs", "!noclip [plr]", "!ping", "!ragdoll",
+	"!kill [plr/all/me]", "!lay", "!leave", "!logs", "!noclip [plr]", "!mm2", "!ping", "!ragdoll",
 	"!rainbow [plr]", "!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
 	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip [plr]", "!tracers",
-	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unfly",
+	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
 	"!unfreecam", "!unfreeze [plr]", "!uninfjump", "!unnoclip [plr]", "!unragdoll",
 	"!unrainbow [plr]", "!unspin", "!untracers", "!unview", "!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
 	"!fov [1-120]", "!kick [plr]", "!unlockmouse"
