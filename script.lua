@@ -1534,6 +1534,11 @@ MM2ESP = {
 	contentLayout = nil,
 	heartbeatConn = nil,
 	isMobile = false,
+	-- NEW: Gun drop features
+	GunDrop_AutoTP = false,
+	GunDrop_Connection = nil,
+	-- NEW: Speed boost
+	SpeedBoost_Enabled = false,
 	-- UI refs stored on table
 	minBtn = nil,
 	closeBtn = nil,
@@ -1646,6 +1651,9 @@ function MM2ESP:RemoveTracer(player)
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════
+-- FIXED TRACERS - Screen-edge based instead of bottom-center
+-- ═══════════════════════════════════════════════════════════
 function MM2ESP:UpdateTracers()
 	if not self.Tracers_Enabled then
 		for _, line in pairs(self.Tracers) do
@@ -1656,7 +1664,8 @@ function MM2ESP:UpdateTracers()
 	local camera = workspace.CurrentCamera
 	if not camera then return end
 	local vSize = camera.ViewportSize
-	local screenBottom = Vector2.new(vSize.X / 2, vSize.Y)
+	local screenCenter = Vector2.new(vSize.X / 2, vSize.Y / 2)
+
 	for player, line in pairs(self.Tracers) do
 		if not player or not player.Parent then
 			line.Visible = false
@@ -1685,25 +1694,52 @@ function MM2ESP:UpdateTracers()
 				continue
 			end
 		end
+
 		local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+		local targetPos = Vector2.new(pos.X, pos.Y)
+
+		-- Calculate closest point on screen edge
+		local edgePos
 		if onScreen then
-			local targetPos = Vector2.new(pos.X, pos.Y)
-			local dir = targetPos - screenBottom
+			-- Target is on screen — draw from screen edge toward target
+			local dir = targetPos - screenCenter
 			local dist = dir.Magnitude
 			if dist < 5 then
 				line.Visible = false
 				continue
 			end
+			-- Clamp to screen edge
 			local angle = math.atan2(dir.Y, dir.X)
-			line.Size = UDim2.new(0, dist, 0, 1.5)
-			line.Position = UDim2.new(0, screenBottom.X, 0, screenBottom.Y)
-			line.Rotation = math.deg(angle)
-			line.BackgroundColor3 = self:GetRoleColor(self:GetRole(player))
-			line.BackgroundTransparency = 0.2
-			line.Visible = true
+			local edgeDist = math.min(vSize.X, vSize.Y) * 0.45
+			edgePos = screenCenter + Vector2.new(
+				math.cos(angle) * edgeDist,
+				math.sin(angle) * edgeDist
+			)
 		else
-			line.Visible = false
+			-- Target is off screen — draw from edge pointing toward target
+			local dir = targetPos - screenCenter
+			local angle = math.atan2(dir.Y, dir.X)
+			local edgeDist = math.min(vSize.X, vSize.Y) * 0.45
+			edgePos = screenCenter + Vector2.new(
+				math.cos(angle) * edgeDist,
+				math.sin(angle) * edgeDist
+			)
 		end
+
+		local drawDir = targetPos - edgePos
+		local drawDist = drawDir.Magnitude
+		if drawDist < 2 then
+			line.Visible = false
+			continue
+		end
+
+		local drawAngle = math.atan2(drawDir.Y, drawDir.X)
+		line.Size = UDim2.new(0, math.min(drawDist, 200), 0, 2)
+		line.Position = UDim2.new(0, edgePos.X, 0, edgePos.Y)
+		line.Rotation = math.deg(drawAngle)
+		line.BackgroundColor3 = self:GetRoleColor(self:GetRole(player))
+		line.BackgroundTransparency = 0.1
+		line.Visible = true
 	end
 end
 
@@ -1724,6 +1760,70 @@ function MM2ESP:ToggleTracers(state)
 		for _, line in pairs(self.Tracers) do
 			line.Visible = false
 		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- NEW: Gun Drop Teleport Features
+-- ═══════════════════════════════════════════════════════════
+function MM2ESP:TeleportToGunDrop()
+	local gunDrop = workspace:FindFirstChild("GunDrop")
+	if not gunDrop then
+		if notify then notify("No gun drop found!", Color3.fromRGB(255, 100, 100)) end
+		return
+	end
+	local myChar = LocalPlayer.Character
+	if not myChar then return end
+	local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+	if not myHrp then return end
+	myHrp.CFrame = CFrame.new(gunDrop.Position + Vector3.new(0, 3, 0))
+	if notify then notify("Teleported to gun drop!", Color3.fromRGB(100, 255, 100)) end
+end
+
+function MM2ESP:SetupGunDropAutoTP()
+	if self.GunDrop_Connection then
+		self.GunDrop_Connection:Disconnect()
+		self.GunDrop_Connection = nil
+	end
+	if not self.GunDrop_AutoTP then return end
+	self.GunDrop_Connection = workspace.ChildAdded:Connect(function(child)
+		if child.Name == "GunDrop" then
+			task.wait(0.1)
+			self:TeleportToGunDrop()
+		end
+	end)
+end
+
+function MM2ESP:ToggleGunDropAutoTP(state)
+	self.GunDrop_AutoTP = state
+	self:SetupGunDropAutoTP()
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- NEW: Speed Boost
+-- ═══════════════════════════════════════════════════════════
+function MM2ESP:ToggleSpeedBoost(state)
+	self.SpeedBoost_Enabled = state
+	local char = LocalPlayer.Character
+	if not char then return end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	if state then
+		hum.WalkSpeed = 30
+		if notify then notify("Speed boost ON (30)", Color3.fromRGB(100, 255, 150)) end
+	else
+		hum.WalkSpeed = 16
+		if notify then notify("Speed boost OFF", Color3.fromRGB(255, 100, 100)) end
+	end
+end
+
+function MM2ESP:UpdateSpeedBoost()
+	if not self.SpeedBoost_Enabled then return end
+	local char = LocalPlayer.Character
+	if not char then return end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum and hum.WalkSpeed ~= 30 then
+		hum.WalkSpeed = 30
 	end
 end
 
@@ -1769,6 +1869,7 @@ function MM2ESP:Cleanup()
 	if self.panel then self.panel:Destroy() end
 	if self.tracerGui then self.tracerGui:Destroy() end
 	if self.heartbeatConn then self.heartbeatConn:Disconnect() end
+	if self.GunDrop_Connection then self.GunDrop_Connection:Disconnect() end
 	for player, _ in pairs(self.ESPs) do
 		self:RemoveESP(player)
 	end
@@ -1782,6 +1883,8 @@ function MM2ESP:Cleanup()
 	self.IsMinimized = false
 	self.IsClosed = false
 	self.Dragging = false
+	self.GunDrop_AutoTP = false
+	self.SpeedBoost_Enabled = false
 end
 
 -- ═══════════════════════════════════════════════════════════
@@ -2007,6 +2110,97 @@ function MM2ESP:MakeToggle(name, label, defaultState, onToggle)
 	return {SetState = animate, GetState = function() return isOn end}
 end
 
+-- ═══════════════════════════════════════════════════════════
+-- NEW: Gun Drop Button + Auto TP Toggle
+-- ═══════════════════════════════════════════════════════════
+function MM2ESP:CreateGunDropSection()
+	local frame = Instance.new("Frame")
+	frame.Name = "GunDropSection"
+	frame.Size = UDim2.new(1, 0, 0, self.TOG_H + 6)
+	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+	frame.BorderSizePixel = 0
+	frame.Parent = self.content
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+	-- TP Button
+	local tpBtn = Instance.new("TextButton")
+	tpBtn.Name = "TPBtn"
+	tpBtn.Size = UDim2.new(0.48, 0, 0, self.TOG_H - 8)
+	tpBtn.Position = UDim2.new(0, 6, 0.5, -(self.TOG_H - 8) / 2)
+	tpBtn.BackgroundColor3 = Color3.fromRGB(80, 60, 180)
+	tpBtn.Text = "TP to Gun"
+	tpBtn.TextColor3 = self.COL_TEXT
+	tpBtn.TextSize = self.isMobile and 11 or 13
+	tpBtn.Font = Enum.Font.GothamBold
+	tpBtn.BorderSizePixel = 0
+	tpBtn.Parent = frame
+	Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 6)
+
+	tpBtn.MouseButton1Click:Connect(function()
+		self:TeleportToGunDrop()
+	end)
+	tpBtn.MouseEnter:Connect(function()
+		TweenService:Create(tpBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(100, 80, 220)}):Play()
+	end)
+	tpBtn.MouseLeave:Connect(function()
+		TweenService:Create(tpBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(80, 60, 180)}):Play()
+	end)
+
+	-- Auto TP Label
+	local autoLbl = Instance.new("TextLabel")
+	autoLbl.Name = "AutoLabel"
+	autoLbl.Size = UDim2.new(0.22, 0, 0, 20)
+	autoLbl.Position = UDim2.new(0.52, 4, 0.5, -10)
+	autoLbl.BackgroundTransparency = 1
+	autoLbl.Text = "Auto:"
+	autoLbl.TextColor3 = self.COL_SUB
+	autoLbl.TextSize = self.isMobile and 10 or 12
+	autoLbl.Font = Enum.Font.GothamSemibold
+	autoLbl.TextXAlignment = Enum.TextXAlignment.Left
+	autoLbl.Parent = frame
+
+	-- Auto TP Switch
+	local switch = Instance.new("Frame")
+	switch.Name = "AutoSwitch"
+	switch.Size = UDim2.new(0, 36, 0, 20)
+	switch.Position = UDim2.new(1, -42, 0.5, -10)
+	switch.BackgroundColor3 = self.COL_OFF
+	switch.BorderSizePixel = 0
+	switch.Parent = frame
+	Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+
+	local knob = Instance.new("Frame")
+	knob.Name = "Knob"
+	knob.Size = UDim2.new(0, 14, 0, 14)
+	knob.Position = UDim2.new(0, 3, 0.5, -7)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.BorderSizePixel = 0
+	knob.Parent = switch
+	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+	local clickArea = Instance.new("TextButton")
+	clickArea.Name = "ClickArea"
+	clickArea.Size = UDim2.new(1, 0, 1, 0)
+	clickArea.BackgroundTransparency = 1
+	clickArea.Text = ""
+	clickArea.Parent = frame
+
+	local isOn = false
+	clickArea.MouseButton1Click:Connect(function()
+		isOn = not isOn
+		TweenService:Create(switch, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			BackgroundColor3 = isOn and self.COL_ACCENT or self.COL_OFF
+		}):Play()
+		TweenService:Create(knob, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Position = isOn and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+		}):Play()
+		self:ToggleGunDropAutoTP(isOn)
+		if notify then
+			notify(isOn and "Auto TP to Gun: ON" or "Auto TP to Gun: OFF", isOn and Color3.fromRGB(100, 255, 150) or Color3.fromRGB(255, 100, 100))
+		end
+	end)
+end
+
 function MM2ESP:CreateLegend()
 	local div = Instance.new("Frame")
 	div.Name = "Divider"
@@ -2134,6 +2328,7 @@ function MM2ESP:SetupLoop()
 		if self.IsClosed then return end
 		if self.ESP_Enabled then self:UpdateAllESP() end
 		if self.Tracers_Enabled then self:UpdateTracers() end
+		if self.SpeedBoost_Enabled then self:UpdateSpeedBoost() end
 	end)
 end
 
@@ -2151,9 +2346,17 @@ function MM2ESP:Open()
 	self.espToggle = self:MakeToggle("ESP", "ESP", true, function(state)
 		self:ToggleESP(state)
 	end)
-	self.tracerToggle = self:MakeToggle("Tracers", "Tracers - Broken", true, function(state)
+	self.tracerToggle = self:MakeToggle("Tracers", "Tracers", true, function(state)
 		self:ToggleTracers(state)
 	end)
+
+	-- NEW: Speed Boost Toggle
+	self.speedToggle = self:MakeToggle("Speed", "Speed Boost (30)", false, function(state)
+		self:ToggleSpeedBoost(state)
+	end)
+
+	-- NEW: Gun Drop Section
+	self:CreateGunDropSection()
 
 	self:CreateLegend()
 
@@ -10310,126 +10513,30 @@ function processCmd(msg)
 	end
 end
 -- =============================================================
--- Lunar Admin GUI — Clean & Interactive
+-- Main Gui :3
 -- =============================================================
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
-local Debris = game:GetService("Debris")
-local TextService = game:GetService("TextService")
-local CoreGui = game:GetService("CoreGui")
-
-local client = Players.LocalPlayer
-local camera = workspace.CurrentCamera
-
--- Mobile detection
+-- Mobile detection at top
 local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-local viewport = camera and camera.ViewportSize or Vector2.new(1920, 1080)
+local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
 local smallestSide = math.min(viewport.X, viewport.Y)
 
 local scale, fontScale
 if isMobile then
 	if smallestSide < 600 then
-		scale = 0.42; fontScale = 0.68
+		scale = 0.42
+		fontScale = 0.68
 	elseif smallestSide < 800 then
-		scale = 0.52; fontScale = 0.75
+		scale = 0.52
+		fontScale = 0.75
 	else
-		scale = 0.62; fontScale = 0.82
+		scale = 0.62
+		fontScale = 0.82
 	end
 else
-	scale = 1; fontScale = 1
+	scale = 1
+	fontScale = 1
 end
 
--- Config (global so it persists if needed)
-if not globalConfig then
-	globalConfig = {
-		textColor = Color3.fromRGB(230, 230, 240),
-		uiTransparency = 0,
-		commandPrefix = "!",
-		notifPos = "topright",
-		showFps = false,
-		showPing = false,
-		autoExec = false,
-		uiScale = scale
-	}
-end
-
-if not currentTheme then
-	currentTheme = {
-		accent = Color3.fromRGB(120, 180, 255),
-		text = Color3.fromRGB(255, 255, 255),
-		glass = Color3.fromRGB(25, 25, 30),
-		btn = Color3.fromRGB(50, 50, 60),
-		list = Color3.fromRGB(35, 35, 42)
-	}
-end
-
-if not themes then
-	themes = {
-		["Ocean"] = { accent = Color3.fromRGB(120, 180, 255), text = Color3.fromRGB(255,255,255), glass = Color3.fromRGB(25,25,30), btn = Color3.fromRGB(50,50,60), list = Color3.fromRGB(35,35,42) },
-		["Crimson"] = { accent = Color3.fromRGB(255, 80, 80), text = Color3.fromRGB(255,255,255), glass = Color3.fromRGB(30,20,20), btn = Color3.fromRGB(60,40,40), list = Color3.fromRGB(42,30,30) },
-		["Emerald"] = { accent = Color3.fromRGB(80, 220, 120), text = Color3.fromRGB(255,255,255), glass = Color3.fromRGB(20,28,22), btn = Color3.fromRGB(40,55,45), list = Color3.fromRGB(30,42,35) },
-		["Amethyst"] = { accent = Color3.fromRGB(180, 120, 255), text = Color3.fromRGB(255,255,255), glass = Color3.fromRGB(28,22,32), btn = Color3.fromRGB(50,40,60), list = Color3.fromRGB(40,32,48) },
-		["Gold"] = { accent = Color3.fromRGB(255, 200, 80), text = Color3.fromRGB(255,255,255), glass = Color3.fromRGB(30,28,20), btn = Color3.fromRGB(55,50,35), list = Color3.fromRGB(42,40,30) },
-		["Midnight"] = { accent = Color3.fromRGB(100, 160, 255), text = Color3.fromRGB(200,210,230), glass = Color3.fromRGB(15,15,20), btn = Color3.fromRGB(35,35,45), list = Color3.fromRGB(28,28,35) }
-	}
-end
-
--- Helper: tween any property
-function tween(obj, props, dur, style, dir)
-	TweenService:Create(obj, TweenInfo.new(dur or 0.25, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props):Play()
-end
-
--- Helper: apply transparency to frame/button/slider but NEVER text
-function applyTransparency(obj, trans)
-	if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-		-- Only apply to background, never text
-		if obj.BackgroundTransparency < 1 then
-			obj.BackgroundTransparency = trans
-		end
-	elseif obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
-		obj.BackgroundTransparency = trans
-	elseif obj:IsA("UIStroke") then
-		obj.Transparency = 0.5 + (trans * 0.5)
-	end
-	for _, child in ipairs(obj:GetChildren()) do
-		applyTransparency(child, trans)
-	end
-end
-
--- Helper: make a modern glass button
-function makeGlassBtn(parent, name, txt, bg, txtColor, sz, pos, corner)
-	local b = Instance.new("TextButton", parent)
-	b.Name = name
-	b.Size = sz or UDim2.new(1, 0, 0, math.floor(36 * scale))
-	b.Position = pos or UDim2.new(0, 0, 0, 0)
-	b.BackgroundColor3 = bg or currentTheme.btn
-	b.BackgroundTransparency = globalConfig.uiTransparency
-	b.Text = txt or ""
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = math.floor(13 * fontScale)
-	b.TextColor3 = txtColor or globalConfig.textColor
-	b.BorderSizePixel = 0
-	b.AutoButtonColor = false
-	b.ZIndex = 2147483647
-	if corner ~= false then
-		Instance.new("UICorner", b).CornerRadius = UDim.new(0, math.floor(8 * scale))
-	end
-	-- Hover effect
-	b.MouseEnter:Connect(function()
-		tween(b, {BackgroundColor3 = currentTheme.accent, TextColor3 = Color3.new(0,0,0)}, 0.15)
-	end)
-	b.MouseLeave:Connect(function()
-		tween(b, {BackgroundColor3 = bg or currentTheme.btn, TextColor3 = txtColor or globalConfig.textColor}, 0.15)
-	end)
-	return b
-end
-
--- =============================================================
--- MAIN GUI
--- =============================================================
 lunarGui = Instance.new("ScreenGui")
 lunarGui.Name = "LunarGui"
 lunarGui.ResetOnSpawn = false
@@ -10438,54 +10545,27 @@ lunarGui.DisplayOrder = 2147483646
 lunarGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 lunarGui.ScreenInsets = Enum.ScreenInsets.None
 lunarGui.IgnoreGuiInset = true
-lunarGui.Parent = CoreGui
-
--- Shadow frame (behind main)
-local shadow = Instance.new("Frame", lunarGui)
-shadow.Name = "Shadow"
-shadow.Size = UDim2.new(0, math.floor(424 * scale), 0, math.floor(564 * scale))
-shadow.Position = UDim2.new(1, math.floor(-442 * scale), 0.5, math.floor(-282 * scale))
-shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-shadow.BackgroundTransparency = 0.6
-shadow.BorderSizePixel = 0
-shadow.ZIndex = 2147483646
-Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, math.floor(12 * scale))
+lunarGui.Parent = game:GetService("CoreGui")
 
 mainFrame = Instance.new("Frame", lunarGui)
 mainFrame.Name = "Main"
 mainFrame.Size = UDim2.new(0, math.floor(420 * scale), 0, math.floor(560 * scale))
 mainFrame.Position = UDim2.new(1, math.floor(-440 * scale), 0.5, math.floor(-280 * scale))
-mainFrame.BackgroundColor3 = currentTheme.glass
-mainFrame.BackgroundTransparency = globalConfig.uiTransparency
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.ClipsDescendants = true
 mainFrame.ZIndex = 2147483647
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, math.floor(10 * scale))
-
--- Subtle border
-local mainStroke = Instance.new("UIStroke", mainFrame)
-mainStroke.Color = currentTheme.accent
-mainStroke.Thickness = 1
-mainStroke.Transparency = 0.7 + (globalConfig.uiTransparency * 0.3)
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
 -- Top Bar
 topBar = Instance.new("Frame", mainFrame)
 topBar.Size = UDim2.new(1, 0, 0, math.floor(50 * scale))
-topBar.BackgroundColor3 = currentTheme.list
-topBar.BackgroundTransparency = globalConfig.uiTransparency
+topBar.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 topBar.BorderSizePixel = 0
 topBar.ZIndex = 2147483647
-Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, math.floor(10 * scale))
-
--- Top accent line
-local accentLine = Instance.new("Frame", topBar)
-accentLine.Size = UDim2.new(1, 0, 0, math.floor(2 * scale))
-accentLine.Position = UDim2.new(0, 0, 0, 0)
-accentLine.BackgroundColor3 = currentTheme.accent
-accentLine.BorderSizePixel = 0
-accentLine.ZIndex = 2147483647
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 8)
 
 -- Title
 titleLabel = Instance.new("TextLabel", topBar)
@@ -10494,44 +10574,37 @@ titleLabel.Position = UDim2.new(0, math.floor(15 * scale), 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Project Lunar"
 titleLabel.Font = Enum.Font.GothamBlack
-titleLabel.TextSize = math.floor(22 * fontScale)
+titleLabel.TextSize = math.floor(24 * fontScale)
 titleLabel.TextColor3 = currentTheme.accent
+titleLabel.TextStrokeTransparency = 0.5
+titleLabel.TextStrokeColor3 = Color3.new(0,0,0)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.ZIndex = 2147483647
 
 -- Minimize Button
 minBtn = Instance.new("TextButton", topBar)
 minBtn.Name = "MinimizeBtn"
-minBtn.Size = UDim2.new(0, math.floor(32 * scale), 0, math.floor(32 * scale))
-minBtn.Position = UDim2.new(1, math.floor(-42 * scale), 0.5, math.floor(-16 * scale))
-minBtn.BackgroundColor3 = currentTheme.btn
-minBtn.BackgroundTransparency = globalConfig.uiTransparency
+minBtn.Size = UDim2.new(0, math.floor(35 * scale), 0, math.floor(35 * scale))
+minBtn.Position = UDim2.new(1, math.floor(-40 * scale), 0.5, math.floor(-17.5 * scale))
+minBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 minBtn.Text = "−"
 minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = math.floor(18 * fontScale)
-minBtn.TextColor3 = globalConfig.textColor
+minBtn.TextSize = math.floor(20 * fontScale)
+minBtn.TextColor3 = Color3.new(1,1,1)
 minBtn.BorderSizePixel = 0
-minBtn.AutoButtonColor = false
 minBtn.ZIndex = 2147483647
-Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, math.floor(6 * scale))
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
-minBtn.MouseEnter:Connect(function()
-	tween(minBtn, {BackgroundColor3 = currentTheme.accent, TextColor3 = Color3.new(0,0,0)}, 0.15)
-end)
-minBtn.MouseLeave:Connect(function()
-	tween(minBtn, {BackgroundColor3 = currentTheme.btn, TextColor3 = globalConfig.textColor}, 0.15)
-end)
-
+-- Minimize functionality
 local minimized = false
 local origSize = mainFrame.Size
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
 	if minimized then
 		mainFrame:TweenSize(UDim2.new(0, math.floor(420 * scale), 0, math.floor(50 * scale)), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
-		shadow:TweenSize(UDim2.new(0, math.floor(424 * scale), 0, math.floor(54 * scale)), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
 		minBtn.Text = "+"
 	else
 		mainFrame:TweenSize(origSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
-		shadow:TweenSize(UDim2.new(0, math.floor(424 * scale), 0, math.floor(564 * scale)), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
 		minBtn.Text = "−"
 	end
 end)
@@ -10539,14 +10612,18 @@ end)
 -- Resize Handle
 resizeHandle = Instance.new("TextButton", mainFrame)
 resizeHandle.Name = "ResizeHandle"
-resizeHandle.Size = UDim2.new(0, math.floor(18 * scale), 0, math.floor(18 * scale))
+resizeHandle.Size = UDim2.new(0, math.floor(20 * scale), 0, math.floor(20 * scale))
 resizeHandle.Position = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-20 * scale))
-resizeHandle.BackgroundTransparency = 1
-resizeHandle.Text = ""
+resizeHandle.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+resizeHandle.Text = "◢"
+resizeHandle.Font = Enum.Font.GothamBold
+resizeHandle.TextSize = math.floor(10 * fontScale)
+resizeHandle.TextColor3 = Color3.fromRGB(150, 150, 150)
 resizeHandle.BorderSizePixel = 0
 resizeHandle.AutoButtonColor = false
 resizeHandle.Active = true
 resizeHandle.ZIndex = 2147483647
+Instance.new("UICorner", resizeHandle).CornerRadius = UDim.new(0, 4)
 
 -- Resize logic
 local resizing = false
@@ -10569,73 +10646,47 @@ end)
 UserInputService.InputChanged:Connect(function(input)
 	if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local d = input.Position - startPos
-		local newW = math.clamp(startSize.X.Offset + d.X, math.floor(320 * scale), math.floor(800 * scale))
-		local newH = math.clamp(startSize.Y.Offset + d.Y, math.floor(300 * scale), math.floor(700 * scale))
-		mainFrame.Size = UDim2.new(0, newW, 0, newH)
-		shadow.Size = UDim2.new(0, newW + 4, 0, newH + 4)
+		mainFrame.Size = UDim2.new(0, math.clamp(startSize.X.Offset + d.X, math.floor(320 * scale), math.floor(800 * scale)), 0, math.clamp(startSize.Y.Offset + d.Y, math.floor(300 * scale), math.floor(700 * scale)))
 	end
 end)
 
 -- Tabs
-local tabBar = Instance.new("Frame", mainFrame)
-tabBar.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(38 * scale))
-tabBar.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(58 * scale))
+tabBar = Instance.new("Frame", mainFrame)
+tabBar.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(40 * scale))
+tabBar.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(60 * scale))
 tabBar.BackgroundTransparency = 1
 tabBar.ZIndex = 2147483647
 
-local tabHolder = Instance.new("Frame", tabBar)
-tabHolder.Size = UDim2.new(1, 0, 1, 0)
-tabHolder.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-tabHolder.BackgroundTransparency = globalConfig.uiTransparency
-tabHolder.BorderSizePixel = 0
-tabHolder.ZIndex = 2147483647
-Instance.new("UICorner", tabHolder).CornerRadius = UDim.new(0, math.floor(8 * scale))
-
-cmdTab = Instance.new("TextButton", tabHolder)
+cmdTab = Instance.new("TextButton", tabBar)
 cmdTab.Name = "CmdTab"
-cmdTab.Size = UDim2.new(0.5, -3, 1, math.floor(-4 * scale))
-cmdTab.Position = UDim2.new(0, 2, 0, math.floor(2 * scale))
+cmdTab.Size = UDim2.new(0.5, -5, 1, 0)
 cmdTab.BackgroundColor3 = currentTheme.accent
 cmdTab.Text = "Commands"
 cmdTab.Font = Enum.Font.GothamBold
-cmdTab.TextSize = math.floor(14 * fontScale)
+cmdTab.TextSize = math.floor(16 * fontScale)
 cmdTab.TextColor3 = Color3.new(0,0,0)
 cmdTab.BorderSizePixel = 0
-cmdTab.AutoButtonColor = false
 cmdTab.ZIndex = 2147483647
-Instance.new("UICorner", cmdTab).CornerRadius = UDim.new(0, math.floor(6 * scale))
+Instance.new("UICorner", cmdTab).CornerRadius = UDim.new(0, 6)
 
-setTab = Instance.new("TextButton", tabHolder)
+setTab = Instance.new("TextButton", tabBar)
 setTab.Name = "SetTab"
-setTab.Size = UDim2.new(0.5, -3, 1, math.floor(-4 * scale))
-setTab.Position = UDim2.new(0.5, 1, 0, math.floor(2 * scale))
-setTab.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-setTab.BackgroundTransparency = globalConfig.uiTransparency
+setTab.Size = UDim2.new(0.5, -5, 1, 0)
+setTab.Position = UDim2.new(0.5, 5, 0, 0)
+setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 setTab.Text = "Settings"
 setTab.Font = Enum.Font.GothamBold
-setTab.TextSize = math.floor(14 * fontScale)
+setTab.TextSize = math.floor(16 * fontScale)
 setTab.TextColor3 = globalConfig.textColor
 setTab.BorderSizePixel = 0
-setTab.AutoButtonColor = false
 setTab.ZIndex = 2147483647
-Instance.new("UICorner", setTab).CornerRadius = UDim.new(0, math.floor(6 * scale))
-
-setTab.MouseEnter:Connect(function()
-	if setTab.BackgroundColor3 ~= currentTheme.accent then
-		tween(setTab, {BackgroundColor3 = Color3.fromRGB(55, 55, 65)}, 0.15)
-	end
-end)
-setTab.MouseLeave:Connect(function()
-	if setTab.BackgroundColor3 ~= currentTheme.accent then
-		tween(setTab, {BackgroundColor3 = Color3.fromRGB(35, 35, 42)}, 0.15)
-	end
-end)
+Instance.new("UICorner", setTab).CornerRadius = UDim.new(0, 6)
 
 -- Content Container
 contentFrame = Instance.new("Frame", mainFrame)
 contentFrame.Name = "Content"
-contentFrame.Size = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-108 * scale))
-contentFrame.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(104 * scale))
+contentFrame.Size = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-110 * scale))
+contentFrame.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(110 * scale))
 contentFrame.BackgroundTransparency = 1
 contentFrame.ClipsDescendants = true
 contentFrame.ZIndex = 2147483647
@@ -10647,180 +10698,159 @@ cmdFrame.Size = UDim2.new(1, 0, 1, 0)
 cmdFrame.BackgroundTransparency = 1
 cmdFrame.ZIndex = 2147483647
 
--- Command Bar
-local barH = math.floor(38 * scale)
+-- Command Bar (replaces search bar)
 cmdBarFrame = Instance.new("Frame", cmdFrame)
 cmdBarFrame.Name = "CmdBarFrame"
-cmdBarFrame.Size = UDim2.new(1, 0, 0, barH)
-cmdBarFrame.BackgroundColor3 = currentTheme.list
-cmdBarFrame.BackgroundTransparency = globalConfig.uiTransparency
+cmdBarFrame.Size = UDim2.new(1, 0, 0, math.floor(38 * scale))
+cmdBarFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 cmdBarFrame.BorderSizePixel = 0
 cmdBarFrame.ZIndex = 2147483647
-Instance.new("UICorner", cmdBarFrame).CornerRadius = UDim.new(0, math.floor(8 * scale))
+Instance.new("UICorner", cmdBarFrame).CornerRadius = UDim.new(0, 6)
 
--- Bar stroke
-local barStroke = Instance.new("UIStroke", cmdBarFrame)
-barStroke.Color = currentTheme.accent
-barStroke.Thickness = 1
-barStroke.Transparency = 0.6
-
--- PL Icon
-local plIcon = Instance.new("TextLabel", cmdBarFrame)
-plIcon.Size = UDim2.new(0, math.floor(26 * scale), 0, math.floor(26 * scale))
-plIcon.Position = UDim2.new(0, math.floor(8 * scale), 0.5, math.floor(-13 * scale))
-plIcon.BackgroundTransparency = 1
-plIcon.Text = "PL"
-plIcon.Font = Enum.Font.GothamBlack
-plIcon.TextSize = math.floor(11 * fontScale)
-plIcon.TextColor3 = currentTheme.accent
-plIcon.ZIndex = 2147483647
+-- Icon
+local a = Instance.new("TextLabel", cmdBarFrame)
+a.Name = "CmdIcon"
+a.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(28 * scale))
+a.Position = UDim2.new(0, math.floor(6 * scale), 0.5, math.floor(-14 * scale))
+a.BackgroundTransparency = 1
+a.Text = "PL"
+a.Font = Enum.Font.GothamBold
+a.TextSize = math.floor(12 * fontScale)
+a.TextColor3 = currentTheme.accent
+a.ZIndex = 2147483647
 
 -- Input box
-cmdInput = Instance.new("TextBox", cmdBarFrame)
-cmdInput.Name = "CmdInput"
-cmdInput.Size = UDim2.new(1, math.floor(-108 * scale), 1, math.floor(-8 * scale))
-cmdInput.Position = UDim2.new(0, math.floor(36 * scale), 0, math.floor(4 * scale))
-cmdInput.BackgroundTransparency = 1
-cmdInput.Text = ""
-cmdInput.PlaceholderText = "Type command..."
-cmdInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
-cmdInput.Font = Enum.Font.Gotham
-cmdInput.TextSize = math.floor(13 * fontScale)
-cmdInput.TextColor3 = globalConfig.textColor
-cmdInput.ClearTextOnFocus = false
-cmdInput.ZIndex = 2147483647
+a = Instance.new("TextBox", cmdBarFrame)
+a.Name = "CmdInput"
+a.Size = UDim2.new(1, math.floor(-110 * scale), 1, 0)
+a.Position = UDim2.new(0, math.floor(36 * scale), 0, 0)
+a.BackgroundTransparency = 1
+a.Text = ""
+a.PlaceholderText = "Type command..."
+a.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+a.Font = Enum.Font.Gotham
+a.TextSize = math.floor(14 * fontScale)
+a.TextColor3 = globalConfig.textColor
+a.TextStrokeTransparency = 0.5
+a.TextStrokeColor3 = Color3.new(0,0,0)
+a.ClearTextOnFocus = false
+a.ZIndex = 2147483647
+cmdInput = a
 
 -- Execute Button
-execBtn = Instance.new("TextButton", cmdBarFrame)
-execBtn.Name = "ExecBtn"
-execBtn.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(24 * scale))
-execBtn.Position = UDim2.new(1, math.floor(-64 * scale), 0.5, math.floor(-12 * scale))
-execBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
-execBtn.BackgroundTransparency = globalConfig.uiTransparency
-execBtn.Text = "▶"
-execBtn.Font = Enum.Font.GothamBlack
-execBtn.TextSize = math.floor(11 * fontScale)
-execBtn.TextColor3 = Color3.new(1,1,1)
-execBtn.BorderSizePixel = 0
-execBtn.AutoButtonColor = false
-execBtn.ZIndex = 2147483647
-Instance.new("UICorner", execBtn).CornerRadius = UDim.new(0, math.floor(5 * scale))
-
-execBtn.MouseEnter:Connect(function()
-	tween(execBtn, {BackgroundColor3 = Color3.fromRGB(0, 210, 120)}, 0.15)
-end)
-execBtn.MouseLeave:Connect(function()
-	tween(execBtn, {BackgroundColor3 = Color3.fromRGB(0, 170, 100)}, 0.15)
-end)
+a = Instance.new("TextButton", cmdBarFrame)
+a.Name = "ExecBtn"
+a.Size = UDim2.new(0, math.floor(30 * scale), 0, math.floor(26 * scale))
+a.Position = UDim2.new(1, math.floor(-68 * scale), 0.5, math.floor(-13 * scale))
+a.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+a.Text = "▶"
+a.Font = Enum.Font.GothamBlack
+a.TextSize = math.floor(12 * fontScale)
+a.TextColor3 = Color3.new(1,1,1)
+a.BorderSizePixel = 0
+a.ZIndex = 2147483647
+Instance.new("UICorner", a).CornerRadius = UDim.new(0, 5)
+execBtn = a
 
 -- Command List Button
-cmdListBtn = Instance.new("TextButton", cmdBarFrame)
-cmdListBtn.Name = "CmdListBtn"
-cmdListBtn.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(24 * scale))
-cmdListBtn.Position = UDim2.new(1, math.floor(-34 * scale), 0.5, math.floor(-12 * scale))
-cmdListBtn.BackgroundColor3 = currentTheme.btn
-cmdListBtn.BackgroundTransparency = globalConfig.uiTransparency
-cmdListBtn.Text = "📋"
-cmdListBtn.Font = Enum.Font.GothamBold
-cmdListBtn.TextSize = math.floor(11 * fontScale)
-cmdListBtn.TextColor3 = globalConfig.textColor
-cmdListBtn.BorderSizePixel = 0
-cmdListBtn.AutoButtonColor = false
-cmdListBtn.ZIndex = 2147483647
-Instance.new("UICorner", cmdListBtn).CornerRadius = UDim.new(0, math.floor(5 * scale))
+a = Instance.new("TextButton", cmdBarFrame)
+a.Name = "CmdListBtn"
+a.Size = UDim2.new(0, math.floor(30 * scale), 0, math.floor(26 * scale))
+a.Position = UDim2.new(1, math.floor(-36 * scale), 0.5, math.floor(-13 * scale))
+a.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+a.Text = "📋"
+a.Font = Enum.Font.GothamBold
+a.TextSize = math.floor(12 * fontScale)
+a.TextColor3 = Color3.new(1,1,1)
+a.BorderSizePixel = 0
+a.ZIndex = 2147483647
+Instance.new("UICorner", a).CornerRadius = UDim.new(0, 5)
+cmdListBtn = a
 
-cmdListBtn.MouseEnter:Connect(function()
-	tween(cmdListBtn, {BackgroundColor3 = currentTheme.accent, TextColor3 = Color3.new(0,0,0)}, 0.15)
-end)
-cmdListBtn.MouseLeave:Connect(function()
-	tween(cmdListBtn, {BackgroundColor3 = currentTheme.btn, TextColor3 = globalConfig.textColor}, 0.15)
-end)
+-- Dropdown for autocomplete
+a = Instance.new("Frame", cmdBarFrame)
+a.Name = "Dropdown"
+a.Size = UDim2.new(1, 0, 0, math.floor(140 * scale))
+a.Position = UDim2.new(0, 0, 1, math.floor(4 * scale))
+a.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+a.BackgroundTransparency = 0.15
+a.BorderSizePixel = 0
+a.Visible = false
+a.ClipsDescendants = true
+a.ZIndex = 2147483647
+Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
+dropdown = a
 
--- Dropdown autocomplete
-dropdown = Instance.new("Frame", cmdBarFrame)
-dropdown.Name = "Dropdown"
-dropdown.Size = UDim2.new(1, 0, 0, math.floor(160 * scale))
-dropdown.Position = UDim2.new(0, 0, 1, math.floor(6 * scale))
-dropdown.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-dropdown.BackgroundTransparency = math.max(0.05, globalConfig.uiTransparency)
-dropdown.BorderSizePixel = 0
-dropdown.Visible = false
-dropdown.ClipsDescendants = true
-dropdown.ZIndex = 2147483647
-Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, math.floor(8 * scale))
+a = Instance.new("UIStroke", dropdown)
+a.Color = Color3.fromRGB(70, 70, 110)
+a.Thickness = 1
+a.Transparency = 0.5
 
-local dropStroke2 = Instance.new("UIStroke", dropdown)
-dropStroke2.Color = currentTheme.accent
-dropStroke2.Thickness = 1
-dropStroke2.Transparency = 0.5
+a = Instance.new("ScrollingFrame", dropdown)
+a.Name = "Scroll"
+a.Size = UDim2.new(1, math.floor(-12 * scale), 1, math.floor(-10 * scale))
+a.Position = UDim2.new(0, math.floor(6 * scale), 0, math.floor(5 * scale))
+a.BackgroundTransparency = 1
+a.ScrollBarThickness = math.floor(3 * scale)
+a.ScrollBarImageColor3 = currentTheme.accent
+a.ZIndex = 2147483647
+dropdownScroll = a
 
-dropdownScroll = Instance.new("ScrollingFrame", dropdown)
-dropdownScroll.Name = "Scroll"
-dropdownScroll.Size = UDim2.new(1, math.floor(-12 * scale), 1, math.floor(-10 * scale))
-dropdownScroll.Position = UDim2.new(0, math.floor(6 * scale), 0, math.floor(5 * scale))
-dropdownScroll.BackgroundTransparency = 1
-dropdownScroll.ScrollBarThickness = math.floor(3 * scale)
-dropdownScroll.ScrollBarImageColor3 = currentTheme.accent
+a = Instance.new("UIListLayout", dropdownScroll)
+a.Padding = UDim.new(0, math.floor(2 * scale))
 
-local dropdownList = Instance.new("UIListLayout", dropdownScroll)
-dropdownList.Padding = UDim.new(0, math.floor(2 * scale))
+-- Command List Panel (side panel)
+a = Instance.new("Frame", cmdFrame)
+a.Name = "CmdListPanel"
+a.Size = UDim2.new(0, math.floor(200 * scale), 1, math.floor(-48 * scale))
+a.Position = UDim2.new(1, math.floor(8 * scale), 0, math.floor(48 * scale))
+a.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+a.BackgroundTransparency = 0.3
+a.BorderSizePixel = 0
+a.Visible = false
+a.ZIndex = 2147483647
+Instance.new("UICorner", a).CornerRadius = UDim.new(0, 8)
+cmdListPanel = a
 
--- Command List Panel
-local panelW = math.floor(210 * scale)
-cmdListPanel = Instance.new("Frame", cmdFrame)
-cmdListPanel.Name = "CmdListPanel"
-cmdListPanel.Size = UDim2.new(0, panelW, 1, math.floor(-50 * scale))
-cmdListPanel.Position = UDim2.new(1, math.floor(10 * scale), 0, math.floor(50 * scale))
-cmdListPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-cmdListPanel.BackgroundTransparency = math.max(0.05, globalConfig.uiTransparency)
-cmdListPanel.BorderSizePixel = 0
-cmdListPanel.Visible = false
-cmdListPanel.ZIndex = 2147483647
-Instance.new("UICorner", cmdListPanel).CornerRadius = UDim.new(0, math.floor(10 * scale))
+a = Instance.new("UIStroke", cmdListPanel)
+a.Color = Color3.fromRGB(70, 70, 110)
+a.Thickness = 1
+a.Transparency = 0.45
 
-local panelStroke = Instance.new("UIStroke", cmdListPanel)
-panelStroke.Color = currentTheme.accent
-panelStroke.Thickness = 1
-panelStroke.Transparency = 0.4
+a = Instance.new("TextLabel", cmdListPanel)
+a.Size = UDim2.new(1, 0, 0, math.floor(30 * scale))
+a.BackgroundTransparency = 1
+a.Text = "📋 Commands"
+a.Font = Enum.Font.GothamBlack
+a.TextSize = math.floor(13 * fontScale)
+a.TextColor3 = currentTheme.accent
+a.ZIndex = 2147483647
 
-local panelTitle = Instance.new("TextLabel", cmdListPanel)
-panelTitle.Size = UDim2.new(1, math.floor(-30 * scale), 0, math.floor(28 * scale))
-panelTitle.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(6 * scale))
-panelTitle.BackgroundTransparency = 1
-panelTitle.Text = "📋 All Commands"
-panelTitle.Font = Enum.Font.GothamBlack
-panelTitle.TextSize = math.floor(12 * fontScale)
-panelTitle.TextColor3 = currentTheme.accent
+a = Instance.new("TextButton", cmdListPanel)
+a.Size = UDim2.new(0, math.floor(24 * scale), 0, math.floor(24 * scale))
+a.Position = UDim2.new(1, math.floor(-28 * scale), 0, math.floor(3 * scale))
+a.BackgroundTransparency = 1
+a.Text = "✕"
+a.Font = Enum.Font.GothamBold
+a.TextSize = math.floor(14 * fontScale)
+a.TextColor3 = Color3.fromRGB(255, 100, 100)
+a.ZIndex = 2147483647
+panelClose = a
 
-panelClose = Instance.new("TextButton", cmdListPanel)
-panelClose.Size = UDim2.new(0, math.floor(22 * scale), 0, math.floor(22 * scale))
-panelClose.Position = UDim2.new(1, math.floor(-26 * scale), 0, math.floor(6 * scale))
-panelClose.BackgroundTransparency = 1
-panelClose.Text = "✕"
-panelClose.Font = Enum.Font.GothamBold
-panelClose.TextSize = math.floor(13 * fontScale)
-panelClose.TextColor3 = Color3.fromRGB(255, 100, 100)
-panelClose.AutoButtonColor = false
+a = Instance.new("ScrollingFrame", cmdListPanel)
+a.Name = "ListScroll"
+a.Size = UDim2.new(1, math.floor(-12 * scale), 1, math.floor(-38 * scale))
+a.Position = UDim2.new(0, math.floor(6 * scale), 0, math.floor(32 * scale))
+a.BackgroundTransparency = 1
+a.ScrollBarThickness = math.floor(3 * scale)
+a.ScrollBarImageColor3 = currentTheme.accent
+a.ZIndex = 2147483647
+listScroll = a
 
-panelClose.MouseEnter:Connect(function()
-	tween(panelClose, {TextColor3 = Color3.fromRGB(255, 60, 60)}, 0.15)
-end)
-panelClose.MouseLeave:Connect(function()
-	tween(panelClose, {TextColor3 = Color3.fromRGB(255, 100, 100)}, 0.15)
-end)
+a = Instance.new("UIListLayout", listScroll)
+a.Padding = UDim.new(0, math.floor(2 * scale))
 
-listScroll = Instance.new("ScrollingFrame", cmdListPanel)
-listScroll.Name = "ListScroll"
-listScroll.Size = UDim2.new(1, math.floor(-12 * scale), 1, math.floor(-40 * scale))
-listScroll.Position = UDim2.new(0, math.floor(6 * scale), 0, math.floor(36 * scale))
-listScroll.BackgroundTransparency = 1
-listScroll.ScrollBarThickness = math.floor(3 * scale)
-listScroll.ScrollBarImageColor3 = currentTheme.accent
-
-local listLayout = Instance.new("UIListLayout", listScroll)
-listLayout.Padding = UDim.new(0, math.floor(2 * scale))
-
--- All commands
+-- All commands for dropdown and panel
 allCommands = {
 	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair", "!unload",
 	"!disablefalldamage", "!enable inventory", "!enable playerlist", "!esp all", "!explode", "!fire",
@@ -10835,28 +10865,28 @@ allCommands = {
 
 -- Populate command list panel
 for _, cmd in ipairs(allCommands) do
-	local cb = Instance.new("TextButton")
-	cb.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
-	cb.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-	cb.BackgroundTransparency = globalConfig.uiTransparency
-	cb.Text = "  " .. cmd
-	cb.Font = Enum.Font.Gotham
-	cb.TextSize = math.floor(11 * fontScale)
-	cb.TextColor3 = Color3.fromRGB(200, 200, 215)
-	cb.TextXAlignment = Enum.TextXAlignment.Left
-	cb.BorderSizePixel = 0
-	cb.AutoButtonColor = false
-	cb.Parent = listScroll
-	cb.ZIndex = 2147483647
-	Instance.new("UICorner", cb).CornerRadius = UDim.new(0, math.floor(4 * scale))
+	a = Instance.new("TextButton")
+	a.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
+	a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+	a.BackgroundTransparency = 0.45
+	a.Text = "  " .. cmd
+	a.Font = Enum.Font.Gotham
+	a.TextSize = math.floor(11 * fontScale)
+	a.TextColor3 = Color3.fromRGB(205, 205, 225)
+	a.TextXAlignment = Enum.TextXAlignment.Left
+	a.Parent = listScroll
+	a.ZIndex = 2147483647
+	Instance.new("UICorner", a).CornerRadius = UDim.new(0, 4)
 
-	cb.MouseEnter:Connect(function()
-		tween(cb, {BackgroundColor3 = Color3.fromRGB(50, 50, 70), TextColor3 = currentTheme.accent}, 0.15)
+	a.MouseEnter:Connect(function()
+		a.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
+		a.TextColor3 = Color3.fromRGB(100, 200, 255)
 	end)
-	cb.MouseLeave:Connect(function()
-		tween(cb, {BackgroundColor3 = Color3.fromRGB(30, 30, 38), TextColor3 = Color3.fromRGB(200, 200, 215)}, 0.15)
+	a.MouseLeave:Connect(function()
+		a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+		a.TextColor3 = Color3.fromRGB(205, 205, 225)
 	end)
-	cb.MouseButton1Click:Connect(function()
+	a.MouseButton1Click:Connect(function()
 		cmdInput.Text = cmd .. " "
 		cmdInput.CursorPosition = #cmdInput.Text + 1
 		cmdListPanel.Visible = false
@@ -10866,20 +10896,22 @@ end
 
 listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
 
+-- Panel close
 panelClose.MouseButton1Click:Connect(function()
 	cmdListPanel.Visible = false
 end)
 
+-- Toggle command list panel
 cmdListBtn.MouseButton1Click:Connect(function()
 	cmdListPanel.Visible = not cmdListPanel.Visible
 end)
 
--- Execute command
+-- Execute command function
 function executeCommand()
 	local cmdText = cmdInput.Text:match("^%s*(.-)%s*$")
 	if cmdText and cmdText ~= "" then
 		if notify then
-			notify("▶️ " .. cmdText, currentTheme.accent)
+			notify("▶️ " .. cmdText, Color3.fromRGB(100, 200, 255))
 		end
 		if processCmd then
 			processCmd(cmdText)
@@ -10918,36 +10950,36 @@ function updateDropdown(text)
 	if #matches > 0 then
 		dropdown.Visible = true
 		for _, match in ipairs(matches) do
-			local db = Instance.new("TextButton")
-			db.Size = UDim2.new(1, 0, 0, math.floor(26 * scale))
-			db.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-			db.BackgroundTransparency = globalConfig.uiTransparency
-			db.Text = "  " .. match
-			db.Font = Enum.Font.Gotham
-			db.TextSize = math.floor(12 * fontScale)
-			db.TextColor3 = Color3.fromRGB(210, 210, 225)
-			db.TextXAlignment = Enum.TextXAlignment.Left
-			db.BorderSizePixel = 0
-			db.AutoButtonColor = false
-			db.Parent = dropdownScroll
-			db.ZIndex = 2147483647
-			Instance.new("UICorner", db).CornerRadius = UDim.new(0, math.floor(4 * scale))
+			a = Instance.new("TextButton")
+			a.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
+			a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+			a.BackgroundTransparency = 0.4
+			a.Text = "  " .. match
+			a.Font = Enum.Font.Gotham
+			a.TextSize = math.floor(12 * fontScale)
+			a.TextColor3 = Color3.fromRGB(220, 220, 240)
+			a.TextXAlignment = Enum.TextXAlignment.Left
+			a.Parent = dropdownScroll
+			a.ZIndex = 2147483647
+			Instance.new("UICorner", a).CornerRadius = UDim.new(0, 4)
 
-			db.MouseButton1Click:Connect(function()
+			a.MouseButton1Click:Connect(function()
 				cmdInput.Text = match .. " "
 				cmdInput.CursorPosition = #cmdInput.Text + 1
 				dropdown.Visible = false
 				cmdInput:CaptureFocus()
 			end)
 
-			db.MouseEnter:Connect(function()
-				tween(db, {BackgroundColor3 = Color3.fromRGB(50, 50, 70), TextColor3 = currentTheme.accent}, 0.15)
+			a.MouseEnter:Connect(function()
+				a.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
+				a.TextColor3 = Color3.fromRGB(100, 200, 255)
 			end)
-			db.MouseLeave:Connect(function()
-				tween(db, {BackgroundColor3 = Color3.fromRGB(30, 30, 38), TextColor3 = Color3.fromRGB(210, 210, 225)}, 0.15)
+			a.MouseLeave:Connect(function()
+				a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+				a.TextColor3 = Color3.fromRGB(220, 220, 240)
 			end)
 		end
-		dropdownScroll.CanvasSize = UDim2.new(0, 0, 0, #matches * math.floor(28 * scale))
+		dropdownScroll.CanvasSize = UDim2.new(0, 0, 0, #matches * math.floor(26 * scale))
 	else
 		dropdown.Visible = false
 	end
@@ -10957,7 +10989,7 @@ cmdInput:GetPropertyChangedSignal("Text"):Connect(function()
 	updateDropdown(cmdInput.Text)
 end)
 
--- Click outside to close
+-- Click outside to close dropdown and panel
 UserInputService.InputBegan:Connect(function(inp)
 	if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
 		if not cmdBarFrame then return end
@@ -10979,167 +11011,156 @@ UserInputService.InputBegan:Connect(function(inp)
 	end
 end)
 
--- Scroll Frame for commands
+-- Scroll Frame
 cmdScroll = Instance.new("ScrollingFrame", cmdFrame)
-cmdScroll.Size = UDim2.new(1, 0, 1, math.floor(-50 * scale))
-cmdScroll.Position = UDim2.new(0, 0, 0, math.floor(50 * scale))
-cmdScroll.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-cmdScroll.BackgroundTransparency = globalConfig.uiTransparency
+cmdScroll.Size = UDim2.new(1, 0, 1, math.floor(-48 * scale))
+cmdScroll.Position = UDim2.new(0, 0, 0, math.floor(48 * scale))
+cmdScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 cmdScroll.BorderSizePixel = 0
-cmdScroll.ScrollBarThickness = math.floor(5 * scale)
+cmdScroll.ScrollBarThickness = math.floor(6 * scale)
 cmdScroll.ScrollBarImageColor3 = currentTheme.accent
 cmdScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 cmdScroll.ZIndex = 2147483647
-Instance.new("UICorner", cmdScroll).CornerRadius = UDim.new(0, math.floor(8 * scale))
+Instance.new("UICorner", cmdScroll).CornerRadius = UDim.new(0, 6)
 
 cmdList = Instance.new("UIListLayout", cmdScroll)
-cmdList.Padding = UDim.new(0, math.floor(5 * scale))
+cmdList.Padding = UDim.new(0, math.floor(6 * scale))
 cmdList.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Command data
+-- Command data in tables
 cmdDesc = {
-	["!aimbot"] = "Opens aimbot control panel", ["!autoexec"] = "Enables auto-run on join",
-	["!boombox"] = "Enables client sided boombox", ["!clicktp"] = "Click to teleport",
-	["!cmdbar"] = "Toggle command bar", ["!console"] = "Opens dev console",
-	["!crosshair"] = "Loads custom crosshair", ["!unload"] = "Closes script",
+	["!aimbot"] = "Opens aimbot control panel", ["!autoexec"] = "Enables auto-run on join", 
+	["!boombox"] = "Enables client sided boombox",
+	["!clicktp"] = "Click to teleport", ["!cmdbar"] = "Toggle command bar",
+	["!console"] = "Opens dev console", ["!crosshair"] = "Loads custom crosshair",
+	["!unload"] = "Closes script",
 	["!disablefalldamage"] = "WIP", ["!enable inventory"] = "Toggle backpack",
 	["!enable playerlist"] = "Toggle player list", ["!esp [plr/all]"] = "Enable esp on player or all",
 	["!explode [plr]"] = "Explodes player", ["!fire [plr]"] = "Sets player on fire",
-	["!firstp"] = "First person mode", ["!fling"] = "Opens fling GUI",
-	["!flashlight"] = "Turns on flashlight", ["!fly"] = "Opens fly panel",
-	["!flyspeed [num]"] = "Set fly speed", ["!freecam"] = "Free camera mode",
-	["!freeze [plr]"] = "Freezes player", ["!infjump"] = "Infinite jump toggle",
-	["!joinlogs"] = "Show join/leave logs", ["!jump [power]"] = "Set jump power",
-	["!kill [plr/all/me]"] = "Kill player/self/all", ["!lay"] = "Makes character lay down",
-	["!leave"] = "Leave game", ["!logs"] = "Open chat logs",
-	["!noclip [plr]"] = "Walk through walls", ["!mm2"] = "Enables mm2 esp by lunar",
+	["!firstp"] = "First person mode", ["!fling"] = "Opens fling GUI", ["!flashlight"] = "Turns on flashlight",
+	["!fly"] = "Opens fly panel", ["!flyspeed [num]"] = "Set fly speed",
+	["!freecam"] = "Free camera mode", ["!freeze [plr]"] = "Freezes player",
+	["!infjump"] = "Infinite jump toggle", ["!joinlogs"] = "Show join/leave logs",
+	["!jump [power]"] = "Set jump power", ["!kill [plr/all/me]"] = "Kill player/self/all",
+	["!lay"] = "Makes character lay down", ["!leave"] = "Leave game",
+	["!logs"] = "Open chat logs", ["!noclip [plr]"] = "Walk through walls", ["!mm2"] = "Enables mm2 esp by lunar",
 	["!ping"] = "Show ping", ["!ragdoll"] = "Ragdoll character",
 	["!rainbow [plr]"] = "Rainbow color cycle", ["!rejoin"] = "Rejoin server",
 	["!removewaypoint"] = "Remove last waypoint", ["!sunglare"] = "Enable sun glare effect",
-	["!sit"] = "Makes character sit", ["!speed [plr] [num]"] = "Set walkspeed",
-	["!serverhop"] = "(Broken)", ["!spin [speed]"] = "Spin character",
-	["!stopwatch"] = "Open stopwatch", ["!thirdp"] = "Third person mode",
-	["!to [plr]"] = "Teleport to player", ["!trip [plr]"] = "Makes player trip",
-	["!tracers"] = "Show player tracers", ["!uncrosshair"] = "Remove crosshair",
-	["!unautoexec"] = "Disables auto-run", ["!unesp [plr/all]"] = "Disable esp on player or all",
-	["!unfire [plr]"] = "Extinguish player", ["!unfling"] = "Close fling GUI",
-	["!unflashlight"] = "Turns off flashlight", ["!unfly"] = "Stop flying",
+	["!sit"] = "Makes character sit", ["!speed [plr] [num]"] = "Set walkspeed", 
+	["!serverhop"] = "(Broken)",
+	["!spin [speed]"] = "Spin character", ["!stopwatch"] = "Open stopwatch",
+	["!thirdp"] = "Third person mode", ["!to [plr]"] = "Teleport to player",
+	["!trip [plr]"] = "Makes player trip", ["!tracers"] = "Show player tracers",
+	["!uncrosshair"] = "Remove crosshair", ["!unautoexec"] = "Disables auto-run",
+	["!unesp [plr/all]"] = "Disable esp on player or all", ["!unfire [plr]"] = "Extinguish player",
+	["!unfling"] = "Close fling GUI", ["!unflashlight"] = "Turns off flashlight", ["!unfly"] = "Stop flying",
 	["!unfreecam"] = "Disable freecam", ["!unfreeze [plr]"] = "Unfreeze player",
 	["!uninfjump"] = "Disable infinite jump", ["!unnoclip [plr]"] = "Disable noclip",
 	["!unragdoll"] = "Stop ragdoll", ["!unrainbow [plr]"] = "Stop rainbow",
 	["!unsunglare"] = "Disable sun glare effect", ["!unspin"] = "Stop spinning",
 	["!untracers"] = "Hide tracers", ["!unview"] = "Stop spectating",
-	["!view [plr]"] = "Spectate player", ["!vehiclefly"] = "Fly in cars!",
-	["!unvehiclefly"] = "unFly in cars!", ["!volume"] = "Set game volume (0-10)",
+	["!view [plr]"] = "Spectate player", ["!vehiclefly"] = "Fly in cars!", ["!unvehiclefly"] = "unFly in cars!", ["!volume"] = "Set game volume (0-10)",
 	["!waypoint"] = "Create waypoint", ["!fov [1-120]"] = "Set camera FOV",
 	["!kick [plr]"] = "Kick yourself", ["!unlockmouse"] = "Toggle mouse lock"
 }
 
 cmds = {
 	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair",
-	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
+	"!!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
 	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
 	"!flyspeed [num]", "!freecam", "!freeze [plr]", "!infjump", "!joinlogs", "!jump [power]",
 	"!kill [plr/all/me]", "!lay", "!leave", "!logs", "!noclip [plr]", "!mm2", "!ping", "!ragdoll",
 	"!rainbow [plr]", "!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
 	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip [plr]", "!tracers",
-	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]",
-	"!unfling", "!unflashlight", "!unfly", "!unfreecam", "!unfreeze [plr]", "!uninfjump",
-	"!unnoclip [plr]", "!unragdoll", "!unrainbow [plr]", "!unspin", "!untracers", "!unview",
-	"!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
+	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
+	"!unfreecam", "!unfreeze [plr]", "!uninfjump", "!unnoclip [plr]", "!unragdoll",
+	"!unrainbow [plr]", "!unspin", "!untracers", "!unview", "!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
 	"!fov [1-120]", "!kick [plr]", "!unlockmouse"
 }
 
--- Tooltip
+-- PC-only tooltip (follows mouse) — sharp corners, no border, like the screenshot
 tooltip = nil
 if not isMobile then
 	tooltip = Instance.new("Frame")
 	tooltip.Name = "CmdTooltip"
 	tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.floor(60 * scale))
-	tooltip.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-	tooltip.BackgroundTransparency = math.max(0.05, globalConfig.uiTransparency)
+	tooltip.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 	tooltip.BorderSizePixel = 0
 	tooltip.ZIndex = 2147483647
 	tooltip.Visible = false
 	tooltip.Parent = lunarGui
-	Instance.new("UICorner", tooltip).CornerRadius = UDim.new(0, math.floor(6 * scale))
 
-	local tipStroke = Instance.new("UIStroke", tooltip)
-	tipStroke.Color = currentTheme.accent
-	tipStroke.Thickness = 1
-	tipStroke.Transparency = 0.5
+	a = Instance.new("TextLabel", tooltip)
+	a.Name = "TipText"
+	a.Size = UDim2.new(1, math.floor(-16 * scale), 1, math.floor(-12 * scale))
+	a.Position = UDim2.new(0, math.floor(8 * scale), 0, math.floor(6 * scale))
+	a.BackgroundTransparency = 1
+	a.Text = ""
+	a.Font = Enum.Font.Gotham
+	a.TextSize = math.floor(13 * fontScale)
+	a.TextColor3 = globalConfig.textColor
+	a.TextWrapped = true
+	a.TextXAlignment = Enum.TextXAlignment.Left
+	a.TextYAlignment = Enum.TextYAlignment.Top
+	a.ZIndex = 2147483647
 
-	local tipText = Instance.new("TextLabel", tooltip)
-	tipText.Name = "TipText"
-	tipText.Size = UDim2.new(1, math.floor(-16 * scale), 1, math.floor(-12 * scale))
-	tipText.Position = UDim2.new(0, math.floor(8 * scale), 0, math.floor(6 * scale))
-	tipText.BackgroundTransparency = 1
-	tipText.Text = ""
-	tipText.Font = Enum.Font.Gotham
-	tipText.TextSize = math.floor(12 * fontScale)
-	tipText.TextColor3 = globalConfig.textColor
-	tipText.TextWrapped = true
-	tipText.TextXAlignment = Enum.TextXAlignment.Left
-	tipText.TextYAlignment = Enum.TextYAlignment.Top
-
-	RunService.RenderStepped:Connect(function()
+	local RunService = game:GetService("RunService")
+	local mouseConn = nil
+	function followMouse()
 		if not tooltip or not tooltip.Visible then return end
 		local mousePos = UserInputService:GetMouseLocation()
 		local x = mousePos.X + math.floor(16 * scale)
 		local y = mousePos.Y + math.floor(16 * scale)
-		local vp = camera.ViewportSize
+		local vp = workspace.CurrentCamera.ViewportSize
 		local tw, th = tooltip.AbsoluteSize.X, tooltip.AbsoluteSize.Y
 		if x + tw > vp.X then x = mousePos.X - tw - math.floor(8 * scale) end
 		if y + th > vp.Y then y = mousePos.Y - th - math.floor(8 * scale) end
 		tooltip.Position = UDim2.new(0, x, 0, y)
-	end)
+	end
+	mouseConn = RunService.RenderStepped:Connect(followMouse)
 end
 
--- Command buttons in scroll
 for i, cmdStr in ipairs(cmds) do
-	local cb = Instance.new("TextButton")
-	cb.Size = UDim2.new(1, math.floor(-8 * scale), 0, math.floor(40 * scale))
-	cb.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-	cb.BackgroundTransparency = globalConfig.uiTransparency
-	cb.Text = "  " .. cmdStr
-	cb.Font = Enum.Font.GothamSemibold
-	cb.TextSize = math.floor(13 * fontScale)
-	cb.TextColor3 = globalConfig.textColor
-	cb.TextXAlignment = Enum.TextXAlignment.Left
-	cb.BorderSizePixel = 0
-	cb.AutoButtonColor = false
-	cb.Parent = cmdScroll
-	cb.LayoutOrder = i
-	cb.ZIndex = 2147483647
-	Instance.new("UICorner", cb).CornerRadius = UDim.new(0, math.floor(6 * scale))
+	a = Instance.new("TextButton")
+	a.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(42 * scale))
+	a.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+	a.Text = "  " .. cmdStr
+	a.Font = Enum.Font.GothamSemibold
+	a.TextSize = math.floor(14 * fontScale)
+	a.TextColor3 = globalConfig.textColor
+	a.TextXAlignment = Enum.TextXAlignment.Left
+	a.TextStrokeTransparency = 0.5
+	a.TextStrokeColor3 = Color3.new(0,0,0)
+	a.BorderSizePixel = 0
+	a.Parent = cmdScroll
+	a.LayoutOrder = i
+	a.ZIndex = 2147483647
+	Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
 
 	local desc = cmdDesc[cmdStr]
 	if desc then
-		cb.MouseEnter:Connect(function()
-			tween(cb, {BackgroundColor3 = Color3.fromRGB(45, 45, 55), TextColor3 = currentTheme.accent}, 0.15)
+		a.MouseEnter:Connect(function()
+			a.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
+			a.TextColor3 = currentTheme.accent
 			if tooltip and not isMobile then
 				tooltip.Visible = true
 				tooltip:FindFirstChild("TipText").Text = desc
-				local textSize = TextService:GetTextSize(desc, math.floor(12 * fontScale), Enum.Font.Gotham, Vector2.new(math.floor(244 * scale), 9999))
-				tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(40 * scale), textSize.Y + math.floor(18 * scale)))
+				local textService = game:GetService("TextService")
+				local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Gotham, Vector2.new(math.floor(244 * scale), 9999))
+				tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
 			end
 		end)
-		cb.MouseLeave:Connect(function()
-			tween(cb, {BackgroundColor3 = Color3.fromRGB(32, 32, 38), TextColor3 = globalConfig.textColor}, 0.15)
+		a.MouseLeave:Connect(function()
+			a.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+			a.TextColor3 = globalConfig.textColor
 			if tooltip and not isMobile then
 				tooltip.Visible = false
 			end
 		end)
-	else
-		cb.MouseEnter:Connect(function()
-			tween(cb, {BackgroundColor3 = Color3.fromRGB(45, 45, 55), TextColor3 = currentTheme.accent}, 0.15)
-		end)
-		cb.MouseLeave:Connect(function()
-			tween(cb, {BackgroundColor3 = Color3.fromRGB(32, 32, 38), TextColor3 = globalConfig.textColor}, 0.15)
-		end)
 	end
 
-	cb.MouseButton1Click:Connect(function()
+	a.MouseButton1Click:Connect(function()
 		if setclipboard then
 			setclipboard(cmdStr)
 			notify("Copied: " .. cmdStr, Color3.fromRGB(100, 255, 100))
@@ -11157,145 +11178,86 @@ setFrame.ZIndex = 2147483647
 
 setScroll = Instance.new("ScrollingFrame", setFrame)
 setScroll.Size = UDim2.new(1, 0, 1, 0)
-setScroll.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-setScroll.BackgroundTransparency = globalConfig.uiTransparency
+setScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 setScroll.BorderSizePixel = 0
-setScroll.ScrollBarThickness = math.floor(5 * scale)
+setScroll.ScrollBarThickness = math.floor(6 * scale)
 setScroll.ScrollBarImageColor3 = currentTheme.accent
 setScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 setScroll.ZIndex = 2147483647
-Instance.new("UICorner", setScroll).CornerRadius = UDim.new(0, math.floor(8 * scale))
+Instance.new("UICorner", setScroll).CornerRadius = UDim.new(0, 6)
 
 setList = Instance.new("UIListLayout", setScroll)
-setList.Padding = UDim.new(0, math.floor(10 * scale))
+setList.Padding = UDim.new(0, math.floor(12 * scale))
 setList.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Section creator with modern styling
+-- Section creator
 function makeSection(parent, titleText, h)
 	local s = Instance.new("Frame", parent)
-	s.Size = UDim2.new(1, math.floor(-12 * scale), 0, math.floor(h * scale))
-	s.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-	s.BackgroundTransparency = globalConfig.uiTransparency
+	s.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(h * scale))
+	s.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 	s.BorderSizePixel = 0
 	s.LayoutOrder = #parent:GetChildren()
 	s.ZIndex = 2147483647
-	Instance.new("UICorner", s).CornerRadius = UDim.new(0, math.floor(10 * scale))
-
-	local secStroke = Instance.new("UIStroke", s)
-	secStroke.Color = Color3.fromRGB(60, 60, 70)
-	secStroke.Thickness = 1
-	secStroke.Transparency = 0.6
+	Instance.new("UICorner", s).CornerRadius = UDim.new(0, 8)
 
 	local t = Instance.new("TextLabel", s)
-	t.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(26 * scale))
-	t.Position = UDim2.new(0, math.floor(12 * scale), 0, math.floor(8 * scale))
+	t.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(28 * scale))
+	t.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(8 * scale))
 	t.BackgroundTransparency = 1
 	t.Text = titleText
 	t.Font = Enum.Font.GothamBlack
-	t.TextSize = math.floor(15 * fontScale)
+	t.TextSize = math.floor(16 * fontScale)
 	t.TextColor3 = currentTheme.accent
+	t.TextStrokeTransparency = 0.5
+	t.TextStrokeColor3 = Color3.new(0,0,0)
 	t.TextXAlignment = Enum.TextXAlignment.Left
 	t.ZIndex = 2147483647
-
-	-- Accent underline
-	local underline = Instance.new("Frame", s)
-	underline.Size = UDim2.new(0, math.floor(40 * scale), 0, math.floor(2 * scale))
-	underline.Position = UDim2.new(0, math.floor(12 * scale), 0, math.floor(32 * scale))
-	underline.BackgroundColor3 = currentTheme.accent
-	underline.BorderSizePixel = 0
-	underline.ZIndex = 2147483647
 
 	return s
 end
 
--- Helper: make a toggle switch
-function makeToggle(parent, y, label, default, callback)
+-- Text Color Section
+cSection = makeSection(setScroll, "TEXT COLOR", 170)
+
+cDisplay = Instance.new("TextLabel", cSection)
+cDisplay.Size = UDim2.new(0.8, 0, 0, math.floor(32 * scale))
+cDisplay.Position = UDim2.new(0.1, 0, 0, math.floor(38 * scale))
+cDisplay.BackgroundColor3 = globalConfig.textColor
+cDisplay.Text = "Preview"
+cDisplay.Font = Enum.Font.GothamBold
+cDisplay.TextSize = math.floor(15 * fontScale)
+cDisplay.TextColor3 = Color3.new(0,0,0)
+cDisplay.ZIndex = 2147483647
+Instance.new("UICorner", cDisplay).CornerRadius = UDim.new(0, 6)
+
+-- FIXED SLIDER SYSTEM
+sliders = {}
+activeSliderComp = nil
+
+function makeSlider(parent, y, color, label, comp)
 	local cont = Instance.new("Frame", parent)
-	cont.Size = UDim2.new(0.9, 0, 0, math.floor(32 * scale))
-	cont.Position = UDim2.new(0.05, 0, 0, math.floor(y * scale))
+	cont.Size = UDim2.new(0.8, 0, 0, math.floor(24 * scale))
+	cont.Position = UDim2.new(0.1, 0, 0, math.floor(y * scale))
 	cont.BackgroundTransparency = 1
 	cont.ZIndex = 2147483647
 
 	local lab = Instance.new("TextLabel", cont)
-	lab.Size = UDim2.new(1, math.floor(-60 * scale), 1, 0)
+	lab.Size = UDim2.new(0, math.floor(30 * scale), 1, 0)
 	lab.BackgroundTransparency = 1
 	lab.Text = label
 	lab.Font = Enum.Font.GothamBold
 	lab.TextSize = math.floor(12 * fontScale)
-	lab.TextColor3 = globalConfig.textColor
-	lab.TextXAlignment = Enum.TextXAlignment.Left
-	lab.ZIndex = 2147483647
-
-	local track = Instance.new("Frame", cont)
-	track.Size = UDim2.new(0, math.floor(44 * scale), 0, math.floor(22 * scale))
-	track.Position = UDim2.new(1, math.floor(-48 * scale), 0.5, math.floor(-11 * scale))
-	track.BackgroundColor3 = default and currentTheme.accent or Color3.fromRGB(50, 50, 60)
-	track.BorderSizePixel = 0
-	track.ZIndex = 2147483647
-	Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
-
-	local knob = Instance.new("Frame", track)
-	knob.Size = UDim2.new(0, math.floor(18 * scale), 0, math.floor(18 * scale))
-	knob.Position = UDim2.new(default and 0.52 or 0.05, 0, 0.5, math.floor(-9 * scale))
-	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	knob.BorderSizePixel = 0
-	knob.ZIndex = 2147483647
-	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-	local enabled = default
-	track.InputBegan:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-			enabled = not enabled
-			if enabled then
-				tween(track, {BackgroundColor3 = currentTheme.accent}, 0.2)
-				tween(knob, {Position = UDim2.new(0.52, 0, 0.5, math.floor(-9 * scale))}, 0.2)
-			else
-				tween(track, {BackgroundColor3 = Color3.fromRGB(50, 50, 60)}, 0.2)
-				tween(knob, {Position = UDim2.new(0.05, 0, 0.5, math.floor(-9 * scale))}, 0.2)
-			end
-			if callback then callback(enabled) end
-		end
-	end)
-
-	return function() return enabled end
-end
-
--- Helper: modern slider
-function makeSlider(parent, y, color, label, comp)
-	local cont = Instance.new("Frame", parent)
-	cont.Size = UDim2.new(0.9, 0, 0, math.floor(36 * scale))
-	cont.Position = UDim2.new(0.05, 0, 0, math.floor(y * scale))
-	cont.BackgroundTransparency = 1
-	cont.ZIndex = 2147483647
-
-	local lab = Instance.new("TextLabel", cont)
-	lab.Size = UDim2.new(0, math.floor(30 * scale), 0, math.floor(16 * scale))
-	lab.BackgroundTransparency = 1
-	lab.Text = label
-	lab.Font = Enum.Font.GothamBold
-	lab.TextSize = math.floor(11 * fontScale)
 	lab.TextColor3 = color
 	lab.TextXAlignment = Enum.TextXAlignment.Left
 	lab.ZIndex = 2147483647
 
-	local valLab = Instance.new("TextLabel", cont)
-	valLab.Size = UDim2.new(0, math.floor(40 * scale), 0, math.floor(16 * scale))
-	valLab.Position = UDim2.new(1, math.floor(-40 * scale), 0, 0)
-	valLab.BackgroundTransparency = 1
-	valLab.Text = tostring(math.round((comp == "R" and globalConfig.textColor.R or comp == "G" and globalConfig.textColor.G or globalConfig.textColor.B) * 255))
-	valLab.Font = Enum.Font.GothamBold
-	valLab.TextSize = math.floor(11 * fontScale)
-	valLab.TextColor3 = globalConfig.textColor
-	valLab.TextXAlignment = Enum.TextXAlignment.Right
-	valLab.ZIndex = 2147483647
-
 	local track = Instance.new("Frame", cont)
 	track.Size = UDim2.new(1, math.floor(-40 * scale), 0, math.floor(8 * scale))
-	track.Position = UDim2.new(0, math.floor(35 * scale), 0, math.floor(22 * scale))
-	track.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+	track.Position = UDim2.new(0, math.floor(35 * scale), 0.5, math.floor(-4 * scale))
+	track.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	track.BorderSizePixel = 0
 	track.ZIndex = 2147483647
-	Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+	Instance.new("UICorner", track).CornerRadius = UDim.new(0, 4)
 
 	local fill = Instance.new("Frame", track)
 	local val = comp == "R" and globalConfig.textColor.R or comp == "G" and globalConfig.textColor.G or globalConfig.textColor.B
@@ -11303,50 +11265,32 @@ function makeSlider(parent, y, color, label, comp)
 	fill.BackgroundColor3 = color
 	fill.BorderSizePixel = 0
 	fill.ZIndex = 2147483647
-	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 4)
 
 	local knob = Instance.new("Frame", track)
-	knob.Size = UDim2.new(0, math.floor(16 * scale), 0, math.floor(16 * scale))
-	knob.Position = UDim2.new(val, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
+	knob.Size = UDim2.new(0, math.floor(14 * scale), 0, math.floor(14 * scale))
+	knob.Position = UDim2.new(val, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
 	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	knob.BorderSizePixel = 0
 	knob.ZIndex = 2147483647
 	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 
-	sliders[comp] = { track = track, fill = fill, knob = knob, valLab = valLab }
+	sliders[comp] = {
+		track = track,
+		fill = fill,
+		knob = knob
+	}
 
 	track.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			activeSliderComp = comp
 			local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
 			fill.Size = UDim2.new(pos, 0, 1, 0)
-			knob.Position = UDim2.new(pos, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
-			valLab.Text = tostring(math.round(pos * 255))
+			knob.Position = UDim2.new(pos, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
 			updateAllColors()
 		end
 	end)
 end
-
--- ========== TEXT COLOR SECTION ==========
-cSection = makeSection(setScroll, "TEXT COLOR", 180)
-
-cDisplay = Instance.new("TextLabel", cSection)
-cDisplay.Size = UDim2.new(0.85, 0, 0, math.floor(34 * scale))
-cDisplay.Position = UDim2.new(0.075, 0, 0, math.floor(42 * scale))
-cDisplay.BackgroundColor3 = globalConfig.textColor
-cDisplay.Text = "Preview Text"
-cDisplay.Font = Enum.Font.GothamBold
-cDisplay.TextSize = math.floor(14 * fontScale)
-cDisplay.TextColor3 = Color3.new(0,0,0)
-cDisplay.ZIndex = 2147483647
-Instance.new("UICorner", cDisplay).CornerRadius = UDim.new(0, math.floor(8 * scale))
-
-sliders = {}
-activeSliderComp = nil
-
-makeSlider(cSection, 86, Color3.fromRGB(255, 80, 80), "R", "R")
-makeSlider(cSection, 118, Color3.fromRGB(80, 255, 80), "G", "G")
-makeSlider(cSection, 150, Color3.fromRGB(80, 140, 255), "B", "B")
 
 function updateAllColors()
 	local r = sliders.R and sliders.R.fill.Size.X.Scale or globalConfig.textColor.R
@@ -11359,13 +11303,18 @@ function updateAllColors()
 
 	if lunarGui then
 		for _, obj in ipairs(lunarGui:GetDescendants()) do
-			if (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) and obj.TextColor3 ~= currentTheme.accent and obj ~= cDisplay then
+			if (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) and obj.TextColor3 ~= currentTheme.accent then
 				obj.TextColor3 = newC
 			end
 		end
 	end
 end
 
+makeSlider(cSection, 78, Color3.fromRGB(255, 80, 80), "R", "R")
+makeSlider(cSection, 106, Color3.fromRGB(80, 255, 80), "G", "G")
+makeSlider(cSection, 134, Color3.fromRGB(80, 140, 255), "B", "B")
+
+-- Global slider input handlers
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		activeSliderComp = nil
@@ -11375,45 +11324,50 @@ end)
 UserInputService.InputChanged:Connect(function(input)
 	if not activeSliderComp then return end
 	if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
+
 	local s = sliders[activeSliderComp]
 	if not s then return end
+
 	local pos = math.clamp((input.Position.X - s.track.AbsolutePosition.X) / s.track.AbsoluteSize.X, 0, 1)
 	s.fill.Size = UDim2.new(pos, 0, 1, 0)
-	s.knob.Position = UDim2.new(pos, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
-	s.valLab.Text = tostring(math.round(pos * 255))
+	s.knob.Position = UDim2.new(pos, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
 	updateAllColors()
 end)
 
--- ========== UI TRANSPARENCY SECTION ==========
-tSection = makeSection(setScroll, "UI TRANSPARENCY", 120)
+-- UI Transparency Section
+tSection = makeSection(setScroll, "UI TRANSPARENCY", 110)
 
 tLabel = Instance.new("TextLabel", tSection)
-tLabel.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(20 * scale))
-tLabel.Position = UDim2.new(0, math.floor(12 * scale), 0, math.floor(42 * scale))
+tLabel.Size = UDim2.new(1, 0, 0, math.floor(22 * scale))
+tLabel.Position = UDim2.new(0, 0, 0, math.floor(36 * scale))
 tLabel.BackgroundTransparency = 1
 tLabel.Text = "Transparency: " .. math.round(globalConfig.uiTransparency * 100) .. "%"
 tLabel.Font = Enum.Font.GothamBold
-tLabel.TextSize = math.floor(13 * fontScale)
+tLabel.TextSize = math.floor(14 * fontScale)
 tLabel.TextColor3 = globalConfig.textColor
+tLabel.ZIndex = 2147483647
 
-local tTrack = Instance.new("Frame", tSection)
-tTrack.Size = UDim2.new(0.85, 0, 0, math.floor(10 * scale))
-tTrack.Position = UDim2.new(0.075, 0, 0, math.floor(72 * scale))
-tTrack.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+tTrack = Instance.new("Frame", tSection)
+tTrack.Size = UDim2.new(0.8, 0, 0, math.floor(10 * scale))
+tTrack.Position = UDim2.new(0.1, 0, 0, math.floor(68 * scale))
+tTrack.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 tTrack.BorderSizePixel = 0
-Instance.new("UICorner", tTrack).CornerRadius = UDim.new(1, 0)
+tTrack.ZIndex = 2147483647
+Instance.new("UICorner", tTrack).CornerRadius = UDim.new(0, 5)
 
-local tFill = Instance.new("Frame", tTrack)
+tFill = Instance.new("Frame", tTrack)
 tFill.Size = UDim2.new(globalConfig.uiTransparency, 0, 1, 0)
 tFill.BackgroundColor3 = currentTheme.accent
 tFill.BorderSizePixel = 0
-Instance.new("UICorner", tFill).CornerRadius = UDim.new(1, 0)
+tFill.ZIndex = 2147483647
+Instance.new("UICorner", tFill).CornerRadius = UDim.new(0, 5)
 
-local tKnob = Instance.new("Frame", tTrack)
-tKnob.Size = UDim2.new(0, math.floor(18 * scale), 0, math.floor(18 * scale))
-tKnob.Position = UDim2.new(globalConfig.uiTransparency, math.floor(-9 * scale), 0.5, math.floor(-9 * scale))
+tKnob = Instance.new("Frame", tTrack)
+tKnob.Size = UDim2.new(0, math.floor(16 * scale), 0, math.floor(16 * scale))
+tKnob.Position = UDim2.new(globalConfig.uiTransparency, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
 tKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 tKnob.BorderSizePixel = 0
+tKnob.ZIndex = 2147483647
 Instance.new("UICorner", tKnob).CornerRadius = UDim.new(1, 0)
 
 local tDragging = false
@@ -11421,16 +11375,12 @@ local tDragging = false
 function updateTrans(x)
 	local pos = math.clamp((x - tTrack.AbsolutePosition.X) / tTrack.AbsoluteSize.X, 0, 1)
 	tFill.Size = UDim2.new(pos, 0, 1, 0)
-	tKnob.Position = UDim2.new(pos, math.floor(-9 * scale), 0.5, math.floor(-9 * scale))
+	tKnob.Position = UDim2.new(pos, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
 	globalConfig.uiTransparency = pos
 	tLabel.Text = "Transparency: " .. math.round(pos * 100) .. "%"
-
-	-- Apply to ALL UI inside mainFrame ONLY, but NEVER to text
-	for _, obj in ipairs(mainFrame:GetDescendants()) do
-		applyTransparency(obj, pos)
+	if mainFrame then
+		mainFrame.BackgroundTransparency = pos
 	end
-	mainFrame.BackgroundTransparency = pos
-	shadow.BackgroundTransparency = 0.6 + (pos * 0.3)
 end
 
 tTrack.InputBegan:Connect(function(input)
@@ -11452,307 +11402,234 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- ========== SCRIPT SETTINGS SECTION ==========
-local scriptSection = makeSection(setScroll, "SCRIPT SETTINGS", 220)
-
--- Auto-execute toggle
-makeToggle(scriptSection, 44, "Auto-Execute on Join", globalConfig.autoExec, function(v)
-	globalConfig.autoExec = v
-	notify(v and "Auto-Execute enabled" or "Auto-Execute disabled", v and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100))
-end)
-
--- Show FPS toggle
-makeToggle(scriptSection, 82, "Show FPS Counter", globalConfig.showFps, function(v)
-	globalConfig.showFps = v
-	notify(v and "FPS counter enabled" or "FPS counter disabled", v and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100))
-end)
-
--- Show Ping toggle
-makeToggle(scriptSection, 120, "Show Ping Display", globalConfig.showPing, function(v)
-	globalConfig.showPing = v
-	notify(v and "Ping display enabled" or "Ping display disabled", v and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100))
-end)
-
--- Command Prefix
-local prefixCont = Instance.new("Frame", scriptSection)
-prefixCont.Size = UDim2.new(0.9, 0, 0, math.floor(36 * scale))
-prefixCont.Position = UDim2.new(0.05, 0, 0, math.floor(158 * scale))
-prefixCont.BackgroundTransparency = 1
-
-local prefixLab = Instance.new("TextLabel", prefixCont)
-prefixLab.Size = UDim2.new(0, math.floor(110 * scale), 1, 0)
-prefixLab.BackgroundTransparency = 1
-prefixLab.Text = "Cmd Prefix"
-prefixLab.Font = Enum.Font.GothamBold
-prefixLab.TextSize = math.floor(12 * fontScale)
-prefixLab.TextColor3 = globalConfig.textColor
-prefixLab.TextXAlignment = Enum.TextXAlignment.Left
-
-local prefixBox = Instance.new("TextBox", prefixCont)
-prefixBox.Size = UDim2.new(0, math.floor(50 * scale), 0, math.floor(28 * scale))
-prefixBox.Position = UDim2.new(0, math.floor(100 * scale), 0.5, math.floor(-14 * scale))
-prefixBox.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-prefixBox.BackgroundTransparency = globalConfig.uiTransparency
-prefixBox.Text = globalConfig.commandPrefix
-prefixBox.Font = Enum.Font.GothamBold
-prefixBox.TextSize = math.floor(14 * fontScale)
-prefixBox.TextColor3 = currentTheme.accent
-prefixBox.ClearTextOnFocus = false
-Instance.new("UICorner", prefixBox).CornerRadius = UDim.new(0, math.floor(6 * scale))
-
-prefixBox.FocusLost:Connect(function()
-	local t = prefixBox.Text:gsub("%s+", "")
-	if t ~= "" and #t == 1 then
-		globalConfig.commandPrefix = t
-		notify("Prefix set to: " .. t, Color3.fromRGB(100, 255, 100))
-	else
-		prefixBox.Text = globalConfig.commandPrefix
-		notify("Prefix must be 1 character!", Color3.fromRGB(255, 100, 100))
-	end
-end)
-
 -- ========== SOUND SETTINGS SECTION ==========
-local soundSection = makeSection(setScroll, "SOUND SETTINGS", 340)
+do
+	local mSection = makeSection(setScroll, "SOUND SETTINGS", 320)
 
-_G.uiSoundVol = _G.uiSoundVol or 1
-_G.notifSoundVol = _G.notifSoundVol or 0.55
-_G.customNotifId = _G.customNotifId or "rbxassetid://97643101798871"
+	_G.uiSoundVol = 1
+	_G.notifSoundVol = 0.55
+	_G.customNotifId = "rbxassetid://97643101798871"
 
-local soundSlider = nil
+	local activeSlider = nil
 
-local function mkSoundSlider(parent, y, lbl, def, key)
-	local c = Instance.new("Frame", parent)
-	c.Size = UDim2.new(0.9, 0, 0, math.floor(50 * scale))
-	c.Position = UDim2.new(0.05, 0, 0, math.floor(y * scale))
+	local function mkSlider(parent, y, lbl, def, key)
+		local c = Instance.new("Frame", parent)
+		c.Size = UDim2.new(0.9, 0, 0, math.floor(50*scale))
+		c.Position = UDim2.new(0.05, 0, 0, math.floor(y*scale))
+		c.BackgroundTransparency = 1
+		c.ZIndex = 2147483647
+
+		local lab = Instance.new("TextLabel", c)
+		lab.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
+		lab.BackgroundTransparency = 1
+		lab.Text = lbl..": "..math.round(def*100).."%"
+		lab.Font = Enum.Font.GothamBold
+		lab.TextSize = math.floor(13*fontScale)
+		lab.TextColor3 = globalConfig.textColor
+		lab.TextXAlignment = Enum.TextXAlignment.Left
+		lab.ZIndex = 2147483647
+
+		local track = Instance.new("Frame", c)
+		track.Size = UDim2.new(1, 0, 0, math.floor(10*scale))
+		track.Position = UDim2.new(0, 0, 0, math.floor(26*scale))
+		track.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+		track.BorderSizePixel = 0
+		track.ZIndex = 2147483647
+		Instance.new("UICorner", track).CornerRadius = UDim.new(0, 5)
+
+		local fill = Instance.new("Frame", track)
+		fill.Size = UDim2.new(def, 0, 1, 0)
+		fill.BackgroundColor3 = currentTheme.accent
+		fill.BorderSizePixel = 0
+		fill.ZIndex = 2147483647
+		Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 5)
+
+		local knob = Instance.new("Frame", track)
+		knob.Size = UDim2.new(0, math.floor(16*scale), 0, math.floor(16*scale))
+		knob.Position = UDim2.new(def, math.floor(-8*scale), 0.5, math.floor(-8*scale))
+		knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		knob.BorderSizePixel = 0
+		knob.ZIndex = 2147483647
+		Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+		local function setVol(x)
+			local v = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+			fill.Size = UDim2.new(v, 0, 1, 0)
+			knob.Position = UDim2.new(v, math.floor(-8*scale), 0.5, math.floor(-8*scale))
+			lab.Text = lbl..": "..math.round(v*100).."%"
+			_G[key] = v
+		end
+
+		track.InputBegan:Connect(function(inp)
+			if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+				activeSlider = key
+				setVol(inp.Position.X)
+			end
+		end)
+
+		track.InputEnded:Connect(function(inp)
+			if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+				if activeSlider == key then activeSlider = nil end
+			end
+		end)
+
+		return setVol
+	end
+
+	local uiSetVol = mkSlider(mSection, 38, "UI Vol", 1, "uiSoundVol")
+	local nfSetVol = mkSlider(mSection, 96, "Notif Vol", 0.55, "notifSoundVol")
+
+	UserInputService.InputChanged:Connect(function(inp)
+		if not activeSlider then return end
+		if inp.UserInputType ~= Enum.UserInputType.MouseMovement and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+		if activeSlider == "uiSoundVol" then
+			uiSetVol(inp.Position.X)
+		else
+			nfSetVol(inp.Position.X)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			activeSlider = nil
+		end
+	end)
+
+	local c = Instance.new("Frame", mSection)
+	c.Size = UDim2.new(0.9, 0, 0, math.floor(70*scale))
+	c.Position = UDim2.new(0.05, 0, 0, math.floor(154*scale))
 	c.BackgroundTransparency = 1
+	c.ZIndex = 2147483647
 
-	local lab = Instance.new("TextLabel", c)
-	lab.Size = UDim2.new(1, 0, 0, math.floor(18 * scale))
-	lab.BackgroundTransparency = 1
-	lab.Text = lbl .. ": " .. math.round(def * 100) .. "%"
-	lab.Font = Enum.Font.GothamBold
-	lab.TextSize = math.floor(12 * fontScale)
-	lab.TextColor3 = globalConfig.textColor
-	lab.TextXAlignment = Enum.TextXAlignment.Left
+	local l = Instance.new("TextLabel", c)
+	l.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
+	l.BackgroundTransparency = 1
+	l.Text = "Custom Notif Sound ID"
+	l.Font = Enum.Font.GothamBold
+	l.TextSize = math.floor(13*fontScale)
+	l.TextColor3 = globalConfig.textColor
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.ZIndex = 2147483647
 
-	local track = Instance.new("Frame", c)
-	track.Size = UDim2.new(1, 0, 0, math.floor(8 * scale))
-	track.Position = UDim2.new(0, 0, 0, math.floor(26 * scale))
-	track.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-	track.BorderSizePixel = 0
-	Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+	local b = Instance.new("TextBox", c)
+	b.Size = UDim2.new(1, math.floor(-70*scale), 0, math.floor(36*scale))
+	b.Position = UDim2.new(0, 0, 0, math.floor(24*scale))
+	b.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+	b.BorderSizePixel = 0
+	b.Text = "rbxassetid://97643101798871"
+	b.PlaceholderText = "rbxassetid://..."
+	b.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+	b.Font = Enum.Font.Gotham
+	b.TextSize = math.floor(13*fontScale)
+	b.TextColor3 = globalConfig.textColor
+	b.ClearTextOnFocus = false
+	b.ZIndex = 2147483647
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
 
-	local fill = Instance.new("Frame", track)
-	fill.Size = UDim2.new(def, 0, 1, 0)
-	fill.BackgroundColor3 = currentTheme.accent
-	fill.BorderSizePixel = 0
-	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+	b.TextEditable = true
+	b.ClearTextOnFocus = false
 
-	local knob = Instance.new("Frame", track)
-	knob.Size = UDim2.new(0, math.floor(16 * scale), 0, math.floor(16 * scale))
-	knob.Position = UDim2.new(def, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
-	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	knob.BorderSizePixel = 0
-	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-	local function setVol(x)
-		local v = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-		fill.Size = UDim2.new(v, 0, 1, 0)
-		knob.Position = UDim2.new(v, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
-		lab.Text = lbl .. ": " .. math.round(v * 100) .. "%"
-		_G[key] = v
-	end
-
-	track.InputBegan:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-			soundSlider = key
-			setVol(inp.Position.X)
-		end
-	end)
-
-	track.InputEnded:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-			if soundSlider == key then soundSlider = nil end
-		end
-	end)
-
-	return setVol
-end
-
-local uiSetVol = mkSoundSlider(soundSection, 44, "UI Volume", _G.uiSoundVol, "uiSoundVol")
-local nfSetVol = mkSoundSlider(soundSection, 100, "Notif Volume", _G.notifSoundVol, "notifSoundVol")
-
-UserInputService.InputChanged:Connect(function(inp)
-	if not soundSlider then return end
-	if inp.UserInputType ~= Enum.UserInputType.MouseMovement and inp.UserInputType ~= Enum.UserInputType.Touch then return end
-	if soundSlider == "uiSoundVol" then
-		uiSetVol(inp.Position.X)
-	else
-		nfSetVol(inp.Position.X)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(inp)
-	if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-		soundSlider = nil
-	end
-end)
-
--- Sound ID box
-local sidCont = Instance.new("Frame", soundSection)
-sidCont.Size = UDim2.new(0.9, 0, 0, math.floor(70 * scale))
-sidCont.Position = UDim2.new(0.05, 0, 0, math.floor(158 * scale))
-sidCont.BackgroundTransparency = 1
-
-local sidLab = Instance.new("TextLabel", sidCont)
-sidLab.Size = UDim2.new(1, 0, 0, math.floor(18 * scale))
-sidLab.BackgroundTransparency = 1
-sidLab.Text = "Custom Notif Sound ID"
-sidLab.Font = Enum.Font.GothamBold
-sidLab.TextSize = math.floor(12 * fontScale)
-sidLab.TextColor3 = globalConfig.textColor
-sidLab.TextXAlignment = Enum.TextXAlignment.Left
-
-local sidBox = Instance.new("TextBox", sidCont)
-sidBox.Size = UDim2.new(1, math.floor(-70 * scale), 0, math.floor(34 * scale))
-sidBox.Position = UDim2.new(0, 0, 0, math.floor(22 * scale))
-sidBox.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-sidBox.BackgroundTransparency = globalConfig.uiTransparency
-sidBox.Text = _G.customNotifId
-sidBox.PlaceholderText = "rbxassetid://..."
-sidBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-sidBox.Font = Enum.Font.Gotham
-sidBox.TextSize = math.floor(12 * fontScale)
-sidBox.TextColor3 = globalConfig.textColor
-sidBox.ClearTextOnFocus = false
-Instance.new("UICorner", sidBox).CornerRadius = UDim.new(0, math.floor(6 * scale))
-
-local sidBtn = Instance.new("TextButton", sidCont)
-sidBtn.Size = UDim2.new(0, math.floor(60 * scale), 0, math.floor(26 * scale))
-sidBtn.Position = UDim2.new(1, math.floor(-64 * scale), 0, math.floor(26 * scale))
-sidBtn.BackgroundColor3 = currentTheme.accent
-sidBtn.Text = "Set"
-sidBtn.Font = Enum.Font.GothamBold
-sidBtn.TextSize = math.floor(11 * fontScale)
-sidBtn.TextColor3 = Color3.new(0, 0, 0)
-sidBtn.BorderSizePixel = 0
-sidBtn.AutoButtonColor = false
-Instance.new("UICorner", sidBtn).CornerRadius = UDim.new(0, math.floor(5 * scale))
-
-sidBtn.MouseEnter:Connect(function()
-	tween(sidBtn, {BackgroundColor3 = Color3.fromRGB(160, 200, 255)}, 0.15)
-end)
-sidBtn.MouseLeave:Connect(function()
-	tween(sidBtn, {BackgroundColor3 = currentTheme.accent}, 0.15)
-end)
-
-local function setSoundId()
-	local t = sidBox.Text:gsub("%s+", "")
-	if t ~= "" then
-		if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://" .. t end
-		_G.customNotifId = t
-		notify("Sound ID set!", Color3.fromRGB(100, 255, 100))
-	end
-end
-
-sidBtn.MouseButton1Click:Connect(setSoundId)
-sidBox.FocusLost:Connect(function(enterPressed)
-	if enterPressed then setSoundId() end
-end)
-
--- Test sound button
-local testBtn = Instance.new("TextButton", soundSection)
-testBtn.Size = UDim2.new(0.9, 0, 0, math.floor(30 * scale))
-testBtn.Position = UDim2.new(0.05, 0, 0, math.floor(236 * scale))
-testBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-testBtn.BackgroundTransparency = globalConfig.uiTransparency
-testBtn.Text = "▶ Test Sound"
-testBtn.Font = Enum.Font.GothamBold
-testBtn.TextSize = math.floor(12 * fontScale)
-testBtn.TextColor3 = globalConfig.textColor
-testBtn.BorderSizePixel = 0
-testBtn.AutoButtonColor = false
-Instance.new("UICorner", testBtn).CornerRadius = UDim.new(0, math.floor(6 * scale))
-
-testBtn.MouseEnter:Connect(function()
-	tween(testBtn, {BackgroundColor3 = Color3.fromRGB(70, 70, 90)}, 0.15)
-end)
-testBtn.MouseLeave:Connect(function()
-	tween(testBtn, {BackgroundColor3 = Color3.fromRGB(55, 55, 70)}, 0.15)
-end)
-
-testBtn.MouseButton1Click:Connect(function()
-	if notifSoundMuted then notify("Notif sounds muted!", Color3.fromRGB(255, 100, 100)); return end
-	local s = Instance.new("Sound")
-	s.SoundId = _G.customNotifId
-	s.Volume = _G.notifSoundVol
-	s.Parent = SoundService
-	s:Play()
-	Debris:AddItem(s, 4)
-end)
-
--- Mute buttons
-local muteCont = Instance.new("Frame", soundSection)
-muteCont.Size = UDim2.new(0.9, 0, 0, math.floor(34 * scale))
-muteCont.Position = UDim2.new(0.05, 0, 0, math.floor(274 * scale))
-muteCont.BackgroundTransparency = 1
-
-local function mkMute(parent, x, w, st, on, off, isUi)
-	local btn = Instance.new("TextButton", parent)
-	btn.Size = UDim2.new(w, 0, 1, 0)
-	btn.Position = UDim2.new(x, 0, 0, 0)
-	btn.BackgroundColor3 = st and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
-	btn.BackgroundTransparency = globalConfig.uiTransparency
-	btn.Text = st and off or on
-	btn.Font = Enum.Font.GothamBlack
-	btn.TextSize = math.floor(12 * fontScale)
-	btn.TextColor3 = Color3.new(1, 1, 1)
+	local btn = Instance.new("TextButton", c)
+	btn.Size = UDim2.new(0, math.floor(60*scale), 0, math.floor(28*scale))
+	btn.Position = UDim2.new(1, math.floor(-65*scale), 0, math.floor(28*scale))
+	btn.BackgroundColor3 = currentTheme.accent
+	btn.Text = "Set"
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = math.floor(12*fontScale)
+	btn.TextColor3 = Color3.new(0, 0, 0)
 	btn.BorderSizePixel = 0
-	btn.AutoButtonColor = false
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, math.floor(6 * scale))
-
-	btn.MouseEnter:Connect(function()
-		tween(btn, {BackgroundColor3 = st and Color3.fromRGB(220, 80, 80) or Color3.fromRGB(80, 200, 100)}, 0.15)
-	end)
-	btn.MouseLeave:Connect(function()
-		tween(btn, {BackgroundColor3 = st and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)}, 0.15)
-	end)
+	btn.ZIndex = 2147483647
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
 	btn.MouseButton1Click:Connect(function()
-		if isUi then
-			soundMuted = not soundMuted
-			btn.BackgroundColor3 = soundMuted and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
-			btn.Text = soundMuted and off or on
-			if soundMuted then
-				notify("UI sounds muted", Color3.fromRGB(255, 100, 100))
-			else
-				notify("UI sounds enabled", Color3.fromRGB(100, 255, 100))
-				local s = Instance.new("Sound")
-				s.SoundId = "rbxassetid://109439703653606"
-				s.Volume = _G.uiSoundVol * 0.3
-				s.Parent = SoundService
-				s:Play()
-				Debris:AddItem(s, 1)
-			end
-		else
-			notifSoundMuted = not notifSoundMuted
-			btn.BackgroundColor3 = notifSoundMuted and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
-			btn.Text = notifSoundMuted and off or on
-			notify(notifSoundMuted and "Notif sounds muted" or "Notif sounds enabled", notifSoundMuted and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(100, 255, 100))
+		local t = b.Text:gsub("%s+", "")
+		if t ~= "" then
+			if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
+			_G.customNotifId = t
+			notify("Sound ID set!", Color3.fromRGB(100, 255, 100))
 		end
 	end)
+
+	b.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			local t = b.Text:gsub("%s+", "")
+			if t ~= "" then
+				if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
+				_G.customNotifId = t
+				notify("Sound ID set!", Color3.fromRGB(100, 255, 100))
+			end
+		end
+	end)
+
+	local test = Instance.new("TextButton", mSection)
+	test.Size = UDim2.new(0.9, 0, 0, math.floor(32*scale))
+	test.Position = UDim2.new(0.05, 0, 0, math.floor(232*scale))
+	test.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+	test.Text = "▶ Test Sound"
+	test.Font = Enum.Font.GothamBold
+	test.TextSize = math.floor(13*fontScale)
+	test.TextColor3 = Color3.new(1, 1, 1)
+	test.BorderSizePixel = 0
+	test.ZIndex = 2147483647
+	Instance.new("UICorner", test).CornerRadius = UDim.new(0, 6)
+
+	test.MouseButton1Click:Connect(function()
+		if notifSoundMuted then notify("Notif sounds muted!", Color3.fromRGB(255, 100, 100)); return end
+		local s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
+		s.Parent = SoundService; s:Play(); Debris:AddItem(s, 4)
+	end)
+
+	local mc = Instance.new("Frame", mSection)
+	mc.Size = UDim2.new(0.9, 0, 0, math.floor(36*scale))
+	mc.Position = UDim2.new(0.05, 0, 0, math.floor(272*scale))
+	mc.BackgroundTransparency = 1
+	mc.ZIndex = 2147483647
+
+	local function mkMute(parent, x, w, st, on, off, isUi)
+		local btn = Instance.new("TextButton", parent)
+		btn.Size = UDim2.new(w, 0, 1, 0)
+		btn.Position = UDim2.new(x, 0, 0, 0)
+		btn.BackgroundColor3 = st and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
+		btn.Text = st and off or on
+		btn.Font = Enum.Font.GothamBlack
+		btn.TextSize = math.floor(13*fontScale)
+		btn.TextColor3 = Color3.new(1, 1, 1)
+		btn.BorderSizePixel = 0
+		btn.ZIndex = 2147483647
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+		btn.MouseButton1Click:Connect(function()
+			if isUi then
+				soundMuted = not soundMuted
+				btn.BackgroundColor3 = soundMuted and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
+				btn.Text = soundMuted and off or on
+				if soundMuted then notify("UI sounds muted", Color3.fromRGB(255, 100, 100))
+				else
+					notify("UI sounds enabled", Color3.fromRGB(100, 255, 100))
+					local s = Instance.new("Sound"); s.SoundId = "rbxassetid://109439703653606"; s.Volume = _G.uiSoundVol*0.3
+					s.Parent = SoundService; s:Play(); Debris:AddItem(s, 1)
+				end
+			else
+				notifSoundMuted = not notifSoundMuted
+				btn.BackgroundColor3 = notifSoundMuted and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
+				btn.Text = notifSoundMuted and off or on
+				notify(notifSoundMuted and "Notif sounds muted" or "Notif sounds enabled", notifSoundMuted and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(100, 255, 100))
+			end
+		end)
+	end
+
+	mkMute(mc, 0, 0.48, soundMuted, "🔊 UI", "🔇 UI", true)
+	mkMute(mc, 0.52, 0.48, notifSoundMuted, "🔊 Notif", "🔇 Notif", false)
 end
 
-mkMute(muteCont, 0, 0.48, soundMuted, "🔊 UI", "🔇 UI", true)
-mkMute(muteCont, 0.52, 0.48, notifSoundMuted, "🔊 Notif", "🔇 Notif", false)
-
 -- ========== THEME SELECTOR SECTION ==========
-local themeSection = makeSection(setScroll, "THEME SELECTOR", 0)
+thSection = makeSection(setScroll, "THEME SELECTOR", 0)
 
-local themeCont = Instance.new("Frame", themeSection)
-themeCont.Size = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-40 * scale))
-themeCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale))
-themeCont.BackgroundTransparency = 1
+thCont = Instance.new("Frame", thSection)
+thCont.Size = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-40 * scale))
+thCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale))
+thCont.BackgroundTransparency = 1
+thCont.ZIndex = 2147483647
 
 local sortedThemes = {}
 for name in pairs(themes) do
@@ -11764,70 +11641,60 @@ local thCount = #sortedThemes
 local cols = 2
 local rows = math.ceil(thCount / cols)
 
-local themeH = math.floor(36 * scale) + math.floor(rows * 50 * scale) + math.floor(10 * scale)
-themeSection.Size = UDim2.new(1, math.floor(-12 * scale), 0, themeH)
+local sectionHeight = math.floor(36 * scale) + math.floor(rows * 55 * scale) + math.floor(10 * scale)
+thSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, sectionHeight)
 
-local themeGrid = Instance.new("UIGridLayout", themeCont)
-themeGrid.CellSize = UDim2.new(0.48, 0, 0, math.floor(42 * scale))
-themeGrid.CellPadding = UDim2.new(0, math.floor(8 * scale), 0, math.floor(8 * scale))
-themeGrid.SortOrder = Enum.SortOrder.LayoutOrder
-themeGrid.FillDirection = Enum.FillDirection.Horizontal
-themeGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-themeGrid.VerticalAlignment = Enum.VerticalAlignment.Top
+thGrid = Instance.new("UIGridLayout", thCont)
+thGrid.CellSize = UDim2.new(0.48, 0, 0, math.floor(45 * scale))
+thGrid.CellPadding = UDim2.new(0, math.floor(10 * scale), 0, math.floor(10 * scale))
+thGrid.SortOrder = Enum.SortOrder.LayoutOrder
+thGrid.FillDirection = Enum.FillDirection.Horizontal
+thGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+thGrid.VerticalAlignment = Enum.VerticalAlignment.Top
 
 for i, name in ipairs(sortedThemes) do
 	local th = themes[name]
-	local themeBtn = Instance.new("TextButton", themeCont)
+	local themeBtn = Instance.new("TextButton", thCont)
 	themeBtn.Name = name .. "ThemeBtn"
 	themeBtn.BackgroundColor3 = th.accent
 	themeBtn.Text = name
 	themeBtn.Font = Enum.Font.GothamBold
-	themeBtn.TextSize = math.floor(12 * fontScale)
+	themeBtn.TextSize = math.floor(13 * fontScale)
 	themeBtn.TextColor3 = th.text
 	themeBtn.TextScaled = false
 	themeBtn.TextWrapped = true
 	themeBtn.TextTruncate = Enum.TextTruncate.AtEnd
 	themeBtn.BorderSizePixel = 0
 	themeBtn.LayoutOrder = i
-	themeBtn.AutoButtonColor = false
-	Instance.new("UICorner", themeBtn).CornerRadius = UDim.new(0, math.floor(8 * scale))
+	themeBtn.ZIndex = 2147483647
+	Instance.new("UICorner", themeBtn).CornerRadius = UDim.new(0, 6)
 
 	local btnStroke = Instance.new("UIStroke", themeBtn)
 	btnStroke.Color = Color3.fromRGB(255, 255, 255)
-	btnStroke.Transparency = 0.8
+	btnStroke.Transparency = 0.85
 	btnStroke.Thickness = 1
-
-	themeBtn.MouseEnter:Connect(function()
-		tween(themeBtn, {Size = UDim2.new(0.5, 0, 0, math.floor(44 * scale))}, 0.15)
-	end)
-	themeBtn.MouseLeave:Connect(function()
-		tween(themeBtn, {Size = UDim2.new(0.48, 0, 0, math.floor(42 * scale))}, 0.15)
-	end)
 
 	themeBtn.MouseButton1Click:Connect(function()
 		local oldTheme = currentTheme
 		currentTheme = th
 
 		mainFrame.BackgroundColor3 = th.glass
-		if topBar then topBar.BackgroundColor3 = th.list end
-		accentLine.BackgroundColor3 = th.accent
-		mainStroke.Color = th.accent
+		if topBar then topBar.BackgroundColor3 = th.glass end
+
 		titleLabel.TextColor3 = th.accent
-		barStroke.Color = th.accent
-		dropStroke2.Color = th.accent
-		panelStroke.Color = th.accent
 
 		cmdTab.BackgroundColor3 = th.accent
 		cmdTab.TextColor3 = th.text
-		setTab.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+		setTab.BackgroundColor3 = th.btn
 		setTab.TextColor3 = globalConfig.textColor
 
 		cmdBarFrame.BackgroundColor3 = th.list
-		if cmdScroll then cmdScroll.BackgroundColor3 = Color3.fromRGB(18, 18, 22) end
-		if setScroll then setScroll.BackgroundColor3 = Color3.fromRGB(18, 18, 22) end
 
-		for _, obj in ipairs(mainFrame:GetDescendants()) do
-			if obj:IsDescendantOf(themeCont) then continue end
+		if cmdScroll then cmdScroll.BackgroundColor3 = th.glass end
+		if setScroll then setScroll.BackgroundColor3 = th.glass end
+
+		for _, obj in ipairs(lunarGui:GetDescendants()) do
+			if obj:IsDescendantOf(thCont) then continue end
 
 			if obj:IsA("TextButton") then
 				if obj.BackgroundColor3 == oldTheme.accent then obj.BackgroundColor3 = th.accent end
@@ -11846,9 +11713,6 @@ for i, name in ipairs(sortedThemes) do
 				if obj.BackgroundColor3 == oldTheme.list then obj.BackgroundColor3 = th.list end
 				if obj.BackgroundColor3 == oldTheme.btn then obj.BackgroundColor3 = th.btn end
 			end
-			if obj:IsA("UIStroke") and obj.Parent ~= themeBtn then
-				if obj.Color == oldTheme.accent then obj.Color = th.accent end
-			end
 		end
 
 		for _, s in pairs(sliders) do
@@ -11862,8 +11726,11 @@ for i, name in ipairs(sortedThemes) do
 
 		for _, obj in ipairs(cmdScroll:GetChildren()) do
 			if obj:IsA("TextButton") then
-				if obj.BackgroundColor3 == Color3.fromRGB(32, 32, 38) then
-					obj.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+				if obj.BackgroundColor3 == Color3.fromRGB(40, 40, 48) or obj.BackgroundColor3 == (oldTheme.list or Color3.fromRGB(40, 40, 48)) then
+					obj.BackgroundColor3 = th.list or Color3.fromRGB(40, 40, 48)
+				end
+				if obj.BackgroundColor3 == Color3.fromRGB(50, 50, 60) or obj.BackgroundColor3 == (oldTheme.btn or Color3.fromRGB(50, 50, 60)) then
+					obj.BackgroundColor3 = th.btn or Color3.fromRGB(50, 50, 60)
 				end
 			end
 		end
@@ -11873,45 +11740,37 @@ for i, name in ipairs(sortedThemes) do
 	end)
 end
 
--- ========== DISCORD SECTION ==========
-local discordSection = makeSection(setScroll, "COMMUNITY", 90)
-discordSection.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+-- Discord Section
+dSection = makeSection(setScroll, "COMMUNITY", 90)
+dSection.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 
-local dBtn = Instance.new("TextButton", discordSection)
-dBtn.Size = UDim2.new(0.9, 0, 0, math.floor(38 * scale))
-dBtn.Position = UDim2.new(0.05, 0, 0, math.floor(40 * scale))
-dBtn.BackgroundColor3 = Color3.fromRGB(110, 125, 255)
+dBtn = Instance.new("TextButton", dSection)
+dBtn.Size = UDim2.new(0.9, 0, 0, math.floor(40 * scale))
+dBtn.Position = UDim2.new(0.05, 0, 0, math.floor(38 * scale))
+dBtn.BackgroundColor3 = Color3.fromRGB(120, 130, 255)
 dBtn.Text = "Join Discord Server"
 dBtn.Font = Enum.Font.GothamBlack
-dBtn.TextSize = math.floor(15 * fontScale)
+dBtn.TextSize = math.floor(16 * fontScale)
 dBtn.TextColor3 = Color3.new(1,1,1)
-dBtn.BorderSizePixel = 0
-dBtn.AutoButtonColor = false
-Instance.new("UICorner", dBtn).CornerRadius = UDim.new(0, math.floor(8 * scale))
-
-dBtn.MouseEnter:Connect(function()
-	tween(dBtn, {BackgroundColor3 = Color3.fromRGB(130, 145, 255)}, 0.15)
-end)
-dBtn.MouseLeave:Connect(function()
-	tween(dBtn, {BackgroundColor3 = Color3.fromRGB(110, 125, 255)}, 0.15)
-end)
+dBtn.ZIndex = 2147483647
+Instance.new("UICorner", dBtn).CornerRadius = UDim.new(0, 6)
 
 dBtn.MouseButton1Click:Connect(function()
 	if setclipboard then
 		setclipboard("https://discord.gg/ydNKRbFmUd")
 		notify("Discord link copied to clipboard!", Color3.fromRGB(88,101,242))
 	else
-		notify("Clipboard not supported", Color3.fromRGB(255,100,100))
+		notify("Clipboard not supported in this executor", Color3.fromRGB(255,100,100))
 	end
 end)
 
--- ========== TAB SWITCHING ==========
+-- Tab switching
 cmdTab.MouseButton1Click:Connect(function()
 	cmdFrame.Visible = true
 	setFrame.Visible = false
 	cmdTab.BackgroundColor3 = currentTheme.accent
 	cmdTab.TextColor3 = Color3.new(0,0,0)
-	setTab.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	setTab.TextColor3 = globalConfig.textColor
 end)
 
@@ -11920,7 +11779,7 @@ setTab.MouseButton1Click:Connect(function()
 	setFrame.Visible = true
 	setTab.BackgroundColor3 = currentTheme.accent
 	setTab.TextColor3 = Color3.new(0,0,0)
-	cmdTab.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	cmdTab.TextColor3 = globalConfig.textColor
 end)
 
@@ -11928,16 +11787,11 @@ end)
 -- STARTUP
 -- =============================================================
 lunarGui.Enabled = true
+playOpen()
+notify("Lunar Admin loaded • Enjoy :3", Color3.fromRGB(120,220,255))
 
-if notify then
-	notify("Lunar Admin loaded • Enjoy :3", currentTheme.accent)
-end
+setupButtonSounds()
 
-if setupButtonSounds then
-	setupButtonSounds()
-end
-
--- Watermark
 task.spawn(function()
 	task.wait(0.8)
 	local wm = Instance.new("ScreenGui")
@@ -11961,18 +11815,6 @@ task.spawn(function()
 	task.delay(2, function() wm:Destroy() end)
 end)
 
--- FPS Counter
-task.spawn(function()
-	while true do
-		if globalConfig.showFps then
-			local fps = math.round(1 / RunService.RenderStepped:Wait())
-			-- You can display FPS here if you have a UI element for it
-		else
-			RunService.RenderStepped:Wait()
-		end
-	end
-end)
-
 -- Keybind handler
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
@@ -11980,11 +11822,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if lunarGui then
 			lunarGui.Enabled = not lunarGui.Enabled
 			if lunarGui.Enabled then
-				shadow.Visible = true
-				if playOpen then playOpen() end
+				playOpen()
 			else
-				shadow.Visible = false
-				if playClose then playClose() end
+				playClose()
 			end
 		end
 	end
