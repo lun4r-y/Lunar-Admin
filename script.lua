@@ -8928,7 +8928,7 @@ local function unfreeze(plr)
 	end
 end
 ------------------------------------------------
--- Fling/clicktp
+-- Fling/clicktp (ALL FLINGS USE SAME WORKING METHOD)
 ------------------------------------------------
 TouchFling = {
 	enabled = false,
@@ -8948,6 +8948,13 @@ TouchFling = {
 	flingAllIndex = 1,
 	flingAllTimer = 0,
 	isMobile = false,
+	-- NEW: Track the active fling loop thread so we can stop it
+	flingThread = nil,
+	-- NEW: Track if fling loop should stop
+	stopFling = false,
+	-- NEW: For fling all - track current target and whether to move on
+	flingAllCurrentTarget = nil,
+	flingAllStuckTimer = 0,
 	_t = nil,
 	_v = nil,
 	_p = nil,
@@ -9078,6 +9085,92 @@ function TouchFling:StartKeySelection()
 	end)
 end
 
+-- WORKING: The spin fling method that actually works
+-- This is used by ALL fling features (Touch Fling, Fling All, Lock Fling)
+function TouchFling:DoSpinFling()
+	local char = client.Character
+	if not char then return end
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local vel = root.Velocity
+	root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+	RunService.RenderStepped:Wait()
+	if root.Parent then root.Velocity = vel end
+	RunService.Stepped:Wait()
+	if root.Parent then root.Velocity = vel + Vector3.new(0, 0.1, 0) end
+end
+
+-- FIXED: Start the fling loop as a separate thread that can be stopped
+function TouchFling:StartFlingLoop()
+	-- Kill any existing thread
+	if self.flingThread then
+		self.stopFling = true
+		task.wait(0.1)
+		self.flingThread = nil
+	end
+
+	self.stopFling = false
+	self.flingThread = task.spawn(function()
+		while not self.stopFling do
+			self:DoSpinFling()
+			RunService.Heartbeat:Wait()
+		end
+		-- When stopped, make sure velocity is normal
+		local char = client.Character
+		if char then
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				root.Velocity = Vector3.new(0, 0, 0)
+			end
+		end
+	end)
+end
+
+function TouchFling:StopFlingLoop()
+	self.stopFling = true
+	if self.flingThread then
+		self.flingThread = nil
+	end
+	-- Reset velocity immediately
+	local char = client.Character
+	if char then
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if root then
+			root.Velocity = Vector3.new(0, 0, 0)
+		end
+	end
+end
+
+-- NEW: Check if a player has been flung (moved far or falling fast)
+function TouchFling:IsPlayerFlung(player)
+	if not player or not player.Character then return true end
+	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+	local hum = player.Character:FindFirstChildOfClass("Humanoid")
+	if not hrp or not hum then return true end
+	if hum.Health <= 0 then return true end
+
+	local vel = hrp.Velocity
+	if vel.Magnitude > 100 then return true end
+	if hrp.Position.Y < -50 then return true end
+
+	return false
+end
+
+-- NEW: Get valid fling targets
+function TouchFling:GetValidTargets()
+	TouchFling._l = {}
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= client and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 then
+				table.insert(TouchFling._l, plr)
+			end
+		end
+	end
+	return TouchFling._l
+end
+
 function TouchFling:CreateGUI()
 	if self.gui then 
 		self.gui.Enabled = true
@@ -9089,7 +9182,6 @@ function TouchFling:CreateGUI()
 	TouchFling._s.ResetOnSpawn = false
 	TouchFling._s.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	-- Try CoreGui first, fallback to PlayerGui
 	local success = pcall(function()
 		TouchFling._s.Parent = game:GetService("CoreGui")
 	end)
@@ -9117,10 +9209,9 @@ function TouchFling:CreateGUI()
 	TouchFling._f.ClipsDescendants = true
 	self.mainFrame = TouchFling._f
 
-	-- Custom drag from top bar only
-	TouchFling._d = false
-	TouchFling._g = nil
-	TouchFling._h = nil
+	self.dragActive = false
+	self.dragStartPos = nil
+	self.dragFrameStart = nil
 
 	TouchFling._c = Instance.new("UICorner")
 	TouchFling._c.CornerRadius = UDim.new(0, 12)
@@ -9142,26 +9233,40 @@ function TouchFling:CreateGUI()
 
 	TouchFling._o.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			TouchFling._d = true
-			TouchFling._g = input.Position
-			TouchFling._h = TouchFling._f.Position
+			self.dragActive = true
+			self.dragStartPos = input.Position
+			self.dragFrameStart = TouchFling._f.Position
 			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then TouchFling._d = false end
+				if input.UserInputState == Enum.UserInputState.End then 
+					self.dragActive = false 
+				end
 			end)
 		end
 	end)
 
 	TouchFling._o.InputChanged:Connect(function(input)
-		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and TouchFling._d then
-			TouchFling._i = input.Position - TouchFling._g
-			TouchFling._f.Position = UDim2.new(TouchFling._h.X.Scale, TouchFling._h.X.Offset + TouchFling._i.X, TouchFling._h.Y.Scale, TouchFling._h.Y.Offset + TouchFling._i.Y)
+		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and self.dragActive then
+			TouchFling._i = input.Position - self.dragStartPos
+			TouchFling._f.Position = UDim2.new(
+				self.dragFrameStart.X.Scale, self.dragFrameStart.X.Offset + TouchFling._i.X,
+				self.dragFrameStart.Y.Scale, self.dragFrameStart.Y.Offset + TouchFling._i.Y
+			)
 		end
 	end)
 
 	UserInputService.InputChanged:Connect(function(input)
-		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and TouchFling._d then
-			TouchFling._i = input.Position - TouchFling._g
-			TouchFling._f.Position = UDim2.new(TouchFling._h.X.Scale, TouchFling._h.X.Offset + TouchFling._i.X, TouchFling._h.Y.Scale, TouchFling._h.Y.Offset + TouchFling._i.Y)
+		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and self.dragActive then
+			TouchFling._i = input.Position - self.dragStartPos
+			TouchFling._f.Position = UDim2.new(
+				self.dragFrameStart.X.Scale, self.dragFrameStart.X.Offset + TouchFling._i.X,
+				self.dragFrameStart.Y.Scale, self.dragFrameStart.Y.Offset + TouchFling._i.Y
+			)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			self.dragActive = false
 		end
 	end)
 
@@ -9213,6 +9318,7 @@ function TouchFling:CreateGUI()
 	TouchFling._c.Parent = TouchFling._n
 
 	TouchFling._n.MouseButton1Click:Connect(function()
+		self:StopFlingLoop()
 		self.gui:Destroy()
 		self.gui = nil
 		self.mainFrame = nil
@@ -9270,6 +9376,11 @@ function TouchFling:CreateGUI()
 
 	self.toggles.enabled.MouseButton1Click:Connect(function()
 		self.enabled = not self.enabled
+		if self.enabled then
+			self:StartFlingLoop()
+		else
+			self:StopFlingLoop()
+		end
 		self:UpdateToggle("enabled", "Touch Fling")
 	end)
 
@@ -9277,6 +9388,8 @@ function TouchFling:CreateGUI()
 		self.flingAll = not self.flingAll
 		self.flingAllIndex = 1
 		self.flingAllTimer = 0
+		self.flingAllCurrentTarget = nil
+		self.flingAllStuckTimer = 0
 		self:UpdateToggle("flingAll", "Fling All")
 	end)
 
@@ -9374,17 +9487,21 @@ end
 
 -- Click TP with Keybind
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if TouchFling.dragActive then return end
 	if gameProcessed then return end
 	if not TouchFling.clickTP then return end
-	TouchFling._d = false
+
+	local shouldTP = false
+
 	if TouchFling.clickTPKey == "MouseButton1" and input.UserInputType == Enum.UserInputType.MouseButton1 then
-		TouchFling._d = true
+		shouldTP = true
 	elseif TouchFling.clickTPKey == "MouseButton2" and input.UserInputType == Enum.UserInputType.MouseButton2 then
-		TouchFling._d = true
-	elseif input.KeyCode == TouchFling.clickTPKey then
-		TouchFling._d = true
+		shouldTP = true
+	elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == TouchFling.clickTPKey then
+		shouldTP = true
 	end
-	if TouchFling._d and Mouse.Target then
+
+	if shouldTP and Mouse.Target then
 		TouchFling._t = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
 		if TouchFling._t then
 			TouchFling._t.CFrame = CFrame.new(Mouse.Hit.Position + Vector3.new(0, 3, 0))
@@ -9392,98 +9509,65 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- Main Loop
+-- FIXED: Main Loop - ALL flings use DoSpinFling
 RunService.Heartbeat:Connect(function(deltaTime)
-	-- Touch Fling self
-	if TouchFling.enabled then
-		TouchFling._t = client.Character
-		if TouchFling._t then
-			TouchFling._t = TouchFling._t:FindFirstChild("HumanoidRootPart")
-			if TouchFling._t then
-				TouchFling._v = TouchFling._t.Velocity
-				TouchFling._t.Velocity = TouchFling._v * 12000 + Vector3.new(0, 14000, 0)
-				RunService.RenderStepped:Wait()
-				if TouchFling._t.Parent then TouchFling._t.Velocity = TouchFling._v end
-				RunService.Stepped:Wait()
-				if TouchFling._t.Parent then 
-					TouchFling._t.Velocity = TouchFling._v + Vector3.new(0, TouchFling.movel * 2, 0)
-					TouchFling.movel = -TouchFling.movel 
-				end
-			end
-		end
-	end
-
-	-- Fling All - cycles through players one at a time
+	-- FIXED: Fling All - teleport into person, stick until flung, then move to next
 	if TouchFling.flingAll then
-		-- Get my root part first
-		TouchFling._y = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
-		if not TouchFling._y then return end
+		local targets = TouchFling:GetValidTargets()
+		if #targets == 0 then return end
 
-		-- Build valid targets list
-		TouchFling._p = Players:GetPlayers()
-		TouchFling._l = {}
-		for _, plr in ipairs(TouchFling._p) do
-			if plr ~= client and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-				table.insert(TouchFling._l, plr)
-			end
-		end
-		if #TouchFling._l == 0 then return end
-
-		-- Timer-based cycling
-		TouchFling.flingAllTimer = TouchFling.flingAllTimer + deltaTime
-		if TouchFling.flingAllTimer >= 0.5 then
-			TouchFling.flingAllTimer = 0
-
-			-- Get current target index
-			TouchFling._i = TouchFling.flingAllIndex
-			if TouchFling._i > #TouchFling._l then
-				TouchFling._i = 1
+		-- If no current target or current target is flung/dead, pick next
+		if not TouchFling.flingAllCurrentTarget or TouchFling:IsPlayerFlung(TouchFling.flingAllCurrentTarget) then
+			local targetIndex = TouchFling.flingAllIndex
+			if targetIndex > #targets then
+				targetIndex = 1
 				TouchFling.flingAllIndex = 1
 			end
 
-			-- Get target player
-			TouchFling._p = TouchFling._l[TouchFling._i]
-
-			-- Check if target is valid and has HRP
-			if TouchFling._p and TouchFling._p.Character and TouchFling._p.Character:FindFirstChild("HumanoidRootPart") then
-				TouchFling._t = TouchFling._p.Character.HumanoidRootPart
-
-				-- Check distance
-				if (TouchFling._y.Position - TouchFling._t.Position).Magnitude < 25 then
-					-- Fling them
-					TouchFling._t.AssemblyLinearVelocity = Vector3.new(math.random(-6000, 6000), 2200 + math.random(0, 800), math.random(-6000, 6000))
-
-					-- Move to next
-					TouchFling.flingAllIndex = TouchFling._i + 1
-					if TouchFling.flingAllIndex > #TouchFling._l then TouchFling.flingAllIndex = 1 end
-				else
-					-- Too far, skip
-					TouchFling.flingAllIndex = TouchFling._i + 1
-					if TouchFling.flingAllIndex > #TouchFling._l then TouchFling.flingAllIndex = 1 end
-				end
-			else
-				-- Invalid target, skip
-				TouchFling.flingAllIndex = TouchFling._i + 1
-				if TouchFling.flingAllIndex > #TouchFling._l then TouchFling.flingAllIndex = 1 end
+			TouchFling.flingAllCurrentTarget = targets[targetIndex]
+			TouchFling.flingAllStuckTimer = 0
+			TouchFling.flingAllIndex = targetIndex + 1
+			if TouchFling.flingAllIndex > #targets then
+				TouchFling.flingAllIndex = 1
 			end
 		end
+
+		-- Stick to current target and fling them using the SAME spin method
+		if TouchFling.flingAllCurrentTarget and TouchFling.flingAllCurrentTarget.Character then
+			local targetRoot = TouchFling.flingAllCurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+			local myRoot = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
+
+			if targetRoot and myRoot then
+				-- Teleport directly into them
+				myRoot.CFrame = targetRoot.CFrame
+
+				-- Use the SAME working spin fling method
+				TouchFling:DoSpinFling()
+
+				-- Safety: if stuck too long (3 sec), force move to next
+				TouchFling.flingAllStuckTimer = TouchFling.flingAllStuckTimer + deltaTime
+				if TouchFling.flingAllStuckTimer >= 3 then
+					TouchFling.flingAllCurrentTarget = nil
+					TouchFling.flingAllStuckTimer = 0
+				end
+			end
+		end
+	else
+		-- Reset when disabled
+		TouchFling.flingAllCurrentTarget = nil
+		TouchFling.flingAllStuckTimer = 0
+		TouchFling.flingAllTimer = 0
 	end
 
-	-- Lock Fling
+	-- FIXED: Lock Fling - uses the SAME DoSpinFling method
 	if TouchFling.lockFling and TouchFling.selectedPlayer and TouchFling.selectedPlayer.Character then
 		TouchFling._t = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
 		TouchFling._v = TouchFling.selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
 		if TouchFling._t and TouchFling._v then
+			-- Stay on top of them
 			TouchFling._t.CFrame = TouchFling._v.CFrame
-			TouchFling._o = TouchFling._v.Velocity
-			TouchFling._v.Velocity = TouchFling._o * 12000 + Vector3.new(0, 16000, 0)
-			RunService.RenderStepped:Wait()
-			if TouchFling._v.Parent then TouchFling._v.Velocity = TouchFling._o end
-			RunService.Stepped:Wait()
-			if TouchFling._v.Parent then
-				TouchFling._v.Velocity = TouchFling._o + Vector3.new(0, TouchFling.movel * 3, 0)
-				TouchFling.movel = -TouchFling.movel
-			end
+			-- Use the SAME working spin fling method
+			TouchFling:DoSpinFling()
 		end
 	end
 
