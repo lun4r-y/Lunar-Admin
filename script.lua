@@ -271,7 +271,7 @@ shine.Parent = shineHolder
 	text.Text = "LOADING"
 	text.TextColor3 = Color3.fromRGB(255, 255, 255)
 	text.TextTransparency = 1
-	text.Font = Enum.Font.GothamBlack
+	text.Font = Enum.Font.Code
 	text.TextScaled = true
 	text.ZIndex = 5
 	text.Parent = frame
@@ -947,7 +947,7 @@ local function notify(text, col)
 	moonIcon.BackgroundTransparency = 1
 	moonIcon.Text = "🌙"
 	moonIcon.TextSize = isMobile and 16 or 22
-	moonIcon.Font = Enum.Font.GothamBold
+	moonIcon.Font = Enum.Font.Code
 	moonIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 	moonIcon.TextTransparency = 1
 	moonIcon.ZIndex = 2147483647
@@ -959,7 +959,7 @@ local function notify(text, col)
 	titleLabel.Position = UDim2.new(0, 44, 0, 8)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Text = "Lunar"
-	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.Font = Enum.Font.Code
 	titleLabel.TextSize = isMobile and 13 or 16
 	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	titleLabel.TextTransparency = 1
@@ -973,7 +973,7 @@ local function notify(text, col)
 	msgLabel.Position = UDim2.new(0, 12, 0, 38)
 	msgLabel.BackgroundTransparency = 1
 	msgLabel.Text = text
-	msgLabel.Font = Enum.Font.Gotham
+	msgLabel.Font = Enum.Font.Code
 	msgLabel.TextSize = isMobile and 11 or 14
 	msgLabel.TextColor3 = Color3.fromRGB(180, 180, 195)
 	msgLabel.TextTransparency = 1
@@ -1191,7 +1191,7 @@ task.spawn(function()
 	tabLabel.BackgroundTransparency = 1
 	tabLabel.Text = "≡"
 	tabLabel.TextSize = isMobile and 14 or 18
-	tabLabel.Font = Enum.Font.GothamBold
+	tabLabel.Font = Enum.Font.Code
 	tabLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	tabLabel.ZIndex = 2147483647
 	tabLabel.Parent = dragTab
@@ -1203,14 +1203,14 @@ task.spawn(function()
 	moon.Text = "🌙"
 	moon.TextColor3 = Color3.fromRGB(255, 215, 0)
 	moon.TextSize = moonSize
-	moon.Font = Enum.Font.GothamBold
+	moon.Font = Enum.Font.Code
 	moon.ZIndex = 2147483647
 
 	local label = Instance.new("TextLabel", frame)
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.new(1, -90, 1, 0)
 	label.Position = UDim2.new(0, 80, 0, 0)
-	label.Font = Enum.Font.GothamSemibold
+	label.Font = Enum.Font.Code
 	label.TextSize = textSize
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
 	label.TextXAlignment = Enum.TextXAlignment.Left
@@ -1968,7 +1968,7 @@ function MM2ESP:CreateTopBar()
 	title.Text = "MM2 ESP"
 	title.TextColor3 = self.COL_TEXT
 	title.TextSize = self.isMobile and 14 or 16
-	title.Font = Enum.Font.GothamBold
+	title.Font = Enum.Font.Code
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = topBar
 
@@ -1980,7 +1980,7 @@ function MM2ESP:CreateTopBar()
 	minBtn.Text = "−"
 	minBtn.TextColor3 = self.COL_TEXT
 	minBtn.TextSize = 18
-	minBtn.Font = Enum.Font.GothamBold
+	minBtn.Font = Enum.Font.Code
 	minBtn.BorderSizePixel = 0
 	minBtn.Parent = topBar
 	Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
@@ -1994,7 +1994,7 @@ function MM2ESP:CreateTopBar()
 	closeBtn.Text = "×"
 	closeBtn.TextColor3 = self.COL_TEXT
 	closeBtn.TextSize = 18
-	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.Font = Enum.Font.Code
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Parent = topBar
 	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
@@ -2041,7 +2041,7 @@ function MM2ESP:MakeToggle(name, label, defaultState, onToggle)
 	lbl.Text = label
 	lbl.TextColor3 = self.COL_TEXT
 	lbl.TextSize = self.isMobile and 12 or 14
-	lbl.Font = Enum.Font.GothamSemibold
+	lbl.Font = Enum.Font.Code
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Parent = frame
 
@@ -2053,7 +2053,7 @@ function MM2ESP:MakeToggle(name, label, defaultState, onToggle)
 	status.Text = defaultState and "ON" or "OFF"
 	status.TextColor3 = defaultState and self.COL_ACCENT or self.COL_SUB
 	status.TextSize = 11
-	status.Font = Enum.Font.GothamBold
+	status.Font = Enum.Font.Code
 	status.Parent = frame
 
 	local switch = Instance.new("Frame")
@@ -2131,7 +2131,7 @@ function MM2ESP:CreateGunDropSection()
 	tpBtn.Text = "TP to Gun"
 	tpBtn.TextColor3 = self.COL_TEXT
 	tpBtn.TextSize = self.isMobile and 11 or 13
-	tpBtn.Font = Enum.Font.GothamBold
+	tpBtn.Font = Enum.Font.Code
 	tpBtn.BorderSizePixel = 0
 	tpBtn.Parent = frame
 	Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 6)
@@ -2155,7 +2155,7 @@ function MM2ESP:CreateGunDropSection()
 	autoLbl.Text = "Auto:"
 	autoLbl.TextColor3 = self.COL_SUB
 	autoLbl.TextSize = self.isMobile and 10 or 12
-	autoLbl.Font = Enum.Font.GothamSemibold
+	autoLbl.Font = Enum.Font.Code
 	autoLbl.TextXAlignment = Enum.TextXAlignment.Left
 	autoLbl.Parent = frame
 
@@ -2241,7 +2241,7 @@ function MM2ESP:CreateLegend()
 		lbl.Text = text
 		lbl.TextColor3 = self.COL_SUB
 		lbl.TextSize = 12
-		lbl.Font = Enum.Font.Gotham
+		lbl.Font = Enum.Font.Code
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = item
 	end
@@ -2438,37 +2438,78 @@ local function Volume(plr, args)
 	
 	notify("Volume: " .. vol .. "/10", currentTheme.accent)
 end
--- ============================================
--- serverhop
--- ============================================
-local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
 
-local function serverhop(plr, args)
+-- ============================================
+-- rejoin
+-- ============================================
+local function rejoin(plr, args)
 	if plr ~= client then
-		notify("❌ Serverhop only works on yourself", Color3.fromRGB(255, 100, 100))
+		notify("❌ Rejoin only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
 
-	notify("🚀 Finding public server...", Color3.fromRGB(100, 255, 150))
+	notify("🔄 Rejoining...", Color3.fromRGB(100, 200, 255))
 
 	local placeId = game.PlaceId
 
-	-- Force public server by using reserved server with no access code
-	-- This bypasses private server restrictions
+	-- Use the SAME bypass method as serverhop: reserved server
+	-- This creates a fresh server slot that bypasses private restrictions
 	local ok, err = pcall(function()
 		local accessCode = TeleportService:ReserveServer(placeId)
 		TeleportService:TeleportToPrivateServer(placeId, accessCode, {plr})
 	end)
 
 	if not ok then
-		-- Fallback: try normal teleport with friend check disabled
+		-- Fallback: normal teleport (may land in public server)
 		local ok2, err2 = pcall(function()
 			TeleportService:Teleport(placeId, plr)
 		end)
 
 		if not ok2 then
-			notify("❌ Teleport failed: " .. tostring(err2), Color3.fromRGB(255, 100, 100))
+			notify("❌ Rejoin failed: " .. tostring(err2), Color3.fromRGB(255, 100, 100))
+		end
+	end
+end
+-- ============================================
+-- serverhop
+-- ============================================
+local function serverhop(plr, args)
+	if plr ~= client then
+		notify("❌ Serverhop only works on yourself", Color3.fromRGB(255, 100, 100))
+		return
+	end
+
+	notify("🚀 Finding different public server...", Color3.fromRGB(100, 255, 150))
+
+	local placeId = game.PlaceId
+	local currentJobId = game.JobId
+
+	-- Try 1: Use TeleportOptions to force public server (ignores friends/reserved)
+	local ok, err = pcall(function()
+		local teleportOptions = Instance.new("TeleportOptions")
+		teleportOptions.ShouldReserveServer = false
+		teleportOptions.ServerInstanceId = nil
+		TeleportService:Teleport(placeId, plr, teleportOptions)
+	end)
+
+	if not ok then
+		-- Try 2: Fallback using ReserveServer with delay to ensure different instance
+		local ok2, err2 = pcall(function()
+			local accessCode = TeleportService:ReserveServer(placeId)
+			task.wait(0.1)
+			TeleportService:TeleportToPrivateServer(placeId, accessCode, {plr})
+		end)
+
+		if not ok2 then
+			-- Try 3: Force teleport with random seed
+			local ok3, err3 = pcall(function()
+				TeleportService:SetTeleportSetting("serverhop_seed", tostring(tick()))
+				TeleportService:Teleport(placeId, plr)
+			end)
+
+			if not ok3 then
+				notify("❌ Serverhop failed: " .. tostring(err3), Color3.fromRGB(255, 100, 100))
+			end
 		end
 	end
 end
@@ -2602,7 +2643,7 @@ local boomboxCode = [[
 				nl.Text = name
 				nl.TextColor3 = C.WHITE
 				nl.TextSize = 13
-				nl.Font = Enum.Font.Gotham
+				nl.Font = Enum.Font.Code
 				nl.TextXAlignment = Enum.TextXAlignment.Left
 				nl.TextTruncate = Enum.TextTruncate.AtEnd
 				nl.Parent = btn
@@ -2614,7 +2655,7 @@ local boomboxCode = [[
 				il.Text = id
 				il.TextColor3 = C.GRAY
 				il.TextSize = 11
-				il.Font = Enum.Font.Gotham
+				il.Font = Enum.Font.Code
 				il.TextXAlignment = Enum.TextXAlignment.Right
 				il.Parent = btn
 
@@ -2737,7 +2778,7 @@ local boomboxCode = [[
 		title.Text = "lun4rs boomboxys"
 		title.TextColor3 = C.WHITE
 		title.TextSize = 18 * scale
-		title.Font = Enum.Font.GothamBold
+		title.Font = Enum.Font.Code
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.Parent = bar
 
@@ -2749,7 +2790,7 @@ local boomboxCode = [[
 		close.Text = "×"
 		close.TextColor3 = C.WHITE
 		close.TextSize = 22 * scale
-		close.Font = Enum.Font.GothamBold
+		close.Font = Enum.Font.Code
 		close.Parent = bar
 		close.MouseEnter:Connect(function() close.BackgroundColor3 = Color3.fromRGB(255, 80, 80) end)
 		close.MouseLeave:Connect(function() close.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end)
@@ -2769,7 +2810,7 @@ local boomboxCode = [[
 		BB.gui.songName.Text = "No song playing"
 		BB.gui.songName.TextColor3 = C.WHITE
 		BB.gui.songName.TextSize = 20 * scale
-		BB.gui.songName.Font = Enum.Font.GothamBold
+		BB.gui.songName.Font = Enum.Font.Code
 		BB.gui.songName.TextXAlignment = Enum.TextXAlignment.Left
 		BB.gui.songName.TextTruncate = Enum.TextTruncate.AtEnd
 		BB.gui.songName.Parent = BB.gui.main
@@ -2781,7 +2822,7 @@ local boomboxCode = [[
 		BB.gui.artistName.Text = "Enter a Roblox audio ID"
 		BB.gui.artistName.TextColor3 = C.GRAY
 		BB.gui.artistName.TextSize = 13 * scale
-		BB.gui.artistName.Font = Enum.Font.Gotham
+		BB.gui.artistName.Font = Enum.Font.Code
 		BB.gui.artistName.TextXAlignment = Enum.TextXAlignment.Left
 		BB.gui.artistName.Parent = BB.gui.main
 
@@ -2792,7 +2833,7 @@ local boomboxCode = [[
 		BB.gui.curTime.Text = "0:00"
 		BB.gui.curTime.TextColor3 = C.WHITE
 		BB.gui.curTime.TextSize = 13 * scale
-		BB.gui.curTime.Font = Enum.Font.Gotham
+		BB.gui.curTime.Font = Enum.Font.Code
 		BB.gui.curTime.TextXAlignment = Enum.TextXAlignment.Left
 		BB.gui.curTime.Parent = BB.gui.main
 
@@ -2803,7 +2844,7 @@ local boomboxCode = [[
 		BB.gui.totTime.Text = "0:00"
 		BB.gui.totTime.TextColor3 = C.WHITE
 		BB.gui.totTime.TextSize = 13 * scale
-		BB.gui.totTime.Font = Enum.Font.Gotham
+		BB.gui.totTime.Font = Enum.Font.Code
 		BB.gui.totTime.TextXAlignment = Enum.TextXAlignment.Right
 		BB.gui.totTime.Parent = BB.gui.main
 
@@ -2860,7 +2901,7 @@ local boomboxCode = [[
 		prev.Text = "PREV"
 		prev.TextColor3 = C.WHITE
 		prev.TextSize = 12 * scale
-		prev.Font = Enum.Font.GothamBold
+		prev.Font = Enum.Font.Code
 		prev.Parent = ctrl
 		prev.MouseEnter:Connect(function() prev.BackgroundColor3 = Color3.fromRGB(70, 70, 75) end)
 		prev.MouseLeave:Connect(function() prev.BackgroundColor3 = C.DARK_GRAY end)
@@ -2873,7 +2914,7 @@ local boomboxCode = [[
 		BB.gui.playBtn.Text = "PLAY"
 		BB.gui.playBtn.TextColor3 = C.BG
 		BB.gui.playBtn.TextSize = 14 * scale
-		BB.gui.playBtn.Font = Enum.Font.GothamBold
+		BB.gui.playBtn.Font = Enum.Font.Code
 		BB.gui.playBtn.Parent = ctrl
 		BB.gui.playBtn.MouseEnter:Connect(function()
 			if BB.playing then
@@ -2903,7 +2944,7 @@ local boomboxCode = [[
 		nextB.Text = "NEXT"
 		nextB.TextColor3 = C.WHITE
 		nextB.TextSize = 12 * scale
-		nextB.Font = Enum.Font.GothamBold
+		nextB.Font = Enum.Font.Code
 		nextB.Parent = ctrl
 		nextB.MouseEnter:Connect(function() nextB.BackgroundColor3 = Color3.fromRGB(70, 70, 75) end)
 		nextB.MouseLeave:Connect(function() nextB.BackgroundColor3 = C.DARK_GRAY end)
@@ -2916,7 +2957,7 @@ local boomboxCode = [[
 		BB.gui.loopBtn.Text = "LOOP OFF"
 		BB.gui.loopBtn.TextColor3 = C.WHITE
 		BB.gui.loopBtn.TextSize = 11 * scale
-		BB.gui.loopBtn.Font = Enum.Font.GothamBold
+		BB.gui.loopBtn.Font = Enum.Font.Code
 		BB.gui.loopBtn.Parent = ctrl
 		BB.gui.loopBtn.MouseEnter:Connect(function()
 			if BB.looping then
@@ -2945,7 +2986,7 @@ local boomboxCode = [[
 		volLabel.Text = "VOL"
 		volLabel.TextColor3 = C.GRAY
 		volLabel.TextSize = 12 * scale
-		volLabel.Font = Enum.Font.GothamBold
+		volLabel.Font = Enum.Font.Code
 		volLabel.Parent = volFrame
 
 		local volHit = Instance.new("Frame")
@@ -3009,7 +3050,7 @@ local boomboxCode = [[
 		BB.gui.idBox.TextColor3 = C.WHITE
 		BB.gui.idBox.PlaceholderColor3 = C.GRAY
 		BB.gui.idBox.TextSize = 14 * scale
-		BB.gui.idBox.Font = Enum.Font.Gotham
+		BB.gui.idBox.Font = Enum.Font.Code
 		BB.gui.idBox.ClearTextOnFocus = false
 		BB.gui.idBox.Parent = inFrame
 
@@ -3021,7 +3062,7 @@ local boomboxCode = [[
 		submitBtn.Text = "LOAD"
 		submitBtn.TextColor3 = C.BG
 		submitBtn.TextSize = 14 * scale
-		submitBtn.Font = Enum.Font.GothamBold
+		submitBtn.Font = Enum.Font.Code
 		submitBtn.Parent = inFrame
 		submitBtn.MouseButton1Click:Connect(function()
 			local cleanId = BB.gui.idBox.Text:gsub("%D", "")
@@ -3041,7 +3082,7 @@ local boomboxCode = [[
 		histLabel.Text = "RECENTLY PLAYED"
 		histLabel.TextColor3 = C.GRAY
 		histLabel.TextSize = 12 * scale
-		histLabel.Font = Enum.Font.GothamBold
+		histLabel.Font = Enum.Font.Code
 		histLabel.TextXAlignment = Enum.TextXAlignment.Left
 		histLabel.Parent = BB.gui.main
 
@@ -3220,7 +3261,7 @@ function LoadLunarCrosshair()
 	crosshairSymbol.AnchorPoint = Vector2.new(0.5, 0.5)
 	crosshairSymbol.Position = UDim2.fromScale(0.5, 0.5)
 	crosshairSymbol.TextScaled = false
-	crosshairSymbol.Font = Enum.Font.GothamBold
+	crosshairSymbol.Font = Enum.Font.Code
 	crosshairSymbol.TextStrokeTransparency = 0.5
 	crosshairSymbol.TextStrokeColor3 = Color3.new(0,0,0)
 	crosshairSymbol.ZIndex = 2147483647
@@ -3250,7 +3291,7 @@ function LoadLunarCrosshair()
 
 	local text = Instance.new("TextLabel")
 	text.Text = settings.Text
-	text.Font = Enum.Font.GothamBold
+	text.Font = Enum.Font.Code
 	text.TextSize = 18
 	text.BackgroundTransparency = 1
 	text.AnchorPoint = Vector2.new(0.5, 0)
@@ -3988,7 +4029,7 @@ function LoadLunarCrosshair()
 	moonIcon.Size = UDim2.fromOffset(32, 32)
 	moonIcon.Position = UDim2.fromOffset(14, 8)
 	moonIcon.BackgroundTransparency = 1
-	moonIcon.Font = Enum.Font.GothamBold
+	moonIcon.Font = Enum.Font.Code
 	moonIcon.TextSize = 20
 	moonIcon.ZIndex = 2147483646
 	moonIcon.Parent = header
@@ -3999,7 +4040,7 @@ function LoadLunarCrosshair()
 	title.Size = UDim2.new(1, -60, 0, 24)
 	title.Position = UDim2.fromOffset(48, 6)
 	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.GothamBold
+	title.Font = Enum.Font.Code
 	title.TextSize = 16
 	title.TextColor3 = Color3.new(1, 1, 1)
 	title.TextXAlignment = Enum.TextXAlignment.Left
@@ -4012,7 +4053,7 @@ function LoadLunarCrosshair()
 	subtitle.Size = UDim2.new(1, -60, 0, 16)
 	subtitle.Position = UDim2.fromOffset(48, 26)
 	subtitle.BackgroundTransparency = 1
-	subtitle.Font = Enum.Font.Gotham
+	subtitle.Font = Enum.Font.Code
 	subtitle.TextSize = 11
 	subtitle.TextColor3 = Color3.fromRGB(160, 160, 180)
 	subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -4026,7 +4067,7 @@ function LoadLunarCrosshair()
 	toggleBtn.Position = UDim2.new(1, -36, 0, 10)
 	toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 	toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
-	toggleBtn.Font = Enum.Font.GothamBold
+	toggleBtn.Font = Enum.Font.Code
 	toggleBtn.TextSize = 18
 	toggleBtn.BorderSizePixel = 0
 	toggleBtn.ZIndex = 2147483646
@@ -4093,7 +4134,7 @@ function LoadLunarCrosshair()
 		sectionLabel.Text = name:upper()
 		sectionLabel.Size = UDim2.new(1, 0, 0, 18)
 		sectionLabel.BackgroundTransparency = 1
-		sectionLabel.Font = Enum.Font.GothamBold
+		sectionLabel.Font = Enum.Font.Code
 		sectionLabel.TextSize = 10
 		sectionLabel.TextColor3 = Color3.fromRGB(120, 100, 255)
 		sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -4150,7 +4191,7 @@ function LoadLunarCrosshair()
 		label.Position = UDim2.fromOffset(10, 0)
 		label.Size = UDim2.new(0.5, -10, 1, 0)
 		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.Gotham
+		label.Font = Enum.Font.Code
 		label.TextSize = 12
 		label.TextColor3 = Color3.fromRGB(200, 200, 220)
 		label.TextXAlignment = Enum.TextXAlignment.Left
@@ -4163,7 +4204,7 @@ function LoadLunarCrosshair()
 		box.Position = UDim2.new(0.5, 4, 0, 4)
 		box.Size = UDim2.new(0.5, -14, 1, -8)
 		box.ClearTextOnFocus = false
-		box.Font = Enum.Font.GothamBold
+		box.Font = Enum.Font.Code
 		box.TextSize = 12
 		box.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 		box.TextColor3 = Color3.new(1, 1, 1)
@@ -4238,7 +4279,7 @@ function LoadLunarCrosshair()
 		label.Position = UDim2.fromOffset(10, 0)
 		label.Size = UDim2.new(0.5, -10, 1, 0)
 		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.Gotham
+		label.Font = Enum.Font.Code
 		label.TextSize = 12
 		label.TextColor3 = Color3.fromRGB(200, 200, 220)
 		label.TextXAlignment = Enum.TextXAlignment.Left
@@ -4332,7 +4373,7 @@ function LoadLunarCrosshair()
 		rrLabel.Position = UDim2.fromOffset(10, 50)
 		rrLabel.Size = UDim2.new(0.5, -10, 1, 0)
 		rrLabel.BackgroundTransparency = 1
-		rrLabel.Font = Enum.Font.Gotham
+		rrLabel.Font = Enum.Font.Code
 		rrLabel.TextSize = 12
 		rrLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
 		rrLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -4400,7 +4441,7 @@ function LoadLunarCrosshair()
 		crLabel.Position = UDim2.fromOffset(10, 0)
 		crLabel.Size = UDim2.new(0.4, -10, 1, 0)
 		crLabel.BackgroundTransparency = 1
-		crLabel.Font = Enum.Font.Gotham
+		crLabel.Font = Enum.Font.Code
 		crLabel.TextSize = 12
 		crLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
 		crLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -4427,7 +4468,7 @@ function LoadLunarCrosshair()
 		openColorBtn.Position = UDim2.new(1, -100, 0.5, -55)
 		openColorBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 		openColorBtn.TextColor3 = Color3.new(1, 1, 1)
-		openColorBtn.Font = Enum.Font.GothamBold
+		openColorBtn.Font = Enum.Font.Code
 		openColorBtn.TextSize = 11
 		openColorBtn.BorderSizePixel = 0
 		openColorBtn.ZIndex = 2147483646
@@ -4458,7 +4499,7 @@ function LoadLunarCrosshair()
 			sLabel.Position = UDim2.fromOffset(10, yPos)
 			sLabel.Size = UDim2.fromOffset(18, 20)
 						sLabel.BackgroundTransparency = 1
-			sLabel.Font = Enum.Font.GothamBold
+			sLabel.Font = Enum.Font.Code
 			sLabel.TextSize = 12
 			sLabel.TextColor3 = colorValue
 			sLabel.ZIndex = 2147483647
@@ -4500,7 +4541,7 @@ function LoadLunarCrosshair()
 			valueBox.Position = UDim2.new(1, -42, 0, yPos - 1)
 			valueBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 			valueBox.TextColor3 = Color3.new(1, 1, 1)
-			valueBox.Font = Enum.Font.GothamBold
+			valueBox.Font = Enum.Font.Code
 			valueBox.TextSize = 12
 			valueBox.BorderSizePixel = 0
 			valueBox.ZIndex = 2147483647
@@ -4570,7 +4611,7 @@ function LoadLunarCrosshair()
 		closePicker.Position = UDim2.fromOffset(10, 108)
 		closePicker.BackgroundColor3 = Color3.fromRGB(120, 100, 255)
 		closePicker.TextColor3 = Color3.new(1, 1, 1)
-		closePicker.Font = Enum.Font.GothamBold
+		closePicker.Font = Enum.Font.Code
 		closePicker.TextSize = 12
 		closePicker.BorderSizePixel = 0
 		closePicker.ZIndex = 2147483647
@@ -4628,7 +4669,7 @@ function LoadLunarCrosshair()
 		label.Text = "Choose Preset"
 		label.Size = UDim2.new(1, 0, 0, 18)
 		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.Gotham
+		label.Font = Enum.Font.Code
 		label.TextSize = 12
 		label.TextColor3 = Color3.fromRGB(200, 200, 220)
 		label.TextXAlignment = Enum.TextXAlignment.Left
@@ -4664,7 +4705,7 @@ function LoadLunarCrosshair()
 		for _, presetName in ipairs(presetNames) do
 			local btn = Instance.new("TextButton")
 			btn.Text = presetName
-			btn.Font = Enum.Font.GothamBold
+			btn.Font = Enum.Font.Code
 			btn.TextSize = 10
 			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
 			btn.TextColor3 = Color3.fromRGB(220, 220, 240)
@@ -4721,7 +4762,7 @@ function LoadLunarCrosshair()
 		label.Text = "Select Symbol (overrides preset)"
 		label.Size = UDim2.new(1, 0, 0, 18)
 		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.Gotham
+		label.Font = Enum.Font.Code
 		label.TextSize = 12
 		label.TextColor3 = Color3.fromRGB(200, 200, 220)
 		label.TextXAlignment = Enum.TextXAlignment.Left
@@ -4760,7 +4801,7 @@ function LoadLunarCrosshair()
 		for _, sym in ipairs(symbols) do
 			local btn = Instance.new("TextButton")
 			btn.Text = sym
-			btn.Font = Enum.Font.GothamBold
+			btn.Font = Enum.Font.Code
 			btn.TextSize = 16
 			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
 			btn.TextColor3 = Color3.fromRGB(220, 220, 240)
@@ -4809,7 +4850,7 @@ function LoadLunarCrosshair()
 		btn.Size = UDim2.new(1, 0, 0, 38)
 		btn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 		btn.TextColor3 = Color3.new(1, 1, 1)
-		btn.Font = Enum.Font.GothamBold
+		btn.Font = Enum.Font.Code
 		btn.TextSize = 13
 		btn.BorderSizePixel = 0
 		btn.ZIndex = 2147483646
@@ -4974,7 +5015,7 @@ function LoadLunarCrosshair()
 			sparkle.Size = UDim2.fromOffset(20, 20)
 			sparkle.BackgroundTransparency = 1
 			sparkle.TextColor3 = color
-			sparkle.Font = Enum.Font.GothamBold
+			sparkle.Font = Enum.Font.Code
 			sparkle.TextSize = vfxSize * 4
 			sparkle.AnchorPoint = Vector2.new(0.5, 0.5)
 			sparkle.Position = UDim2.fromOffset(math.random(-50, 50), math.random(-50, 50))
@@ -5092,7 +5133,7 @@ function LoadLunarCrosshair()
 			heart.Size = UDim2.fromOffset(20, 20)
 			heart.BackgroundTransparency = 1
 			heart.TextColor3 = color
-			heart.Font = Enum.Font.GothamBold
+			heart.Font = Enum.Font.Code
 			heart.TextSize = vfxSize * 5
 			heart.AnchorPoint = Vector2.new(0.5, 0.5)
 			heart.Position = UDim2.fromOffset(math.random(-40, 40), math.random(-40, 40))
@@ -5677,7 +5718,7 @@ local function createSpeedPanel()
 	title.Size = UDim2.new(1, 0, 0, 50)
 	title.BackgroundTransparency = 1
 	title.Text = "SPEED CONTROL"
-	title.Font = Enum.Font.GothamBlack
+	title.Font = Enum.Font.Code
 	title.TextSize = 26
 	title.TextColor3 = currentTheme.accent
 	title.TextTransparency = 0
@@ -5689,7 +5730,7 @@ local function createSpeedPanel()
 	speedDisplay.Position = UDim2.new(0, 0, 0, 50)
 	speedDisplay.BackgroundTransparency = 1
 	speedDisplay.Text = "Speed: " .. speedPanelData.speedValue
-	speedDisplay.Font = Enum.Font.GothamBold
+	speedDisplay.Font = Enum.Font.Code
 	speedDisplay.TextSize = 24
 	speedDisplay.TextColor3 = globalConfig.textColor
 	speedDisplay.TextTransparency = 0
@@ -5702,7 +5743,7 @@ local function createSpeedPanel()
 	speedBox.Position = UDim2.new(0.1, 0, 0, 100)
 	speedBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 	speedBox.Text = tostring(speedPanelData.speedValue)
-	speedBox.Font = Enum.Font.GothamBold
+	speedBox.Font = Enum.Font.Code
 	speedBox.TextSize = 28
 	speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 	speedBox.PlaceholderText = "Enter speed (1-10000)"
@@ -5715,7 +5756,7 @@ local function createSpeedPanel()
 	toggle1Btn.Position = UDim2.new(0.05, 0, 0, 165)
 	toggle1Btn.BackgroundColor3 = speedPanelData.enabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
 	toggle1Btn.Text = "Walkspeed: " .. (speedPanelData.enabled and "ON" or "OFF")
-	toggle1Btn.Font = Enum.Font.GothamBold
+	toggle1Btn.Font = Enum.Font.Code
 	toggle1Btn.TextSize = 18
 	toggle1Btn.TextColor3 = Color3.new(0,0,0)
 	applyGlassEffect(toggle1Btn, 0.2, 0.5)
@@ -5725,7 +5766,7 @@ local function createSpeedPanel()
 	toggle2Btn.Position = UDim2.new(0.05, 0, 0, 220)
 	toggle2Btn.BackgroundColor3 = speedPanelData.bypassEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
 	toggle2Btn.Text = "Loop + No Slide: " .. (speedPanelData.bypassEnabled and "ON" or "OFF")
-	toggle2Btn.Font = Enum.Font.GothamBold
+	toggle2Btn.Font = Enum.Font.Code
 	toggle2Btn.TextSize = 18
 	toggle2Btn.TextColor3 = Color3.new(0,0,0)
 	applyGlassEffect(toggle2Btn, 0.2, 0.5)
@@ -5735,7 +5776,7 @@ local function createSpeedPanel()
 	closeBtn.Position = UDim2.new(1, -45, 0, 8)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 	closeBtn.Text = "X"
-	closeBtn.Font = Enum.Font.GothamBlack
+	closeBtn.Font = Enum.Font.Code
 	closeBtn.TextSize = 20
 	closeBtn.TextColor3 = Color3.new(1,1,1)
 	applyGlassEffect(closeBtn, 0.2, 0.4)
@@ -5907,7 +5948,7 @@ function VehicleFlySystem:CreatePanel()
 	Title.Position = UDim2.new(0, 15, 0, 0)
 	Title.BackgroundTransparency = 1
 	Title.Text = "Vehicle fly:3"
-	Title.Font = Enum.Font.GothamBold
+	Title.Font = Enum.Font.Code
 	Title.TextSize = 20
 	Title.TextColor3 = Color3.fromRGB(255, 180, 50)
 	Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -5919,7 +5960,7 @@ function VehicleFlySystem:CreatePanel()
 	MinBtn.Position = UDim2.new(1, -75, 0.5, -16)
 	MinBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 	MinBtn.Text = "−"
-	MinBtn.Font = Enum.Font.GothamBold
+	MinBtn.Font = Enum.Font.Code
 	MinBtn.TextSize = 24
 	MinBtn.TextColor3 = Color3.new(1, 1, 1)
 	MinBtn.Parent = TopBar
@@ -5934,7 +5975,7 @@ function VehicleFlySystem:CreatePanel()
 	CloseBtn.Position = UDim2.new(1, -38, 0.5, -16)
 	CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 	CloseBtn.Text = "×"
-	CloseBtn.Font = Enum.Font.GothamBold
+	CloseBtn.Font = Enum.Font.Code
 	CloseBtn.TextSize = 22
 	CloseBtn.TextColor3 = Color3.new(1, 1, 1)
 	CloseBtn.Parent = TopBar
@@ -5949,7 +5990,7 @@ function VehicleFlySystem:CreatePanel()
 	SpeedLabel.Position = UDim2.new(0, 0, 0, 55)
 	SpeedLabel.BackgroundTransparency = 1
 	SpeedLabel.Text = "speed (1-10000)"
-	SpeedLabel.Font = Enum.Font.GothamSemibold
+	SpeedLabel.Font = Enum.Font.Code
 	SpeedLabel.TextSize = 14
 	SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 	SpeedLabel.Parent = MainFrame
@@ -5960,7 +6001,7 @@ function VehicleFlySystem:CreatePanel()
 	SpeedInput.Position = UDim2.new(0.5, -90, 0, 85)
 	SpeedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 	SpeedInput.Text = tostring(self.uiSpeed)
-	SpeedInput.Font = Enum.Font.GothamBold
+	SpeedInput.Font = Enum.Font.Code
 	SpeedInput.TextSize = 22
 	SpeedInput.TextColor3 = Color3.fromRGB(255, 200, 100)
 	SpeedInput.ClearTextOnFocus = false
@@ -5978,7 +6019,7 @@ function VehicleFlySystem:CreatePanel()
 	StatsLabel.Position = UDim2.new(0, 0, 0, 135)
 	StatsLabel.BackgroundTransparency = 1
 	StatsLabel.Text = "Actual: 50 studs/sec"
-	StatsLabel.Font = Enum.Font.Gotham
+	StatsLabel.Font = Enum.Font.Code
 	StatsLabel.TextSize = 12
 	StatsLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
 	StatsLabel.Parent = MainFrame
@@ -5989,7 +6030,7 @@ function VehicleFlySystem:CreatePanel()
 	FlyBtn.Position = UDim2.new(0.5, -100, 0, 160)
 	FlyBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 30)
 	FlyBtn.Text = "▶ start flying!"
-	FlyBtn.Font = Enum.Font.GothamBlack
+	FlyBtn.Font = Enum.Font.Code
 	FlyBtn.TextSize = 18
 	FlyBtn.TextColor3 = Color3.new(1, 1, 1)
 	FlyBtn.Parent = MainFrame
@@ -6006,7 +6047,7 @@ function VehicleFlySystem:CreatePanel()
 	HelpLabel.Position = UDim2.new(0, 0, 1, -25)
 	HelpLabel.BackgroundTransparency = 1
 	HelpLabel.Text = "WASD | Space ↑ | Shift ↓"
-	HelpLabel.Font = Enum.Font.Gotham
+	HelpLabel.Font = Enum.Font.Code
 	HelpLabel.TextSize = 11
 	HelpLabel.TextColor3 = Color3.fromRGB(120, 120, 140)
 	HelpLabel.Parent = MainFrame
@@ -6356,7 +6397,7 @@ function FlySystem:CreatePanel()
 	Title.Position = UDim2.new(0, 15, 0, 0)
 	Title.BackgroundTransparency = 1
 	Title.Text = "fly thingy!"
-	Title.Font = Enum.Font.GothamBold
+	Title.Font = Enum.Font.Code
 	Title.TextSize = 20
 	Title.TextColor3 = Color3.fromRGB(100, 200, 255)
 	Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -6368,7 +6409,7 @@ function FlySystem:CreatePanel()
 	MinBtn.Position = UDim2.new(1, -75, 0.5, -16)
 	MinBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 	MinBtn.Text = "−"
-	MinBtn.Font = Enum.Font.GothamBold
+	MinBtn.Font = Enum.Font.Code
 	MinBtn.TextSize = 24
 	MinBtn.TextColor3 = Color3.new(1, 1, 1)
 	MinBtn.Parent = TopBar
@@ -6383,7 +6424,7 @@ function FlySystem:CreatePanel()
 	CloseBtn.Position = UDim2.new(1, -38, 0.5, -16)
 	CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 	CloseBtn.Text = "×"
-	CloseBtn.Font = Enum.Font.GothamBold
+	CloseBtn.Font = Enum.Font.Code
 	CloseBtn.TextSize = 22
 	CloseBtn.TextColor3 = Color3.new(1, 1, 1)
 	CloseBtn.Parent = TopBar
@@ -6398,7 +6439,7 @@ function FlySystem:CreatePanel()
 	SpeedLabel.Position = UDim2.new(0, 0, 0, 55)
 	SpeedLabel.BackgroundTransparency = 1
 	SpeedLabel.Text = "speed (1-10000)"
-	SpeedLabel.Font = Enum.Font.GothamSemibold
+	SpeedLabel.Font = Enum.Font.Code
 	SpeedLabel.TextSize = 14
 	SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 	SpeedLabel.Parent = MainFrame
@@ -6409,7 +6450,7 @@ function FlySystem:CreatePanel()
 	SpeedInput.Position = UDim2.new(0.5, -90, 0, 85)
 	SpeedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 	SpeedInput.Text = tostring(self.uiSpeed)
-	SpeedInput.Font = Enum.Font.GothamBold
+	SpeedInput.Font = Enum.Font.Code
 	SpeedInput.TextSize = 22
 	SpeedInput.TextColor3 = Color3.fromRGB(100, 255, 150)
 	SpeedInput.ClearTextOnFocus = false
@@ -6427,7 +6468,7 @@ function FlySystem:CreatePanel()
 	StatsLabel.Position = UDim2.new(0, 0, 0, 135)
 	StatsLabel.BackgroundTransparency = 1
 	StatsLabel.Text = "Actual: 50 studs/sec"
-	StatsLabel.Font = Enum.Font.Gotham
+	StatsLabel.Font = Enum.Font.Code
 	StatsLabel.TextSize = 12
 	StatsLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
 	StatsLabel.Parent = MainFrame
@@ -6438,7 +6479,7 @@ function FlySystem:CreatePanel()
 	FlyBtn.Position = UDim2.new(0.5, -100, 0, 160)
 	FlyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
 	FlyBtn.Text = "▶ start fly!"
-	FlyBtn.Font = Enum.Font.GothamBlack
+	FlyBtn.Font = Enum.Font.Code
 	FlyBtn.TextSize = 20
 	FlyBtn.TextColor3 = Color3.new(1, 1, 1)
 	FlyBtn.Parent = MainFrame
@@ -6455,7 +6496,7 @@ function FlySystem:CreatePanel()
 	HelpLabel.Position = UDim2.new(0, 0, 1, -25)
 	HelpLabel.BackgroundTransparency = 1
 	HelpLabel.Text = "WASD | Space ↑ | Shift ↓"
-	HelpLabel.Font = Enum.Font.Gotham
+	HelpLabel.Font = Enum.Font.Code
 	HelpLabel.TextSize = 11
 	HelpLabel.TextColor3 = Color3.fromRGB(120, 120, 140)
 	HelpLabel.Parent = MainFrame
@@ -6776,7 +6817,7 @@ local function view(targetPlayer)
 	label.BackgroundTransparency = globalConfig.uiTransparency or 0.45
 	label.BackgroundColor3 = currentTheme.glass or Color3.fromRGB(20, 20, 40)
 	label.Text           = "👁️  Spectating: " .. targetPlayer.Name .. "  (@" .. targetPlayer.DisplayName .. ")  — Use mouse to look around"
-	label.Font           = Enum.Font.GothamBold
+	label.Font           = Enum.Font.Code
 	label.TextSize       = 18
 	label.TextColor3     = globalConfig.textColor or Color3.fromRGB(230, 230, 255)
 	label.TextStrokeTransparency = 0.7
@@ -6874,7 +6915,7 @@ local function createJoinLogsPanel()
 	title.Position = UDim2.new(0, 15, 0, 5)
 	title.BackgroundTransparency = 1
 	title.Text = "JOIN/LEAVE LOGS"
-	title.Font = Enum.Font.GothamBlack
+	title.Font = Enum.Font.Code
 	title.TextSize = 22
 	title.TextColor3 = currentTheme.accent
 	title.TextTransparency = 0 -- SOLID
@@ -6887,7 +6928,7 @@ local function createJoinLogsPanel()
 	closeBtn.Position = UDim2.new(1, -45, 0, 5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 	closeBtn.Text = "X"
-	closeBtn.Font = Enum.Font.GothamBlack
+	closeBtn.Font = Enum.Font.Code
 	closeBtn.TextSize = 20
 	closeBtn.TextColor3 = Color3.new(1,1,1)
 	closeBtn.TextTransparency = 0 -- SOLID
@@ -6903,7 +6944,7 @@ local function createJoinLogsPanel()
 	timeHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	timeHeader.BackgroundTransparency = 1
 	timeHeader.Text = "Time"
-	timeHeader.Font = Enum.Font.GothamBold
+	timeHeader.Font = Enum.Font.Code
 	timeHeader.TextSize = 14
 	timeHeader.TextColor3 = globalConfig.textColor
 	timeHeader.TextTransparency = 0 -- SOLID
@@ -6915,7 +6956,7 @@ local function createJoinLogsPanel()
 	userHeader.Position = UDim2.new(0.2, 0, 0, 0)
 	userHeader.BackgroundTransparency = 1
 	userHeader.Text = "Username"
-	userHeader.Font = Enum.Font.GothamBold
+	userHeader.Font = Enum.Font.Code
 	userHeader.TextSize = 14
 	userHeader.TextColor3 = globalConfig.textColor
 	userHeader.TextTransparency = 0 -- SOLID
@@ -6927,7 +6968,7 @@ local function createJoinLogsPanel()
 	distHeader.Position = UDim2.new(0.6, 0, 0, 0)
 	distHeader.BackgroundTransparency = 1
 	distHeader.Text = "Distance"
-	distHeader.Font = Enum.Font.GothamBold
+	distHeader.Font = Enum.Font.Code
 	distHeader.TextSize = 14
 	distHeader.TextColor3 = globalConfig.textColor
 	distHeader.TextTransparency = 0 -- SOLID
@@ -6939,7 +6980,7 @@ local function createJoinLogsPanel()
 	actionHeader.Position = UDim2.new(0.8, 0, 0, 0)
 	actionHeader.BackgroundTransparency = 1
 	actionHeader.Text = "Action"
-	actionHeader.Font = Enum.Font.GothamBold
+	actionHeader.Font = Enum.Font.Code
 	actionHeader.TextSize = 14
 	actionHeader.TextColor3 = globalConfig.textColor
 	actionHeader.TextTransparency = 0 -- SOLID
@@ -6970,7 +7011,7 @@ local function createJoinLogsPanel()
 		timeLabel.Size = UDim2.new(0.2, 0, 1, 0)
 		timeLabel.BackgroundTransparency = 1
 		timeLabel.Text = os.date("%H:%M:%S")
-		timeLabel.Font = Enum.Font.Gotham
+		timeLabel.Font = Enum.Font.Code
 		timeLabel.TextSize = 12
 		timeLabel.TextColor3 = globalConfig.textColor
 		timeLabel.TextTransparency = 0 -- SOLID
@@ -6982,7 +7023,7 @@ local function createJoinLogsPanel()
 		userLabel.Position = UDim2.new(0.2, 0, 0, 0)
 		userLabel.BackgroundTransparency = 1
 		userLabel.Text = plr.Name
-		userLabel.Font = Enum.Font.GothamBold
+		userLabel.Font = Enum.Font.Code
 		userLabel.TextSize = 14
 		userLabel.TextColor3 = globalConfig.textColor
 		userLabel.TextTransparency = 0 -- SOLID
@@ -6999,7 +7040,7 @@ local function createJoinLogsPanel()
 		distLabel.Position = UDim2.new(0.6, 0, 0, 0)
 		distLabel.BackgroundTransparency = 1
 		distLabel.Text = dist
-		distLabel.Font = Enum.Font.Gotham
+		distLabel.Font = Enum.Font.Code
 		distLabel.TextSize = 12
 		distLabel.TextColor3 = globalConfig.textColor
 		distLabel.TextTransparency = 0 -- SOLID
@@ -7011,7 +7052,7 @@ local function createJoinLogsPanel()
 		actionLabel.Position = UDim2.new(0.8, 0, 0, 0)
 		actionLabel.BackgroundTransparency = 1
 		actionLabel.Text = action
-		actionLabel.Font = Enum.Font.GothamBold
+		actionLabel.Font = Enum.Font.Code
 		actionLabel.TextSize = 14
 		actionLabel.TextColor3 = action == "JOINED" and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
 		actionLabel.TextTransparency = 0 -- SOLID
@@ -7072,9 +7113,7 @@ local espData = {
 	distanceConn = nil,
 	myCharConn = nil,
 	globalEnabled = false,
-	-- NEW: Track players by UserId so ESP persists through rejoins
 	trackedUserIds = {},
-	-- NEW: Track individual player ESP targets (for !esp playername)
 	individualTargets = {}
 }
 
@@ -7177,7 +7216,7 @@ local function attachESP(plr, char)
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Size = UDim2.new(1, 0, 0.55, 0)
-	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.Font = Enum.Font.Code
 	nameLabel.TextSize = 14
 	nameLabel.TextStrokeTransparency = 0.3
 	nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -7192,7 +7231,7 @@ local function attachESP(plr, char)
 	distLabel.BackgroundTransparency = 1
 	distLabel.Position = UDim2.new(0, 0, 0.55, 0)
 	distLabel.Size = UDim2.new(1, 0, 0.45, 0)
-	distLabel.Font = Enum.Font.Gotham
+	distLabel.Font = Enum.Font.Code
 	distLabel.TextSize = 12
 	distLabel.TextStrokeTransparency = 0.4
 	distLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -7949,7 +7988,7 @@ local function createAimbotPanel()
 	title.Position = UDim2.new(0, 15, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Text = "🎯 AIMBOT"
-	title.Font = Enum.Font.GothamBlack
+	title.Font = Enum.Font.Code
 	title.TextSize = 22
 	title.TextColor3 = currentTheme.accent
 	title.TextXAlignment = Enum.TextXAlignment.Left
@@ -7964,7 +8003,7 @@ local function createAimbotPanel()
 	minimizeBtn.Position = UDim2.new(1, -75, 0.5, -17.5)
 	minimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	minimizeBtn.Text = "−"
-	minimizeBtn.Font = Enum.Font.GothamBold
+	minimizeBtn.Font = Enum.Font.Code
 	minimizeBtn.TextSize = 20
 	minimizeBtn.TextColor3 = Color3.new(1,1,1)
 	minimizeBtn.BorderSizePixel = 0
@@ -7978,7 +8017,7 @@ local function createAimbotPanel()
 	closeBtn.Position = UDim2.new(1, -40, 0.5, -17.5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
 	closeBtn.Text = "×"
-	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.Font = Enum.Font.Code
 	closeBtn.TextSize = 22
 	closeBtn.TextColor3 = Color3.new(1,1,1)
 	closeBtn.BorderSizePixel = 0
@@ -8049,7 +8088,7 @@ local function createAimbotPanel()
 		label.Size = UDim2.new(1, 0, 1, 0)
 		label.BackgroundTransparency = 1
 		label.Text = text
-		label.Font = Enum.Font.GothamBlack
+		label.Font = Enum.Font.Code
 		label.TextSize = 14
 		label.TextColor3 = Color3.new(0, 0, 0)
 		label.TextStrokeTransparency = 0.8
@@ -8062,7 +8101,7 @@ local function createAimbotPanel()
 		local btn = Instance.new("TextButton")
 		btn.Size = UDim2.new(0.95, 0, 0, 40)
 		btn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-		btn.Font = Enum.Font.GothamBold
+		btn.Font = Enum.Font.Code
 		btn.TextSize = 15
 		btn.AutoButtonColor = true
 		btn.BorderSizePixel = 0
@@ -8154,7 +8193,7 @@ local function createAimbotPanel()
 		label.Size = UDim2.new(1, 0, 0, 22)
 		label.BackgroundTransparency = 1
 		label.Text = labelText .. ": " .. aimbotData[dataKey]
-		label.Font = Enum.Font.GothamBold
+		label.Font = Enum.Font.Code
 		label.TextSize = 14
 		label.TextColor3 = globalConfig.textColor
 		label.ZIndex = 2147483647
@@ -8454,7 +8493,7 @@ local function createSubPanel(name, size, titleText)
 	title.Position = UDim2.new(0, 15, 0, 5)
 	title.BackgroundTransparency = 1
 	title.Text = titleText
-	title.Font = Enum.Font.GothamBlack
+	title.Font = Enum.Font.Code
 	title.TextSize = 22
 	title.TextColor3 = currentTheme.accent
 	title.TextTransparency = 0 -- SOLID
@@ -8467,7 +8506,7 @@ local function createSubPanel(name, size, titleText)
 	closeBtn.Position = UDim2.new(1, -45, 0, 5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 	closeBtn.Text = "X"
-	closeBtn.Font = Enum.Font.GothamBlack
+	closeBtn.Font = Enum.Font.Code
 	closeBtn.TextSize = 20
 	closeBtn.TextColor3 = Color3.new(1,1,1)
 	closeBtn.TextTransparency = 0 -- SOLID
@@ -8502,7 +8541,7 @@ local function addLog(sender, message)
 	entry.Text = " <font color='rgb(140,180,255)'><b>" .. sender .. "</b></font>: " .. message
 	entry.TextColor3 = globalConfig.textColor
 	entry.TextSize = 15
-	entry.Font = Enum.Font.Gotham
+	entry.Font = Enum.Font.Code
 	entry.TextWrapped = true
 	entry.TextTransparency = 0 -- SOLID
 	entry.TextStrokeTransparency = 0.5
@@ -8543,7 +8582,7 @@ local function toggleLogs()
 	clearBtn.Position = UDim2.new(1, -140, 0, 5)
 	clearBtn.BackgroundColor3 = currentTheme.btn
 	clearBtn.Text = "Clear"
-	clearBtn.Font = Enum.Font.GothamBold
+	clearBtn.Font = Enum.Font.Code
 	clearBtn.TextSize = 16
 	clearBtn.TextColor3 = globalConfig.textColor
 	clearBtn.TextTransparency = 0 -- SOLID
@@ -8597,7 +8636,7 @@ local function toggleStopwatch()
 	timeLabel.BackgroundTransparency = 0.3
 	timeLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 	timeLabel.Text = "00:00.00"
-	timeLabel.Font = Enum.Font.GothamBlack
+	timeLabel.Font = Enum.Font.Code
 	timeLabel.TextSize = 56
 	timeLabel.TextColor3 = currentTheme.accent
 	timeLabel.TextTransparency = 0 -- SOLID
@@ -8614,7 +8653,7 @@ local function toggleStopwatch()
 	startBtn.Size = UDim2.new(0.48, 0, 1, 0)
 	startBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 	startBtn.Text = "START"
-	startBtn.Font = Enum.Font.GothamBlack
+	startBtn.Font = Enum.Font.Code
 	startBtn.TextSize = 22
 	startBtn.TextColor3 = Color3.new(0,0,0)
 	startBtn.TextTransparency = 0 -- SOLID
@@ -8625,7 +8664,7 @@ local function toggleStopwatch()
 	resetBtn.Position = UDim2.new(0.52, 0, 0, 0)
 	resetBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 	resetBtn.Text = "RESET"
-	resetBtn.Font = Enum.Font.GothamBlack
+	resetBtn.Font = Enum.Font.Code
 	resetBtn.TextSize = 22
 	resetBtn.TextColor3 = Color3.new(0,0,0)
 	resetBtn.TextTransparency = 0 -- SOLID
@@ -9280,7 +9319,7 @@ function TouchFling:CreateGUI()
 	TouchFling._l.BackgroundTransparency = 1
 	TouchFling._l.Position = UDim2.new(0, 10, 0, 0)
 	TouchFling._l.Size = UDim2.new(0.5, 0, 1, 0)
-	TouchFling._l.Font = Enum.Font.GothamBold
+	TouchFling._l.Font = Enum.Font.Code
 	TouchFling._l.Text = "Touch Fling"
 	TouchFling._l.TextColor3 = Color3.fromRGB(180, 220, 255)
 	TouchFling._l.TextSize = TouchFling._u
@@ -9293,7 +9332,7 @@ function TouchFling:CreateGUI()
 	TouchFling._b.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
 	TouchFling._b.Position = UDim2.new(1, -65, 0.5, -12)
 	TouchFling._b.Size = UDim2.new(0, 26, 0, 26)
-	TouchFling._b.Font = Enum.Font.GothamBold
+	TouchFling._b.Font = Enum.Font.Code
 	TouchFling._b.Text = "-"
 	TouchFling._b.TextColor3 = Color3.new(1, 1, 1)
 	TouchFling._b.TextSize = 18
@@ -9308,7 +9347,7 @@ function TouchFling:CreateGUI()
 	TouchFling._n.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
 	TouchFling._n.Position = UDim2.new(1, -34, 0.5, -12)
 	TouchFling._n.Size = UDim2.new(0, 26, 0, 26)
-	TouchFling._n.Font = Enum.Font.GothamBold
+	TouchFling._n.Font = Enum.Font.Code
 	TouchFling._n.Text = "X"
 	TouchFling._n.TextColor3 = Color3.new(1, 1, 1)
 	TouchFling._n.TextSize = 16
@@ -9344,7 +9383,7 @@ function TouchFling:CreateGUI()
 		TouchFling._b.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 		TouchFling._b.Position = UDim2.new(0.1, 0, y, 0)
 		TouchFling._b.Size = UDim2.new(0.8, 0, 0, (TouchFling._m and 32 or 38))
-		TouchFling._b.Font = Enum.Font.GothamSemibold
+		TouchFling._b.Font = Enum.Font.Code
 		TouchFling._b.Text = text .. ": OFF"
 		TouchFling._b.TextColor3 = Color3.fromRGB(255, 80, 80)
 		TouchFling._b.TextSize = (TouchFling._m and 11 or 13)
@@ -9366,7 +9405,7 @@ function TouchFling:CreateGUI()
 	self.toggles.keybindBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
 	self.toggles.keybindBtn.Position = UDim2.new(0.1, 0, 0.60, 0)
 	self.toggles.keybindBtn.Size = UDim2.new(0.8, 0, 0, (TouchFling._m and 32 or 38))
-	self.toggles.keybindBtn.Font = Enum.Font.GothamSemibold
+	self.toggles.keybindBtn.Font = Enum.Font.Code
 	self.toggles.keybindBtn.Text = "Click TP Key: E"
 	self.toggles.keybindBtn.TextColor3 = Color3.fromRGB(100, 200, 255)
 	self.toggles.keybindBtn.TextSize = (TouchFling._m and 11 or 13)
@@ -9418,7 +9457,7 @@ function TouchFling:CreateGUI()
 	TouchFling._l.BackgroundTransparency = 1
 	TouchFling._l.Position = UDim2.new(0.1, 0, 0.70, 0)
 	TouchFling._l.Size = UDim2.new(0.8, 0, 0, 18)
-	TouchFling._l.Font = Enum.Font.GothamSemibold
+	TouchFling._l.Font = Enum.Font.Code
 	TouchFling._l.Text = "Select Player"
 	TouchFling._l.TextColor3 = Color3.fromRGB(200, 200, 255)
 	TouchFling._l.TextSize = (TouchFling._m and 11 or 13) + 1
@@ -9444,7 +9483,7 @@ function TouchFling:CreateGUI()
 	TouchFling._l.BackgroundTransparency = 1
 	TouchFling._l.Position = UDim2.new(0.05, 0, 0.93, 0)
 	TouchFling._l.Size = UDim2.new(0.9, 0, 0, 16)
-	TouchFling._l.Font = Enum.Font.Gotham
+	TouchFling._l.Font = Enum.Font.Code
 	TouchFling._l.Text = "https://discord.gg/ydNKRbFmUd"
 	TouchFling._l.TextColor3 = Color3.fromRGB(120, 180, 255)
 	TouchFling._l.TextSize = 11
@@ -9464,7 +9503,7 @@ function TouchFling:CreateGUI()
 				TouchFling._b.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 				TouchFling._b.Text = plr.Name
 				TouchFling._b.TextColor3 = Color3.new(1, 1, 1)
-				TouchFling._b.Font = Enum.Font.GothamSemibold
+				TouchFling._b.Font = Enum.Font.Code
 				TouchFling._b.TextSize = 14
 				TouchFling._b.Parent = TouchFling._s
 				TouchFling._c = Instance.new("UICorner")
@@ -9781,52 +9820,6 @@ local function explode(plr)
 
 	notify("Exploded! Limbs detached & scattered", Color3.fromRGB(255, 60, 60))
 end
-
-------------------------------------------------
--- rainbow
-------------------------------------------------
-local function rainbow(plr)
-	if plr ~= client then
-		notify("❌ Rainbow only works on yourself", Color3.fromRGB(255, 100, 100))
-		return
-	end
-	if rainbowData[plr] then 
-		notify("⚠️ Already rainbow", Color3.fromRGB(255, 200, 100))
-		return 
-	end
-	local char = plr.Character
-	if not char then 
-		notify("❌ No character for rainbow", Color3.fromRGB(255, 100, 100))
-		return 
-	end
-	local conn = RunService.Heartbeat:Connect(function()
-		local hue = tick() % 5 / 5
-		local c = Color3.fromHSV(hue, 1, 1)
-		for _, part in char:GetDescendants() do
-			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-				part.Color = c
-			end
-		end
-	end)
-	rainbowData[plr] = conn
-	notify("Rainbow ON", Color3.fromRGB(255, 100, 255))
-end
-------------------------------------------------
--- unrainbow
-------------------------------------------------
-local function unrainbow(plr)
-	if plr ~= client then
-		notify("Unrainbow only works on yourself", Color3.fromRGB(255, 100, 100))
-		return
-	end
-	if rainbowData[plr] then
-		rainbowData[plr]:Disconnect()
-		rainbowData[plr] = nil
-		notify("Rainbow OFF", Color3.fromRGB(200, 100, 200))
-	else
-		notify("⚠️ Not in rainbow mode", Color3.fromRGB(255, 200, 100))
-	end
-end
 ------------------------------------------------
 -- fire
 ------------------------------------------------
@@ -9932,7 +9925,7 @@ local function waypoint()
 	symbol.Size = UDim2.new(1,0,0.5,0)
 	symbol.BackgroundTransparency = 1
 	symbol.Text = "★"
-	symbol.Font = Enum.Font.GothamBlack
+	symbol.Font = Enum.Font.Code
 	symbol.TextSize = 40
 	symbol.TextColor3 = Color3.new(1,1,1)
 	symbol.TextStrokeTransparency = 0
@@ -9942,7 +9935,7 @@ local function waypoint()
 	distLabel.Position = UDim2.new(0,0,0.5,0)
 	distLabel.BackgroundTransparency = 1
 	distLabel.Text = "0 studs"
-	distLabel.Font = Enum.Font.Gotham
+	distLabel.Font = Enum.Font.Code
 	distLabel.TextSize = 18
 	distLabel.TextColor3 = Color3.new(1,1,1)
 	distLabel.TextStrokeTransparency = 0.5
@@ -10438,9 +10431,6 @@ function processCmd(msg)
 	elseif cmd == "ragdoll" then
 		ragdoll(client)
 		
-	elseif cmd == "rainbow" then
-		rainbow(target)
-		
 	elseif cmd == "rejoin" then
 		rejoin(LocalPlayer, args)
 		
@@ -10462,6 +10452,9 @@ function processCmd(msg)
 		
 	elseif cmd == "serverhop" then
 		serverhop(target, args)
+
+	elseif cmd == "!rejoin" then
+    	rejoin(client, args)
 
 	elseif cmd == "spin" then
 		spin(client, args[1])
@@ -10550,9 +10543,6 @@ function processCmd(msg)
 		
 	elseif cmd == "unragdoll" then
 		unragdoll(client)
-		
-	elseif cmd == "unrainbow" then
-		unrainbow(target)
 		
 	elseif cmd == "unspin" then
 		unspin(client)
@@ -10657,7 +10647,7 @@ titleLabel.Size = UDim2.new(1, math.floor(-100 * scale), 1, 0)
 titleLabel.Position = UDim2.new(0, math.floor(15 * scale), 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Project Lunar"
-titleLabel.Font = Enum.Font.GothamBlack
+titleLabel.Font = Enum.Font.Code
 titleLabel.TextSize = math.floor(24 * fontScale)
 titleLabel.TextColor3 = currentTheme.accent
 titleLabel.TextStrokeTransparency = 0.5
@@ -10672,7 +10662,7 @@ minBtn.Size = UDim2.new(0, math.floor(35 * scale), 0, math.floor(35 * scale))
 minBtn.Position = UDim2.new(1, math.floor(-40 * scale), 0.5, math.floor(-17.5 * scale))
 minBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 minBtn.Text = "−"
-minBtn.Font = Enum.Font.GothamBold
+minBtn.Font = Enum.Font.Code
 minBtn.TextSize = math.floor(20 * fontScale)
 minBtn.TextColor3 = Color3.new(1,1,1)
 minBtn.BorderSizePixel = 0
@@ -10700,7 +10690,7 @@ resizeHandle.Size = UDim2.new(0, math.floor(20 * scale), 0, math.floor(20 * scal
 resizeHandle.Position = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-20 * scale))
 resizeHandle.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 resizeHandle.Text = "◢"
-resizeHandle.Font = Enum.Font.GothamBold
+resizeHandle.Font = Enum.Font.Code
 resizeHandle.TextSize = math.floor(10 * fontScale)
 resizeHandle.TextColor3 = Color3.fromRGB(150, 150, 150)
 resizeHandle.BorderSizePixel = 0
@@ -10746,7 +10736,7 @@ cmdTab.Name = "CmdTab"
 cmdTab.Size = UDim2.new(0.5, -5, 1, 0)
 cmdTab.BackgroundColor3 = currentTheme.accent
 cmdTab.Text = "Commands"
-cmdTab.Font = Enum.Font.GothamBold
+cmdTab.Font = Enum.Font.Code
 cmdTab.TextSize = math.floor(16 * fontScale)
 cmdTab.TextColor3 = Color3.new(0,0,0)
 cmdTab.BorderSizePixel = 0
@@ -10759,7 +10749,7 @@ setTab.Size = UDim2.new(0.5, -5, 1, 0)
 setTab.Position = UDim2.new(0.5, 5, 0, 0)
 setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 setTab.Text = "Settings"
-setTab.Font = Enum.Font.GothamBold
+setTab.Font = Enum.Font.Code
 setTab.TextSize = math.floor(16 * fontScale)
 setTab.TextColor3 = globalConfig.textColor
 setTab.BorderSizePixel = 0
@@ -10798,7 +10788,7 @@ a.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(28 * scale))
 a.Position = UDim2.new(0, math.floor(6 * scale), 0.5, math.floor(-14 * scale))
 a.BackgroundTransparency = 1
 a.Text = "PL"
-a.Font = Enum.Font.GothamBold
+a.Font = Enum.Font.Code
 a.TextSize = math.floor(12 * fontScale)
 a.TextColor3 = currentTheme.accent
 a.ZIndex = 2147483647
@@ -10812,7 +10802,7 @@ a.BackgroundTransparency = 1
 a.Text = ""
 a.PlaceholderText = "Type command..."
 a.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-a.Font = Enum.Font.Gotham
+a.Font = Enum.Font.Code
 a.TextSize = math.floor(14 * fontScale)
 a.TextColor3 = globalConfig.textColor
 a.TextStrokeTransparency = 0.5
@@ -10828,7 +10818,7 @@ a.Size = UDim2.new(0, math.floor(30 * scale), 0, math.floor(26 * scale))
 a.Position = UDim2.new(1, math.floor(-68 * scale), 0.5, math.floor(-13 * scale))
 a.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
 a.Text = "▶"
-a.Font = Enum.Font.GothamBlack
+a.Font = Enum.Font.Code
 a.TextSize = math.floor(12 * fontScale)
 a.TextColor3 = Color3.new(1,1,1)
 a.BorderSizePixel = 0
@@ -10843,7 +10833,7 @@ a.Size = UDim2.new(0, math.floor(30 * scale), 0, math.floor(26 * scale))
 a.Position = UDim2.new(1, math.floor(-36 * scale), 0.5, math.floor(-13 * scale))
 a.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 a.Text = "📋"
-a.Font = Enum.Font.GothamBold
+a.Font = Enum.Font.Code
 a.TextSize = math.floor(12 * fontScale)  -- <-- THIS IS WRONG
 a.TextColor3 = Color3.new(1,1,1)
 a.BorderSizePixel = 0
@@ -10905,7 +10895,7 @@ a = Instance.new("TextLabel", cmdListPanel)
 a.Size = UDim2.new(1, 0, 0, math.floor(30 * scale))
 a.BackgroundTransparency = 1
 a.Text = "📋 Commands"
-a.Font = Enum.Font.GothamBlack
+a.Font = Enum.Font.Code
 a.TextSize = math.floor(13 * fontScale)
 a.TextColor3 = currentTheme.accent
 a.ZIndex = 2147483647
@@ -10915,7 +10905,7 @@ a.Size = UDim2.new(0, math.floor(24 * scale), 0, math.floor(24 * scale))
 a.Position = UDim2.new(1, math.floor(-28 * scale), 0, math.floor(3 * scale))
 a.BackgroundTransparency = 1
 a.Text = "✕"
-a.Font = Enum.Font.GothamBold
+a.Font = Enum.Font.Code
 a.TextSize = math.floor(14 * fontScale)
 a.TextColor3 = Color3.fromRGB(255, 100, 100)
 a.ZIndex = 2147483647
@@ -10939,43 +10929,71 @@ allCommands = {
 	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair", "!unload",
 	"!disablefalldamage", "!enable inventory", "!enable playerlist", "!esp all", "!explode", "!fire",
 	"!firstp", "!fling", "!fly", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump", "!kill",
-	"!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll", "!rainbow", "!rejoin", "!removewaypoint",
+	"!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll", "!rejoin", "!removewaypoint",
 	"!resetspeed", "!sit", "!speed", "!serverhop", "!spin", "!stopwatch", "!thirdp", "!to", "!trip", "!tracers",
 	"!uncrosshair", "!unautoexec", "!unesp all", "!unfire", "!unfly", "!unfreecam", "!unfreeze",
-	"!sunglare", "!unsunglare", "!uninfjump", "!unnoclip", "!unragdoll", "!unrainbow", "!unspin",
+	"!sunglare", "!unsunglare", "!uninfjump", "!unnoclip", "!unragdoll", "!unspin",
 	"!untracers", "!unview", "!view", "!vehiclefly", "!unvehiclefly", "!volume", "!waypoint", "!fov",
 	"!kick", "!unlockmouse"
 }
 
--- Populate command list panel
-for _, cmd in ipairs(allCommands) do
-	a = Instance.new("TextButton")
-	a.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
-	a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
-	a.BackgroundTransparency = 0.45
-	a.Text = "  " .. cmd
-	a.Font = Enum.Font.Gotham
-	a.TextSize = math.floor(11 * fontScale)
-	a.TextColor3 = Color3.fromRGB(205, 205, 225)
-	a.TextXAlignment = Enum.TextXAlignment.Left
-	a.Parent = listScroll
-	a.ZIndex = 2147483647
-	Instance.new("UICorner", a).CornerRadius = UDim.new(0, 4)
+-- Populate command list panel (FIXED: Proper hover detection for ScrollingFrame)
+local function createCmdListButton(cmd)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
+	btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+	btn.BackgroundTransparency = 0.45
+	btn.Text = "  " .. cmd
+	btn.Font = Enum.Font.Code
+	btn.TextSize = math.floor(11 * fontScale)
+	btn.TextColor3 = Color3.fromRGB(205, 205, 225)
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+	btn.Parent = listScroll
+	btn.ZIndex = 2147483647
+	btn.AutoButtonColor = false
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-	a.MouseEnter:Connect(function()
-		a.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
-		a.TextColor3 = Color3.fromRGB(100, 200, 255)
+	local isHovered = false
+
+	btn.MouseEnter:Connect(function()
+		isHovered = true
+		btn.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
+		btn.TextColor3 = Color3.fromRGB(100, 200, 255)
 	end)
-	a.MouseLeave:Connect(function()
-		a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
-		a.TextColor3 = Color3.fromRGB(205, 205, 225)
+
+	btn.MouseLeave:Connect(function()
+		isHovered = false
+		btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+		btn.TextColor3 = Color3.fromRGB(205, 205, 225)
 	end)
-	a.MouseButton1Click:Connect(function()
+
+	-- FIX: Reset hover state when scrolling away
+	listScroll:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+		if isHovered then
+			local mousePos = UserInputService:GetMouseLocation()
+			local absPos = btn.AbsolutePosition
+			local absSize = btn.AbsoluteSize
+			if mousePos.X < absPos.X or mousePos.X > absPos.X + absSize.X or
+			   mousePos.Y < absPos.Y or mousePos.Y > absPos.Y + absSize.Y then
+				isHovered = false
+				btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+				btn.TextColor3 = Color3.fromRGB(205, 205, 225)
+			end
+		end
+	end)
+
+	btn.MouseButton1Click:Connect(function()
 		cmdInput.Text = cmd .. " "
 		cmdInput.CursorPosition = #cmdInput.Text + 1
 		cmdListPanel.Visible = false
 		cmdInput:CaptureFocus()
 	end)
+
+	return btn
+end
+
+for _, cmd in ipairs(allCommands) do
+	createCmdListButton(cmd)
 end
 
 listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
@@ -11004,6 +11022,7 @@ function executeCommand()
 		end
 		cmdInput.Text = ""
 		dropdown.Visible = false
+		cmdScroll.Visible = true
 	end
 end
 
@@ -11013,59 +11032,97 @@ cmdInput.FocusLost:Connect(function(enterPressed)
 	if enterPressed then executeCommand() end
 end)
 
--- Dropdown autocomplete
+
 function updateDropdown(text)
 	for _, child in ipairs(dropdownScroll:GetChildren()) do
 		if child:IsA("TextButton") then child:Destroy() end
 	end
 
-	if text == "" or text == "!" then
+	if text == "" then
 		dropdown.Visible = false
+		cmdScroll.Visible = true
 		return
 	end
 
+	-- Hide the big command list so dropdown is clickable on top
+	cmdScroll.Visible = false
+
 	local matches = {}
+	local lowerText = text:lower()
+
+	-- Priority 1: Starts with text
 	for _, cmd in ipairs(allCommands) do
-		if cmd:lower():find(text:lower(), 1, true) then
+		if cmd:lower():sub(1, #lowerText) == lowerText then
 			table.insert(matches, cmd)
+		end
+	end
+
+	-- Priority 2: Contains text anywhere
+	for _, cmd in ipairs(allCommands) do
+		local alreadyAdded = false
+		for _, m in ipairs(matches) do
+			if m == cmd then alreadyAdded = true break end
+		end
+		if not alreadyAdded and cmd:lower():find(lowerText, 1, true) then
+			table.insert(matches, cmd)
+		end
+	end
+
+	-- Priority 3: Fuzzy match (each char appears in order)
+	if #matches == 0 then
+		for _, cmd in ipairs(allCommands) do
+			local cmdLower = cmd:lower()
+			local textIdx = 1
+			for i = 1, #cmdLower do
+				if cmdLower:sub(i, i) == lowerText:sub(textIdx, textIdx) then
+					textIdx = textIdx + 1
+					if textIdx > #lowerText then break end
+				end
+			end
+			if textIdx > #lowerText then
+				table.insert(matches, cmd)
+			end
 		end
 	end
 
 	if #matches > 0 then
 		dropdown.Visible = true
 		for _, match in ipairs(matches) do
-			a = Instance.new("TextButton")
-			a.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
-			a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
-			a.BackgroundTransparency = 0.4
-			a.Text = "  " .. match
-			a.Font = Enum.Font.Gotham
-			a.TextSize = math.floor(12 * fontScale)
-			a.TextColor3 = Color3.fromRGB(220, 220, 240)
-			a.TextXAlignment = Enum.TextXAlignment.Left
-			a.Parent = dropdownScroll
-			a.ZIndex = 2147483647
-			Instance.new("UICorner", a).CornerRadius = UDim.new(0, 4)
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
+			btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+			btn.BackgroundTransparency = 0.4
+			btn.Text = "  " .. match
+			btn.Font = Enum.Font.Code
+			btn.TextSize = math.floor(12 * fontScale)
+			btn.TextColor3 = Color3.fromRGB(220, 220, 240)
+			btn.TextXAlignment = Enum.TextXAlignment.Left
+			btn.Parent = dropdownScroll
+			btn.ZIndex = 2147483647
+			btn.AutoButtonColor = false
+			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-			a.MouseButton1Click:Connect(function()
+			btn.MouseButton1Click:Connect(function()
 				cmdInput.Text = match .. " "
 				cmdInput.CursorPosition = #cmdInput.Text + 1
 				dropdown.Visible = false
+				cmdScroll.Visible = true
 				cmdInput:CaptureFocus()
 			end)
 
-			a.MouseEnter:Connect(function()
-				a.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
-				a.TextColor3 = Color3.fromRGB(100, 200, 255)
+			btn.MouseEnter:Connect(function()
+				btn.BackgroundColor3 = Color3.fromRGB(55, 55, 85)
+				btn.TextColor3 = Color3.fromRGB(100, 200, 255)
 			end)
-			a.MouseLeave:Connect(function()
-				a.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
-				a.TextColor3 = Color3.fromRGB(220, 220, 240)
+			btn.MouseLeave:Connect(function()
+				btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
+				btn.TextColor3 = Color3.fromRGB(220, 220, 240)
 			end)
 		end
 		dropdownScroll.CanvasSize = UDim2.new(0, 0, 0, #matches * math.floor(26 * scale))
 	else
 		dropdown.Visible = false
+		cmdScroll.Visible = true
 	end
 end
 
@@ -11073,28 +11130,40 @@ cmdInput:GetPropertyChangedSignal("Text"):Connect(function()
 	updateDropdown(cmdInput.Text)
 end)
 
--- Click outside to close dropdown and panel
+
+-- Click outside to close dropdown and panel (FIXED: Don't close when clicking inside dropdown)
 UserInputService.InputBegan:Connect(function(inp)
 	if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
 		if not cmdBarFrame then return end
 		local mousePos = UserInputService:GetMouseLocation()
 		local barPos = cmdBarFrame.AbsolutePosition
 		local barSize = cmdBarFrame.AbsoluteSize
-		local panelPos = cmdListPanel.AbsolutePosition
-		local panelSize = cmdListPanel.AbsoluteSize
+
+		-- Check if click is inside dropdown
+		local inDropdown = false
+		if dropdown.Visible then
+			local ddPos = dropdown.AbsolutePosition
+			local ddSize = dropdown.AbsoluteSize
+			inDropdown = mousePos.X >= ddPos.X and mousePos.X <= ddPos.X + ddSize.X and
+						mousePos.Y >= ddPos.Y and mousePos.Y <= ddPos.Y + ddSize.Y
+		end
 
 		local inBar = mousePos.X >= barPos.X and mousePos.X <= barPos.X + barSize.X and
-			mousePos.Y >= barPos.Y and mousePos.Y <= barPos.Y + barSize.Y + (dropdown.Visible and dropdown.AbsoluteSize.Y or 0)
+					  mousePos.Y >= barPos.Y and mousePos.Y <= barPos.Y + barSize.Y
 
+		local panelPos = cmdListPanel.AbsolutePosition
+		local panelSize = cmdListPanel.AbsoluteSize
 		local inPanel = cmdListPanel.Visible and
 			mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
 			mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y
 
-		if not inBar then dropdown.Visible = false end
+		if not inBar and not inDropdown then
+			dropdown.Visible = false
+			cmdScroll.Visible = true
+		end
 		if not inPanel and not inBar then cmdListPanel.Visible = false end
 	end
 end)
-
 -- Scroll Frame
 cmdScroll = Instance.new("ScrollingFrame", cmdFrame)
 cmdScroll.Size = UDim2.new(1, 0, 1, math.floor(-48 * scale))
@@ -11123,8 +11192,8 @@ local cmdDesc = {
 	["!enable inventory"] = "Toggle backpack",
 	["!enable playerlist"] = "Toggle player list",
 	["!esp all"] = "Enable esp on player or all",
-	["!explode [plr]"] = "Explodes player",
-	["!fire [plr]"] = "Sets player on fire",
+	["!explode [plr]"] = "Explodes player(visual)",
+	["!fire [plr]"] = "Sets player on fire(visual)",
 	["!firstp"] = "First person mode",
 	["!fling"] = "Opens fling GUI",
 	["!flashlight"] = "Turns on flashlight",
@@ -11132,20 +11201,19 @@ local cmdDesc = {
 	["!flyspeed [num]"] = "Set fly speed",
 	["!fov [1-120]"] = "Set camera FOV",
 	["!freecam"] = "Free camera mode",
-	["!freeze [plr]"] = "Freezes player",
+	["!freeze"] = "Freezes player",
 	["!infjump"] = "Infinite jump toggle",
 	["!joinlogs"] = "Show join/leave logs",
 	["!jump [power]"] = "Set jump power",
-	["!kick [plr]"] = "Kick yourself",
-	["!kill [plr/all/me]"] = "Kill player/self/all",
+	["!kick"] = "Kick yourself",
+	["!kill"] = "Kill self",
 	["!lay"] = "Makes character lay down",
 	["!leave"] = "Leave game",
 	["!logs"] = "Open chat logs",
 	["!mm2"] = "Enables mm2 esp by lunar",
-	["!noclip [plr]"] = "Walk through walls",
+	["!noclip"] = "Walk through walls",
 	["!ping"] = "Show ping",
-	["!ragdoll"] = "Ragdoll character",
-	["!rainbow [plr]"] = "Rainbow color cycle",
+	["!ragdoll"] = "Ragdoll character(Broken?)",
 	["!rejoin"] = "Rejoin server",
 	["!removewaypoint"] = "Remove last waypoint",
 	["!serverhop"] = "(Broken)",
@@ -11162,16 +11230,15 @@ local cmdDesc = {
 	["!uncrosshair"] = "Remove crosshair",
 	["!unload"] = "Closes script",
 	["!unesp [plr/all]"] = "Disable esp on player or all",
-	["!unfire [plr]"] = "Extinguish player",
+	["!unfire"] = "Extinguish player(visual)",
 	["!unfling"] = "Close fling GUI",
 	["!unflashlight"] = "Turns off flashlight",
 	["!unfly"] = "Stop flying",
 	["!unfreecam"] = "Disable freecam",
-	["!unfreeze [plr]"] = "Unfreeze player",
+	["!unfreeze"] = "Unfreeze player",
 	["!uninfjump"] = "Disable infinite jump",
-	["!unnoclip [plr]"] = "Disable noclip",
+	["!unnoclip"] = "Disable noclip",
 	["!unragdoll"] = "Stop ragdoll",
-	["!unrainbow [plr]"] = "Stop rainbow",
 	["!unsunglare"] = "Disable sun glare effect",
 	["!unspin"] = "Stop spinning",
 	["!untracers"] = "Hide tracers",
@@ -11188,14 +11255,14 @@ cmds = {
 	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair",
 	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
 	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
-	"!flyspeed [num]", "!freecam", "!freeze [plr]", "!infjump", "!joinlogs", "!jump [power]",
-	"!kill [plr/all/me]", "!lay", "!leave", "!logs", "!noclip [plr]", "!mm2", "!ping", "!ragdoll",
-	"!rainbow [plr]", "!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
-	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip [plr]", "!tracers",
+	"!flyspeed [num]", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump [power]",
+	"!kill", "!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll",
+	"!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
+	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip", "!tracers",
 	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
-	"!unfreecam", "!unfreeze [plr]", "!uninfjump", "!unnoclip [plr]", "!unragdoll",
-	"!unrainbow [plr]", "!unspin", "!untracers", "!unview", "!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
-	"!fov [1-120]", "!kick [plr]", "!unlockmouse"
+	"!unfreecam", "!unfreeze", "!uninfjump", "!unnoclip", "!unragdoll",
+	"!unspin", "!untracers", "!unview", "!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
+	"!fov [1-120]", "!kick", "!unlockmouse"
 }
 
 -- PC-only tooltip (follows mouse) — sharp corners, no border, like the screenshot
@@ -11216,7 +11283,7 @@ if not isMobile then
 	a.Position = UDim2.new(0, math.floor(8 * scale), 0, math.floor(6 * scale))
 	a.BackgroundTransparency = 1
 	a.Text = ""
-	a.Font = Enum.Font.Gotham
+	a.Font = Enum.Font.Code
 	a.TextSize = math.floor(13 * fontScale)
 	a.TextColor3 = globalConfig.textColor
 	a.TextWrapped = true
@@ -11245,7 +11312,7 @@ for i, cmdStr in ipairs(cmds) do
 	a.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(42 * scale))
 	a.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
 	a.Text = "  " .. cmdStr
-	a.Font = Enum.Font.GothamSemibold
+	a.Font = Enum.Font.Code
 	a.TextSize = math.floor(14 * fontScale)
 	a.TextColor3 = globalConfig.textColor
 	a.TextXAlignment = Enum.TextXAlignment.Left
@@ -11266,7 +11333,7 @@ for i, cmdStr in ipairs(cmds) do
 				tooltip.Visible = true
 				tooltip:FindFirstChild("TipText").Text = desc
 				local textService = game:GetService("TextService")
-				local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Gotham, Vector2.new(math.floor(244 * scale), 9999))
+				local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
 				tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
 			end
 		end)
@@ -11324,7 +11391,7 @@ function makeSection(parent, titleText, h)
 	t.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(8 * scale))
 	t.BackgroundTransparency = 1
 	t.Text = titleText
-	t.Font = Enum.Font.GothamBlack
+	t.Font = Enum.Font.Code
 	t.TextSize = math.floor(16 * fontScale)
 	t.TextColor3 = currentTheme.accent
 	t.TextStrokeTransparency = 0.5
@@ -11343,7 +11410,7 @@ cDisplay.Size = UDim2.new(0.8, 0, 0, math.floor(32 * scale))
 cDisplay.Position = UDim2.new(0.1, 0, 0, math.floor(38 * scale))
 cDisplay.BackgroundColor3 = globalConfig.textColor
 cDisplay.Text = "Preview"
-cDisplay.Font = Enum.Font.GothamBold
+cDisplay.Font = Enum.Font.Code
 cDisplay.TextSize = math.floor(15 * fontScale)
 cDisplay.TextColor3 = Color3.new(0,0,0)
 cDisplay.ZIndex = 2147483647
@@ -11364,7 +11431,7 @@ function makeSlider(parent, y, color, label, comp)
 	lab.Size = UDim2.new(0, math.floor(30 * scale), 1, 0)
 	lab.BackgroundTransparency = 1
 	lab.Text = label
-	lab.Font = Enum.Font.GothamBold
+	lab.Font = Enum.Font.Code
 	lab.TextSize = math.floor(12 * fontScale)
 	lab.TextColor3 = color
 	lab.TextXAlignment = Enum.TextXAlignment.Left
@@ -11461,7 +11528,7 @@ tLabel.Size = UDim2.new(1, 0, 0, math.floor(22 * scale))
 tLabel.Position = UDim2.new(0, 0, 0, math.floor(36 * scale))
 tLabel.BackgroundTransparency = 1
 tLabel.Text = "Transparency: " .. math.round(globalConfig.uiTransparency * 100) .. "%"
-tLabel.Font = Enum.Font.GothamBold
+tLabel.Font = Enum.Font.Code
 tLabel.TextSize = math.floor(14 * fontScale)
 tLabel.TextColor3 = globalConfig.textColor
 tLabel.ZIndex = 2147483647
@@ -11542,7 +11609,7 @@ do
 		lab.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
 		lab.BackgroundTransparency = 1
 		lab.Text = lbl..": "..math.round(def*100).."%"
-		lab.Font = Enum.Font.GothamBold
+		lab.Font = Enum.Font.Code
 		lab.TextSize = math.floor(13*fontScale)
 		lab.TextColor3 = globalConfig.textColor
 		lab.TextXAlignment = Enum.TextXAlignment.Left
@@ -11624,7 +11691,7 @@ do
 	l.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
 	l.BackgroundTransparency = 1
 	l.Text = "Custom Notif Sound ID"
-	l.Font = Enum.Font.GothamBold
+	l.Font = Enum.Font.Code
 	l.TextSize = math.floor(13*fontScale)
 	l.TextColor3 = globalConfig.textColor
 	l.TextXAlignment = Enum.TextXAlignment.Left
@@ -11638,7 +11705,7 @@ do
 	b.Text = "rbxassetid://97643101798871"
 	b.PlaceholderText = "rbxassetid://..."
 	b.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-	b.Font = Enum.Font.Gotham
+	b.Font = Enum.Font.Code
 	b.TextSize = math.floor(13*fontScale)
 	b.TextColor3 = globalConfig.textColor
 	b.ClearTextOnFocus = false
@@ -11653,7 +11720,7 @@ do
 	btn.Position = UDim2.new(1, math.floor(-65*scale), 0, math.floor(28*scale))
 	btn.BackgroundColor3 = currentTheme.accent
 	btn.Text = "Set"
-	btn.Font = Enum.Font.GothamBold
+	btn.Font = Enum.Font.Code
 	btn.TextSize = math.floor(12*fontScale)
 	btn.TextColor3 = Color3.new(0, 0, 0)
 	btn.BorderSizePixel = 0
@@ -11685,7 +11752,7 @@ do
 	test.Position = UDim2.new(0.05, 0, 0, math.floor(232*scale))
 	test.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
 	test.Text = "▶ Test Sound"
-	test.Font = Enum.Font.GothamBold
+	test.Font = Enum.Font.Code
 	test.TextSize = math.floor(13*fontScale)
 	test.TextColor3 = Color3.new(1, 1, 1)
 	test.BorderSizePixel = 0
@@ -11710,7 +11777,7 @@ do
 		btn.Position = UDim2.new(x, 0, 0, 0)
 		btn.BackgroundColor3 = st and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
 		btn.Text = st and off or on
-		btn.Font = Enum.Font.GothamBlack
+		btn.Font = Enum.Font.Code
 		btn.TextSize = math.floor(13*fontScale)
 		btn.TextColor3 = Color3.new(1, 1, 1)
 		btn.BorderSizePixel = 0
@@ -11777,7 +11844,7 @@ for i, name in ipairs(sortedThemes) do
 	themeBtn.Name = name .. "ThemeBtn"
 	themeBtn.BackgroundColor3 = th.accent
 	themeBtn.Text = name
-	themeBtn.Font = Enum.Font.GothamBold
+	themeBtn.Font = Enum.Font.Code
 	themeBtn.TextSize = math.floor(13 * fontScale)
 	themeBtn.TextColor3 = th.text
 	themeBtn.TextScaled = false
@@ -11868,7 +11935,7 @@ dBtn.Size = UDim2.new(0.9, 0, 0, math.floor(40 * scale))
 dBtn.Position = UDim2.new(0.05, 0, 0, math.floor(38 * scale))
 dBtn.BackgroundColor3 = Color3.fromRGB(120, 130, 255)
 dBtn.Text = "Join Discord Server"
-dBtn.Font = Enum.Font.GothamBlack
+dBtn.Font = Enum.Font.Code
 dBtn.TextSize = math.floor(16 * fontScale)
 dBtn.TextColor3 = Color3.new(1,1,1)
 dBtn.ZIndex = 2147483647
@@ -11922,7 +11989,7 @@ task.spawn(function()
 	label.Position = UDim2.new(0.5, -160, 0.94, 0)
 	label.BackgroundTransparency = 1
 	label.Text = "Created By @xlunarxZzrbxx • lunar_rbx discord"
-	label.Font = Enum.Font.GothamBold
+	label.Font = Enum.Font.Code
 	label.TextSize = 24
 	label.TextColor3 = globalConfig.textColor
 	label.TextTransparency = 0
