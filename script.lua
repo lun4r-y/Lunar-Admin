@@ -1515,24 +1515,20 @@ end
 -- ═══════════════════════════════════════════════════════════
 -- mm2 esp
 -- ═══════════════════════════════════════════════════════════
-
 MM2ESP = {
 	ESP_Enabled = true,
-	Tracers_Enabled = true,
 	IsMinimized = false,
 	IsClosed = false,
 	Dragging = false,
 	DragOffset = Vector2.new(0, 0),
 	ESPs = {},
-	Tracers = {},
 	panel = nil,
-	tracerGui = nil,
 	mainFrame = nil,
 	shadow = nil,
 	content = nil,
-	tracerContainer = nil,
 	contentLayout = nil,
 	heartbeatConn = nil,
+	speedConn = nil,
 	isMobile = false,
 	-- NEW: Gun drop features
 	GunDrop_AutoTP = false,
@@ -1628,168 +1624,140 @@ function MM2ESP:UpdateAllESP()
 	end
 end
 
-function MM2ESP:CreateTracer(player)
-	if player == LocalPlayer then return end
-	if self.Tracers[player] then
-		self.Tracers[player]:Destroy()
-		self.Tracers[player] = nil
-	end
-	if not self.Tracers_Enabled then return end
-	local line = Instance.new("Frame")
-	line.Name = "Tracer_" .. player.Name
-	line.BorderSizePixel = 0
-	line.AnchorPoint = Vector2.new(0, 0.5)
-	line.ZIndex = 10
-	line.Parent = self.tracerContainer
-	self.Tracers[player] = line
-end
-
-function MM2ESP:RemoveTracer(player)
-	if self.Tracers[player] then
-		self.Tracers[player]:Destroy()
-		self.Tracers[player] = nil
-	end
-end
-
 -- ═══════════════════════════════════════════════════════════
--- FIXED TRACERS - Screen-edge based instead of bottom-center
+-- FIXED: Speed Boost with persistent connection
 -- ═══════════════════════════════════════════════════════════
-function MM2ESP:UpdateTracers()
-	if not self.Tracers_Enabled then
-		for _, line in pairs(self.Tracers) do
-			line.Visible = false
-		end
-		return
+function MM2ESP:SetupSpeedBoostLoop()
+	-- Disconnect old connection if exists
+	if self.speedConn then
+		self.speedConn:Disconnect()
+		self.speedConn = nil
 	end
-	local camera = workspace.CurrentCamera
-	if not camera then return end
-	local vSize = camera.ViewportSize
-	local screenCenter = Vector2.new(vSize.X / 2, vSize.Y / 2)
 
-	for player, line in pairs(self.Tracers) do
-		if not player or not player.Parent then
-			line.Visible = false
-			continue
-		end
-		local char = player.Character
-		if not char then
-			line.Visible = false
-			continue
-		end
-		local hrp = char:FindFirstChild("HumanoidRootPart")
-		if not hrp then
-			line.Visible = false
-			continue
-		end
+	if not self.SpeedBoost_Enabled then return end
+
+	self.speedConn = RunService.Heartbeat:Connect(function()
+		if not self.SpeedBoost_Enabled then return end
+		local char = LocalPlayer.Character
+		if not char then return end
 		local hum = char:FindFirstChildOfClass("Humanoid")
-		if hum and hum.Health <= 0 then
-			line.Visible = false
-			continue
+		if hum and hum.WalkSpeed < 30 then
+			hum.WalkSpeed = 30
 		end
-		local myChar = LocalPlayer.Character
-		if myChar then
-			local myHrp = myChar:FindFirstChild("HumanoidRootPart")
-			if myHrp and (hrp.Position - myHrp.Position).Magnitude > 500 then
-				line.Visible = false
-				continue
-			end
-		end
-
-		local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
-		local targetPos = Vector2.new(pos.X, pos.Y)
-
-		-- Calculate closest point on screen edge
-		local edgePos
-		if onScreen then
-			-- Target is on screen — draw from screen edge toward target
-			local dir = targetPos - screenCenter
-			local dist = dir.Magnitude
-			if dist < 5 then
-				line.Visible = false
-				continue
-			end
-			-- Clamp to screen edge
-			local angle = math.atan2(dir.Y, dir.X)
-			local edgeDist = math.min(vSize.X, vSize.Y) * 0.45
-			edgePos = screenCenter + Vector2.new(
-				math.cos(angle) * edgeDist,
-				math.sin(angle) * edgeDist
-			)
-		else
-			-- Target is off screen — draw from edge pointing toward target
-			local dir = targetPos - screenCenter
-			local angle = math.atan2(dir.Y, dir.X)
-			local edgeDist = math.min(vSize.X, vSize.Y) * 0.45
-			edgePos = screenCenter + Vector2.new(
-				math.cos(angle) * edgeDist,
-				math.sin(angle) * edgeDist
-			)
-		end
-
-		local drawDir = targetPos - edgePos
-		local drawDist = drawDir.Magnitude
-		if drawDist < 2 then
-			line.Visible = false
-			continue
-		end
-
-		local drawAngle = math.atan2(drawDir.Y, drawDir.X)
-		line.Size = UDim2.new(0, math.min(drawDist, 200), 0, 2)
-		line.Position = UDim2.new(0, edgePos.X, 0, edgePos.Y)
-		line.Rotation = math.deg(drawAngle)
-		line.BackgroundColor3 = self:GetRoleColor(self:GetRole(player))
-		line.BackgroundTransparency = 0.1
-		line.Visible = true
-	end
+	end)
 end
 
-function MM2ESP:ToggleESP(state)
-	self.ESP_Enabled = state
+function MM2ESP:ToggleSpeedBoost(state)
+	self.SpeedBoost_Enabled = state
+
+	-- Apply immediately
+	local char = LocalPlayer.Character
+	if char then
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.WalkSpeed = state and 30 or 16
+		end
+	end
+
+	-- Setup persistent loop
+	self:SetupSpeedBoostLoop()
+
+	-- Also listen for character respawn to reapply
 	if state then
-		self:UpdateAllESP()
+		if self.charAddedConn then self.charAddedConn:Disconnect() end
+		self.charAddedConn = LocalPlayer.CharacterAdded:Connect(function(char)
+			task.wait(0.3)
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum and self.SpeedBoost_Enabled then
+				hum.WalkSpeed = 30
+			end
+		end)
 	else
-		for player, _ in pairs(self.ESPs) do
-			self:RemoveESP(player)
+		if self.charAddedConn then
+			self.charAddedConn:Disconnect()
+			self.charAddedConn = nil
 		end
 	end
-end
 
-function MM2ESP:ToggleTracers(state)
-	self.Tracers_Enabled = state
-	if not state then
-		for _, line in pairs(self.Tracers) do
-			line.Visible = false
-		end
+	if notify then
+		notify(state and "Speed boost ON (30)" or "Speed boost OFF", state and Color3.fromRGB(100, 255, 150) or Color3.fromRGB(255, 100, 100))
 	end
 end
 
 -- ═══════════════════════════════════════════════════════════
--- NEW: Gun Drop Teleport Features
+-- FIXED: Gun Drop Features
 -- ═══════════════════════════════════════════════════════════
-function MM2ESP:TeleportToGunDrop()
+function MM2ESP:FindGunDrop()
+	-- GunDrop can be in workspace directly or in a folder
 	local gunDrop = workspace:FindFirstChild("GunDrop")
+	if gunDrop then return gunDrop end
+
+	-- Check common locations
+	for _, child in ipairs(workspace:GetChildren()) do
+		if child.Name == "GunDrop" then
+			return child
+		end
+		-- Sometimes it's nested
+		if child:IsA("Folder") or child:IsA("Model") then
+			local nested = child:FindFirstChild("GunDrop")
+			if nested then return nested end
+		end
+	end
+
+	return nil
+end
+
+function MM2ESP:TeleportToGunDrop()
+	local gunDrop = self:FindGunDrop()
 	if not gunDrop then
 		if notify then notify("No gun drop found!", Color3.fromRGB(255, 100, 100)) end
 		return
 	end
+
 	local myChar = LocalPlayer.Character
-	if not myChar then return end
+	if not myChar then 
+		if notify then notify("Character not loaded!", Color3.fromRGB(255, 100, 100)) end
+		return 
+	end
+
 	local myHrp = myChar:FindFirstChild("HumanoidRootPart")
-	if not myHrp then return end
+	if not myHrp then
+		if notify then notify("HumanoidRootPart not found!", Color3.fromRGB(255, 100, 100)) end
+		return
+	end
+
+	-- Use CFrame for reliable teleport
 	myHrp.CFrame = CFrame.new(gunDrop.Position + Vector3.new(0, 3, 0))
 	if notify then notify("Teleported to gun drop!", Color3.fromRGB(100, 255, 100)) end
 end
 
 function MM2ESP:SetupGunDropAutoTP()
+	-- Disconnect old connection
 	if self.GunDrop_Connection then
 		self.GunDrop_Connection:Disconnect()
 		self.GunDrop_Connection = nil
 	end
+
 	if not self.GunDrop_AutoTP then return end
+
+	-- Check if gun drop already exists
+	local existingGun = self:FindGunDrop()
+	if existingGun then
+		task.spawn(function()
+			task.wait(0.5)
+			if self.GunDrop_AutoTP and self:FindGunDrop() then
+				self:TeleportToGunDrop()
+			end
+		end)
+	end
+
+	-- Listen for new gun drops
 	self.GunDrop_Connection = workspace.ChildAdded:Connect(function(child)
 		if child.Name == "GunDrop" then
-			task.wait(0.1)
-			self:TeleportToGunDrop()
+			task.wait(0.3)
+			if self.GunDrop_AutoTP then
+				self:TeleportToGunDrop()
+			end
 		end
 	end)
 end
@@ -1797,33 +1765,8 @@ end
 function MM2ESP:ToggleGunDropAutoTP(state)
 	self.GunDrop_AutoTP = state
 	self:SetupGunDropAutoTP()
-end
-
--- ═══════════════════════════════════════════════════════════
--- NEW: Speed Boost
--- ═══════════════════════════════════════════════════════════
-function MM2ESP:ToggleSpeedBoost(state)
-	self.SpeedBoost_Enabled = state
-	local char = LocalPlayer.Character
-	if not char then return end
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if not hum then return end
-	if state then
-		hum.WalkSpeed = 30
-		if notify then notify("Speed boost ON (30)", Color3.fromRGB(100, 255, 150)) end
-	else
-		hum.WalkSpeed = 16
-		if notify then notify("Speed boost OFF", Color3.fromRGB(255, 100, 100)) end
-	end
-end
-
-function MM2ESP:UpdateSpeedBoost()
-	if not self.SpeedBoost_Enabled then return end
-	local char = LocalPlayer.Character
-	if not char then return end
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if hum and hum.WalkSpeed ~= 30 then
-		hum.WalkSpeed = 30
+	if notify then
+		notify(state and "Auto TP to Gun: ON" or "Auto TP to Gun: OFF", state and Color3.fromRGB(100, 255, 150) or Color3.fromRGB(255, 100, 100))
 	end
 end
 
@@ -1852,34 +1795,27 @@ function MM2ESP:OnPlayerAdded(player)
 	player.CharacterAdded:Connect(function()
 		task.wait(0.5)
 		self:CreateESP(player)
-		self:CreateTracer(player)
 	end)
 	player.CharacterRemoving:Connect(function()
 		self:RemoveESP(player)
-		self:RemoveTracer(player)
 	end)
 	if player.Character then
 		task.wait(0.5)
 		self:CreateESP(player)
-		self:CreateTracer(player)
 	end
 end
 
 function MM2ESP:Cleanup()
 	if self.panel then self.panel:Destroy() end
-	if self.tracerGui then self.tracerGui:Destroy() end
 	if self.heartbeatConn then self.heartbeatConn:Disconnect() end
+	if self.speedConn then self.speedConn:Disconnect() end
+	if self.charAddedConn then self.charAddedConn:Disconnect() end
 	if self.GunDrop_Connection then self.GunDrop_Connection:Disconnect() end
 	for player, _ in pairs(self.ESPs) do
 		self:RemoveESP(player)
 	end
-	for player, _ in pairs(self.Tracers) do
-		self:RemoveTracer(player)
-	end
 	self.ESPs = {}
-	self.Tracers = {}
 	self.ESP_Enabled = true
-	self.Tracers_Enabled = true
 	self.IsMinimized = false
 	self.IsClosed = false
 	self.Dragging = false
@@ -1888,31 +1824,8 @@ function MM2ESP:Cleanup()
 end
 
 -- ═══════════════════════════════════════════════════════════
--- GUI SUB-FUNCTIONS (split to avoid too many locals)
+-- GUI SUB-FUNCTIONS
 -- ═══════════════════════════════════════════════════════════
-
-function MM2ESP:CreateTracerGUI()
-	local tGui = Instance.new("ScreenGui")
-	tGui.Name = "MM2Tracers"
-	tGui.ResetOnSpawn = false
-	tGui.IgnoreGuiInset = true
-	tGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	tGui.ScreenInsets = Enum.ScreenInsets.None
-	local ok = pcall(function()
-		tGui.Parent = game:GetService("CoreGui")
-	end)
-	if not ok then
-		tGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-	end
-	self.tracerGui = tGui
-
-	local tContainer = Instance.new("Frame")
-	tContainer.Name = "TracerContainer"
-	tContainer.Size = UDim2.new(1, 0, 1, 0)
-	tContainer.BackgroundTransparency = 1
-	tContainer.Parent = tGui
-	self.tracerContainer = tContainer
-end
 
 function MM2ESP:CreateMainFrame()
 	local mGui = Instance.new("ScreenGui")
@@ -2111,7 +2024,7 @@ function MM2ESP:MakeToggle(name, label, defaultState, onToggle)
 end
 
 -- ═══════════════════════════════════════════════════════════
--- NEW: Gun Drop Button + Auto TP Toggle
+-- FIXED: Gun Drop Section
 -- ═══════════════════════════════════════════════════════════
 function MM2ESP:CreateGunDropSection()
 	local frame = Instance.new("Frame")
@@ -2195,9 +2108,6 @@ function MM2ESP:CreateGunDropSection()
 			Position = isOn and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
 		}):Play()
 		self:ToggleGunDropAutoTP(isOn)
-		if notify then
-			notify(isOn and "Auto TP to Gun: ON" or "Auto TP to Gun: OFF", isOn and Color3.fromRGB(100, 255, 150) or Color3.fromRGB(255, 100, 100))
-		end
 	end)
 end
 
@@ -2290,7 +2200,6 @@ function MM2ESP:SetupButtons()
 
 	self.closeBtn.MouseButton1Click:Connect(function()
 		self.IsClosed = true
-		self.tracerGui.Enabled = false
 		TweenService:Create(self.shadow, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
 		TweenService:Create(self.mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
 		for _, child in ipairs(self.mainFrame:GetDescendants()) do
@@ -2319,7 +2228,6 @@ function MM2ESP:SetupPlayers()
 	Players.PlayerAdded:Connect(function(player) self:OnPlayerAdded(player) end)
 	Players.PlayerRemoving:Connect(function(player)
 		self:RemoveESP(player)
-		self:RemoveTracer(player)
 	end)
 end
 
@@ -2327,8 +2235,6 @@ function MM2ESP:SetupLoop()
 	self.heartbeatConn = RunService.Heartbeat:Connect(function()
 		if self.IsClosed then return end
 		if self.ESP_Enabled then self:UpdateAllESP() end
-		if self.Tracers_Enabled then self:UpdateTracers() end
-		if self.SpeedBoost_Enabled then self:UpdateSpeedBoost() end
 	end)
 end
 
@@ -2338,16 +2244,12 @@ end
 
 function MM2ESP:Open()
 	self:Cleanup()
-	self:CreateTracerGUI()
 	self:CreateMainFrame()
 	self:CreateTopBar()
 	self:CreateContentArea()
 
 	self.espToggle = self:MakeToggle("ESP", "ESP", true, function(state)
 		self:ToggleESP(state)
-	end)
-	self.tracerToggle = self:MakeToggle("Tracers", "Tracers", true, function(state)
-		self:ToggleTracers(state)
 	end)
 
 	-- NEW: Speed Boost Toggle
