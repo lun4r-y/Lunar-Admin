@@ -10203,9 +10203,6 @@ function processCmd(msg)
 	elseif cmd == "autoexec" then
 		autoexecCommand()
 		
-	elseif cmd == "bring" then
-		bring(target)
-		
 	elseif cmd == "boombox" then
 	_G.Boombox:run(msg)
 		
