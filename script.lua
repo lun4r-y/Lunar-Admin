@@ -1511,7 +1511,210 @@ end
 function closeFlashlight()
 	LunarFlashlight:TurnOff()
 end
+-- =================== JERK TOOL STANDALONE ===================
 
+_G._jerkData = {
+	tool = nil,
+	track = nil,
+	jorkin = false,
+	loopConn = nil,
+	equippedConn = nil,
+	unequippedConn = nil,
+	diedConn = nil
+}
+
+function _G.GiveJerkTool()
+	-- Cleanup existing
+	_G.RemoveJerkTool()
+
+	local char = client.Character
+	if not char then
+		if notify then notify("❌ Character not loaded", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+	local backpack = client:FindFirstChildWhichIsA("Backpack")
+	if not humanoid or not backpack then
+		if notify then notify("❌ Humanoid or Backpack not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	local tool = Instance.new("Tool")
+	tool.Name = "Jerk Off"
+	tool.ToolTip = "in the stripped club. straight up \"jorking it\" . and by \"it\" , haha, well. let's justr say. My peanits."
+	tool.RequiresHandle = false
+	tool.Parent = backpack
+	_G._jerkData.tool = tool
+
+	local function stopTomfoolery()
+		_G._jerkData.jorkin = false
+		if _G._jerkData.track then
+			pcall(function() _G._jerkData.track:Stop() end)
+			_G._jerkData.track = nil
+		end
+	end
+
+	_G._jerkData.equippedConn = tool.Equipped:Connect(function()
+		_G._jerkData.jorkin = true
+	end)
+
+	_G._jerkData.unequippedConn = tool.Unequipped:Connect(stopTomfoolery)
+	_G._jerkData.diedConn = humanoid.Died:Connect(stopTomfoolery)
+
+	-- Main loop
+	_G._jerkData.loopConn = task.spawn(function()
+		while task.wait() do
+			if not _G._jerkData.tool or not _G._jerkData.tool.Parent then break end
+			if not _G._jerkData.jorkin then continue end
+
+			local isR15 = char:FindFirstChild("UpperTorso") ~= nil
+			if not _G._jerkData.track then
+				local anim = Instance.new("Animation")
+				anim.AnimationId = not isR15 and "rbxassetid://72042024" or "rbxassetid://698251653"
+				_G._jerkData.track = humanoid:LoadAnimation(anim)
+			end
+
+			_G._jerkData.track:Play()
+			_G._jerkData.track:AdjustSpeed(isR15 and 0.7 or 0.65)
+			_G._jerkData.track.TimePosition = 0.6
+			task.wait(0.1)
+			while _G._jerkData.track and _G._jerkData.track.TimePosition < (not isR15 and 0.65 or 0.7) do
+				task.wait(0.1)
+			end
+			if _G._jerkData.track then
+				_G._jerkData.track:Stop()
+				_G._jerkData.track = nil
+			end
+		end
+	end)
+
+	if notify then
+		notify("Jerk tool given!", Color3.fromRGB(255, 150, 200))
+	end
+end
+
+function _G.RemoveJerkTool()
+	pcall(function()
+		if _G._jerkData.loopConn then
+			-- task.spawn can't be disconnected, but the loop checks tool.Parent
+		end
+		if _G._jerkData.equippedConn then _G._jerkData.equippedConn:Disconnect() end
+		if _G._jerkData.unequippedConn then _G._jerkData.unequippedConn:Disconnect() end
+		if _G._jerkData.diedConn then _G._jerkData.diedConn:Disconnect() end
+		if _G._jerkData.track then _G._jerkData.track:Stop() end
+		if _G._jerkData.tool then _G._jerkData.tool:Destroy() end
+	end)
+	_G._jerkData = {
+		tool = nil,
+		track = nil,
+		jorkin = false,
+		loopConn = nil,
+		equippedConn = nil,
+		unequippedConn = nil,
+		diedConn = nil
+	}
+	if notify then
+		notify("Jerk tool removed", Color3.fromRGB(255, 100, 100))
+	end
+end
+
+-- =================== BANG / UNBANG STANDALONE ===================
+
+_G._bangData = {
+	anim = nil,
+	track = nil,
+	diedConn = nil,
+	steppedConn = nil,
+	target = nil
+}
+
+function _G.StartBang(args)
+	-- Args: args[1] = target name/displayname, args[2] = speed number
+	
+	-- Cleanup existing
+	_G.StopBang()
+
+	local char = client.Character
+	if not char then
+		if notify then notify("❌ Character not loaded", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then
+		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	-- Detect R15
+	local isR15 = char:FindFirstChild("UpperTorso") ~= nil
+	local animId = isR15 and "rbxassetid://5918726674" or "rbxassetid://148840371"
+
+	local speed = tonumber(args[2]) or 3
+
+	_G._bangData.anim = Instance.new("Animation")
+	_G._bangData.anim.AnimationId = animId
+	_G._bangData.track = hum:LoadAnimation(_G._bangData.anim)
+	_G._bangData.track:Play(0.1, 1, 1)
+	_G._bangData.track:AdjustSpeed(speed)
+
+	-- Stop on death
+	_G._bangData.diedConn = hum.Died:Connect(function()
+		_G.StopBang()
+	end)
+
+	-- Target lock
+	local targetPlr = nil
+	if args[1] then
+		local targetName = args[1]:lower()
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
+				targetPlr = plr
+				break
+			end
+		end
+	end
+
+	_G._bangData.target = targetPlr
+
+	if targetPlr and targetPlr.Character then
+		local offset = CFrame.new(0, 0, 1.1)
+		_G._bangData.steppedConn = RunService.Stepped:Connect(function()
+			pcall(function()
+				local myChar = client.Character
+				local theirChar = targetPlr.Character
+				if not myChar or not theirChar then return end
+				local myRoot = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
+				local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Torso")
+				if myRoot and theirRoot then
+					myRoot.CFrame = theirRoot.CFrame * offset
+				end
+			end)
+		end)
+		if notify then
+			notify("Banging " .. targetPlr.Name .. " at speed " .. speed, Color3.fromRGB(255, 100, 200))
+		end
+	else
+		if notify then
+			notify("Bang started (no target) at speed " .. speed, Color3.fromRGB(255, 100, 200))
+		end
+	end
+end
+
+function _G.StopBang()
+	pcall(function()
+		if _G._bangData.steppedConn then _G._bangData.steppedConn:Disconnect() end
+		if _G._bangData.track then _G._bangData.track:Stop() end
+		if _G._bangData.anim then _G._bangData.anim:Destroy() end
+		if _G._bangData.diedConn then _G._bangData.diedConn:Disconnect() end
+	end)
+	_G._bangData = {anim = nil, track = nil, diedConn = nil, steppedConn = nil, target = nil}
+	if notify then
+		notify("Bang stopped", Color3.fromRGB(100, 255, 150))
+	end
+end
+-- =================== END BANG / UNBANG ===================
 -- ═══════════════════════════════════════════════════════════
 -- mm2 esp
 -- ═══════════════════════════════════════════════════════════
@@ -10182,7 +10385,7 @@ local function disableTracers()
 end
 
 -- =============================================================
--- COMMAND PROCESSOR - DEFINED BEFORE USE
+-- COMMAND PROCESSOR
 -- =============================================================
 function processCmd(msg)
 	if not msg or msg:sub(1,1) ~= prefix then return end
@@ -10206,11 +10409,23 @@ function processCmd(msg)
 	elseif cmd == "boombox" then
 	_G.Boombox:run(msg)
 		
+	elseif cmd == "bang" then
+		_G.StartBang(args)
+
+	elseif cmd == "unbang" then
+		_G.StopBang()
+
 	elseif cmd == "clicktp" then
 		
 	elseif cmd == "cmdbar" then
 		toggleCmdBar()
 		
+	elseif cmd == "jerk" then
+		_G.GiveJerkTool()
+
+	elseif cmd == "unjerk" then
+		_G.RemoveJerkTool()
+
 	elseif cmd == "console" then
 		console()
 		
@@ -10825,9 +11040,9 @@ a.Padding = UDim.new(0, math.floor(2 * scale))
 
 -- All commands for dropdown and panel
 allCommands = {
-	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair", "!unload",
+	"!aimbot", "!autoexec", "!boombox", "!bang", "!unbang", "!clicktp", "!cmdbar", "!console", "!crosshair", "!unload",
 	"!disablefalldamage", "!enable inventory", "!enable playerlist", "!esp all", "!explode", "!fire",
-	"!firstp", "!fling", "!fly", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump", "!kill",
+	"!firstp", "!fling", "!fly", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump", "!jerk", "!unjerk", "!kill",
 	"!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll", "!rejoin", "!removewaypoint",
 	"!resetspeed", "!sit", "!speed", "!serverhop", "!spin", "!stopwatch", "!thirdp", "!to", "!trip", "!tracers",
 	"!uncrosshair", "!unautoexec", "!unesp all", "!unfire", "!unfly", "!unfreecam", "!unfreeze",
@@ -11083,6 +11298,7 @@ local cmdDesc = {
 	["!aimbot"] = "Opens aimbot control panel",
 	["!autoexec"] = "Enables auto-run on join",
 	["!boombox"] = "Enables client sided boombox",
+	["!bang [user] [speed]"] = "rape someone lol",
 	["!clicktp"] = "Click to teleport",
 	["!cmdbar"] = "Toggle command bar",
 	["!console"] = "Opens dev console",
@@ -11103,6 +11319,8 @@ local cmdDesc = {
 	["!freeze"] = "Freezes player",
 	["!infjump"] = "Infinite jump toggle",
 	["!joinlogs"] = "Show join/leave logs",
+	["!jerk"] = "Gives jerk off tool",
+	["!unjerk"] = "Removes jerk off tool",
 	["!jump [power]"] = "Set jump power",
 	["!kick"] = "Kick yourself",
 	["!kill"] = "Kill self",
@@ -11126,6 +11344,7 @@ local cmdDesc = {
 	["!trip [plr]"] = "Makes player trip",
 	["!tracers"] = "Show player tracers",
 	["!unautoexec"] = "Disables auto-run",
+	["!unbang"] = "unRape someone lol",
 	["!uncrosshair"] = "Remove crosshair",
 	["!unload"] = "Closes script",
 	["!unesp [plr/all]"] = "Disable esp on player or all",
@@ -11151,10 +11370,10 @@ local cmdDesc = {
 }
 
 cmds = {
-	"!aimbot", "!autoexec", "!boombox", "!clicktp", "!cmdbar", "!console", "!crosshair",
+	"!aimbot", "!autoexec", "!boombox", "!bang [user] [speed]", "!unbang", "!clicktp", "!cmdbar", "!console", "!crosshair",
 	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
 	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
-	"!flyspeed [num]", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump [power]",
+	"!flyspeed [num]", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump [power]",
 	"!kill", "!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll",
 	"!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
 	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip", "!tracers",
@@ -11887,7 +12106,7 @@ task.spawn(function()
 	label.Size = UDim2.new(0, 320, 0, 40)
 	label.Position = UDim2.new(0.5, -160, 0.94, 0)
 	label.BackgroundTransparency = 1
-	label.Text = "Created By @xlunarxZzrbxx • lunar_rbx discord"
+	label.Text = "Created By @lun4_y • lunar_rbx discord"
 	label.Font = Enum.Font.Code
 	label.TextSize = 24
 	label.TextColor3 = globalConfig.textColor
