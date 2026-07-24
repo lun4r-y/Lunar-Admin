@@ -1511,6 +1511,564 @@ end
 function closeFlashlight()
 	LunarFlashlight:TurnOff()
 end
+
+-- =============================================================
+-- ORBIT / UNORBIT
+-- =============================================================
+_G._orbitData = {
+	conn = nil,
+	target = nil,
+	speed = 1,
+	angle = 0,
+	radius = 8
+}
+
+function _G.StartOrbit(args)
+	_G.StopOrbit()
+
+	local targetName = args[1]
+	if not targetName then
+		if notify then notify("❌ Usage: !orbit [player] [speed]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	targetName = targetName:lower()
+	local targetPlr = nil
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
+			targetPlr = plr
+			break
+		end
+	end
+
+	if not targetPlr then
+		if notify then notify("❌ Player not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._orbitData.target = targetPlr
+	_G._orbitData.speed = tonumber(args[2]) or 2
+	_G._orbitData.angle = 0
+
+	_G._orbitData.conn = RunService.Heartbeat:Connect(function(dt)
+		pcall(function()
+			local myChar = client.Character
+			local theirChar = targetPlr.Character
+			if not myChar or not theirChar then return end
+			local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart")
+			if not myRoot or not theirRoot then return end
+
+			_G._orbitData.angle = _G._orbitData.angle + (_G._orbitData.speed * dt)
+			local offset = Vector3.new(
+				math.cos(_G._orbitData.angle) * _G._orbitData.radius,
+				0,
+				math.sin(_G._orbitData.angle) * _G._orbitData.radius
+			)
+			myRoot.CFrame = CFrame.new(theirRoot.Position + offset, theirRoot.Position)
+		end)
+	end)
+
+	if notify then notify("Orbiting " .. targetPlr.Name, Color3.fromRGB(150, 100, 255)) end
+end
+
+function _G.StopOrbit()
+	if _G._orbitData.conn then
+		pcall(function() _G._orbitData.conn:Disconnect() end)
+	end
+	_G._orbitData = {conn = nil, target = nil, speed = 1, angle = 0, radius = 8}
+	if notify then notify("Orbit stopped", Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- LOOP GOTO / UNLOOP GOTO
+-- =============================================================
+_G._loopGotoData = {
+	conn = nil,
+	target = nil,
+	delay = 1
+}
+
+function _G.StartLoopGoto(args)
+	_G.StopLoopGoto()
+
+	local targetName = args[1]
+	if not targetName then
+		if notify then notify("❌ Usage: !loopgoto [player] [delay]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	targetName = targetName:lower()
+	local targetPlr = nil
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
+			targetPlr = plr
+			break
+		end
+	end
+
+	if not targetPlr then
+		if notify then notify("❌ Player not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._loopGotoData.target = targetPlr
+	_G._loopGotoData.delay = tonumber(args[2]) or 1
+
+	local function tpToTarget()
+		pcall(function()
+			local myChar = client.Character
+			local theirChar = targetPlr.Character
+			if not myChar or not theirChar then return end
+			local myRoot = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
+			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Torso")
+			if myRoot and theirRoot then
+				myRoot.CFrame = theirRoot.CFrame + Vector3.new(0, 3, 0)
+			end
+		end)
+	end
+
+	-- Teleport immediately, then loop
+	tpToTarget()
+	_G._loopGotoData.conn = task.spawn(function()
+		while _G._loopGotoData.target do
+			task.wait(_G._loopGotoData.delay)
+			if not _G._loopGotoData.target then break end
+			tpToTarget()
+		end
+	end)
+
+	if notify then notify("Loop goto " .. targetPlr.Name .. " every " .. _G._loopGotoData.delay .. "s", Color3.fromRGB(100, 200, 255)) end
+end
+
+function _G.StopLoopGoto()
+	_G._loopGotoData.target = nil
+	_G._loopGotoData = {conn = nil, target = nil, delay = 1}
+	if notify then notify("Loop goto stopped", Color3.fromRGB(100, 255, 150)) end
+end
+-- =============================================================
+-- TPWALK / UNTPWALK STANDALONE
+-- =============================================================
+
+_G._tpwalkData = {
+	conn = nil,
+	speed = 1,
+	stack = 0
+}
+
+function _G.EnableTPWalk(args)
+	_G.DisableTPWalk()
+
+	local char = client.Character
+	if not char then
+		if notify then notify("❌ Character not loaded", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	local hum = char:FindFirstChildWhichIsA("Humanoid")
+	if not hum then
+		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._tpwalkData.speed = tonumber(args[1]) or 1
+
+	_G._tpwalkData.conn = RunService.Heartbeat:Connect(function(delta)
+		pcall(function()
+			local char = client.Character
+			if not char then return end
+			local hum = char:FindFirstChildWhichIsA("Humanoid")
+			if not hum or not hum.Parent then
+				_G.DisableTPWalk()
+				return
+			end
+
+			if hum.MoveDirection.Magnitude > 0 then
+				char:TranslateBy(hum.MoveDirection * (_G._tpwalkData.speed + _G._tpwalkData.stack) * delta * 10)
+			end
+		end)
+	end)
+
+	if notify then notify("TPWalk enabled — Speed: " .. _G._tpwalkData.speed, Color3.fromRGB(100, 255, 200)) end
+end
+
+function _G.DisableTPWalk()
+	if _G._tpwalkData.conn then
+		pcall(function() _G._tpwalkData.conn:Disconnect() end)
+	end
+	_G._tpwalkData = {conn = nil, speed = 1, stack = 0}
+	if notify then notify("TPWalk disabled", Color3.fromRGB(100, 255, 150)) end
+end
+-- =================== END TPWALK / UNTPWALK ===================
+-- =============================================================
+-- WALK ON WATER / UNWALK ON WATER
+-- =============================================================
+_G._walkOnWaterData = {
+	conn = nil,
+	originalGravity = workspace.Gravity
+}
+
+function _G.EnableWalkOnWater()
+	_G.DisableWalkOnWater()
+
+	_G._walkOnWaterData.originalGravity = workspace.Gravity
+
+	_G._walkOnWaterData.conn = RunService.Heartbeat:Connect(function()
+		pcall(function()
+			local char = client.Character
+			if not char then return end
+			local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if not root or not hum then return end
+
+			-- Check if above water
+			local pos = root.Position
+			local ray = Ray.new(pos, Vector3.new(0, -10, 0))
+			local hit, pos = workspace:FindPartOnRay(ray, char)
+			if hit then
+				local isWater = hit.Name:lower():find("water") or hit.Material == Enum.Material.Water
+				if isWater and hum.FloorMaterial == Enum.Material.Air then
+					-- Just above water, push up
+					root.Velocity = Vector3.new(root.Velocity.X, 0, root.Velocity.Z)
+					root.CFrame = CFrame.new(root.Position.X, pos.Y + 3, root.Position.Z)
+				end
+			end
+		end)
+	end)
+
+	if notify then notify("Walk on water enabled", Color3.fromRGB(100, 150, 255)) end
+end
+
+function _G.DisableWalkOnWater()
+	if _G._walkOnWaterData.conn then
+		pcall(function() _G._walkOnWaterData.conn:Disconnect() end)
+	end
+	workspace.Gravity = _G._walkOnWaterData.originalGravity
+	_G._walkOnWaterData = {conn = nil, originalGravity = workspace.Gravity}
+	if notify then notify("Walk on water disabled", Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- SUPER JUMP
+-- =============================================================
+_G._superJumpData = {
+	originalPower = 50,
+	conn = nil
+}
+
+function _G.EnableSuperJump(args)
+	_G.DisableSuperJump()
+
+	local char = client.Character
+	if not char then
+		if notify then notify("❌ Character not loaded", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then
+		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._superJumpData.originalPower = hum.JumpPower
+	local power = tonumber(args[1]) or 100
+	hum.JumpPower = power
+
+	-- Keep reapplying on respawn
+	_G._superJumpData.conn = client.CharacterAdded:Connect(function(newChar)
+		task.wait(0.3)
+		local newHum = newChar:FindFirstChildOfClass("Humanoid")
+		if newHum then newHum.JumpPower = power end
+	end)
+
+	if notify then notify("Super jump enabled: " .. power, Color3.fromRGB(100, 255, 100)) end
+end
+
+function _G.DisableSuperJump()
+	if _G._superJumpData.conn then
+		pcall(function() _G._superJumpData.conn:Disconnect() end)
+	end
+	local char = client.Character
+	if char then
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum then hum.JumpPower = _G._superJumpData.originalPower end
+	end
+	_G._superJumpData = {originalPower = 50, conn = nil}
+	if notify then notify("Super jump disabled", Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- GRAVITY / RESET GRAVITY
+-- =============================================================
+_G._gravityOriginal = workspace.Gravity
+
+function _G.SetGravity(args)
+	local grav = tonumber(args[1])
+	if not grav then
+		if notify then notify("❌ Usage: !gravity [number]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+	workspace.Gravity = grav
+	if notify then notify("Gravity set to " .. grav, Color3.fromRGB(150, 200, 255)) end
+end
+
+function _G.ResetGravity()
+	workspace.Gravity = _G._gravityOriginal
+	if notify then notify("Gravity reset to " .. _G._gravityOriginal, Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- CAMLOCK / UNCAMLOCK
+-- =============================================================
+_G._camlockData = {
+	conn = nil,
+	target = nil,
+	originalCameraType = nil
+}
+
+function _G.StartCamlock(args)
+	_G.StopCamlock()
+
+	local targetName = args[1]
+	if not targetName then
+		if notify then notify("❌ Usage: !camlock [player]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	targetName = targetName:lower()
+	local targetPlr = nil
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
+			targetPlr = plr
+			break
+		end
+	end
+
+	if not targetPlr then
+		if notify then notify("❌ Player not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._camlockData.target = targetPlr
+	_G._camlockData.originalCameraType = workspace.CurrentCamera.CameraType
+	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+
+	_G._camlockData.conn = RunService.RenderStepped:Connect(function()
+		pcall(function()
+			local theirChar = targetPlr.Character
+			if not theirChar then return end
+			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Head")
+			if not theirRoot then return end
+
+			local cam = workspace.CurrentCamera
+			local myChar = client.Character
+			local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+			if myRoot then
+				cam.CFrame = CFrame.new(myRoot.Position + Vector3.new(0, 5, 10), theirRoot.Position)
+			else
+				cam.CFrame = CFrame.new(theirRoot.Position + Vector3.new(0, 10, 20), theirRoot.Position)
+			end
+		end)
+	end)
+
+	if notify then notify("Camlock on " .. targetPlr.Name, Color3.fromRGB(255, 100, 100)) end
+end
+
+function _G.StopCamlock()
+	if _G._camlockData.conn then
+		pcall(function() _G._camlockData.conn:Disconnect() end)
+	end
+	if _G._camlockData.originalCameraType then
+		workspace.CurrentCamera.CameraType = _G._camlockData.originalCameraType
+	end
+	_G._camlockData = {conn = nil, target = nil, originalCameraType = nil}
+	if notify then notify("Camlock stopped", Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- ZOOM (PC ONLY)
+-- =============================================================
+_G._zoomData = {
+	conn = nil,
+	zoomKey = nil,
+	zoomDistance = 50
+}
+
+function _G.SetZoom(args)
+	-- PC ONLY check
+	local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+	if isMobile then
+		if notify then notify("❌ Zoom is PC only", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G.ClearZoom()
+
+	local distance = tonumber(args[1])
+	if not distance then
+		if notify then notify("❌ Usage: !zoom [distance] [key]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._zoomData.zoomDistance = distance
+	_G._zoomData.zoomKey = args[2] and Enum.KeyCode[args[2]:upper()] or Enum.KeyCode.Z
+
+	local zoomed = false
+	local originalMaxZoom = nil
+
+	_G._zoomData.conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.KeyCode == _G._zoomData.zoomKey then
+			zoomed = not zoomed
+			local cam = workspace.CurrentCamera
+			if zoomed then
+				originalMaxZoom = cam.MaxZoomDistance
+				cam.MaxZoomDistance = _G._zoomData.zoomDistance
+				cam.MinZoomDistance = _G._zoomData.zoomDistance
+				if notify then notify("Zoomed to " .. distance, Color3.fromRGB(100, 200, 255)) end
+			else
+				cam.MaxZoomDistance = originalMaxZoom or 400
+				cam.MinZoomDistance = 0.5
+				if notify then notify("Zoom reset", Color3.fromRGB(100, 255, 150)) end
+			end
+		end
+	end)
+
+	if notify then notify("Zoom set: " .. distance .. " | Key: " .. tostring(_G._zoomData.zoomKey.Name), Color3.fromRGB(100, 200, 255)) end
+end
+
+function _G.ClearZoom()
+	if _G._zoomData.conn then
+		pcall(function() _G._zoomData.conn:Disconnect() end)
+	end
+	local cam = workspace.CurrentCamera
+	cam.MaxZoomDistance = 400
+	cam.MinZoomDistance = 0.5
+	_G._zoomData = {conn = nil, zoomKey = nil, zoomDistance = 50}
+	if notify then notify("Zoom cleared", Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- XRAY / UNXRAY
+-- =============================================================
+_G._xrayData = {
+	originalTransparencies = {}
+}
+
+function _G.EnableXray()
+	_G.DisableXray()
+
+	_G._xrayData.originalTransparencies = {}
+
+	for _, part in ipairs(workspace:GetDescendants()) do
+		if part:IsA("BasePart") and part.Transparency < 0.7 then
+			_G._xrayData.originalTransparencies[part] = part.Transparency
+			part.Transparency = 0.7
+		end
+	end
+
+	if notify then notify("X-Ray enabled", Color3.fromRGB(100, 255, 100)) end
+end
+
+function _G.DisableXray()
+	for part, trans in pairs(_G._xrayData.originalTransparencies) do
+		pcall(function()
+			if part and part.Parent then
+				part.Transparency = trans
+			end
+		end)
+	end
+	_G._xrayData = {originalTransparencies = {}}
+	if notify then notify("X-Ray disabled", Color3.fromRGB(100, 255, 150)) end
+end
+
+-- =============================================================
+-- TIMESET
+-- =============================================================
+_G._timeOriginal = nil
+
+function _G.SetTime(args)
+	local hour = tonumber(args[1])
+	if not hour or hour < 0 or hour > 24 then
+		if notify then notify("❌ Usage: !timeset [0-24]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	if _G._timeOriginal == nil then
+		_G._timeOriginal = game.Lighting.ClockTime
+	end
+
+	game.Lighting.ClockTime = hour
+	if notify then notify("Time set to " .. hour .. ":00", Color3.fromRGB(255, 200, 100)) end
+end
+
+function _G.ResetTime()
+	if _G._timeOriginal ~= nil then
+		game.Lighting.ClockTime = _G._timeOriginal
+		if notify then notify("Time reset", Color3.fromRGB(100, 255, 150)) end
+	end
+end
+
+-- =============================================================
+-- COPY CHAT / UNCOPY CHAT
+-- =============================================================
+_G._copyChatData = {
+	conn = nil,
+	target = nil
+}
+
+function _G.StartCopyChat(args)
+	_G.StopCopyChat()
+
+	local targetName = args[1]
+	if not targetName then
+		if notify then notify("❌ Usage: !copychat [player]", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	targetName = targetName:lower()
+	local targetPlr = nil
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
+			targetPlr = plr
+			break
+		end
+	end
+
+	if not targetPlr then
+		if notify then notify("❌ Player not found", Color3.fromRGB(255,100,100)) end
+		return
+	end
+
+	_G._copyChatData.target = targetPlr
+
+	_G._copyChatData.conn = targetPlr.Chatted:Connect(function(msg)
+		pcall(function()
+			if TextChatService then
+				local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+				if channel then
+					channel:SendAsync("[" .. targetPlr.Name .. "]: " .. msg)
+				end
+			elseif game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents") then
+				-- Legacy chat
+				local chatRemote = game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
+				chatRemote:FireServer("[" .. targetPlr.Name .. "]: " .. msg, "All")
+			end
+		end)
+	end)
+
+	if notify then notify("Copying chat from " .. targetPlr.Name, Color3.fromRGB(100, 255, 200)) end
+end
+
+function _G.StopCopyChat()
+	if _G._copyChatData.conn then
+		pcall(function() _G._copyChatData.conn:Disconnect() end)
+	end
+	_G._copyChatData = {conn = nil, target = nil}
+	if notify then notify("Copy chat stopped", Color3.fromRGB(100, 255, 150)) end
+end
+
 -- =================== JERK TOOL STANDALONE ===================
 
 _G._jerkData = {
@@ -10409,6 +10967,82 @@ function processCmd(msg)
 	elseif cmd == "boombox" then
 	_G.Boombox:run(msg)
 		
+-- Orbit
+	elseif cmd == "orbit" then
+		_G.StartOrbit(args)
+
+	elseif cmd == "unorbit" then
+		_G.StopOrbit()
+
+-- Loop Goto
+	elseif cmd == "loopgoto" then
+		_G.StartLoopGoto(args)
+
+	elseif cmd == "unloopgoto" then
+		_G.StopLoopGoto()
+
+-- Walk on Water
+	elseif cmd == "walkonwater" then
+		_G.EnableWalkOnWater()
+
+	elseif cmd == "unwalkonwater" then
+		_G.DisableWalkOnWater()
+
+	elseif cmd == "tpwalk" then
+		_G.EnableTPWalk(args)
+
+	elseif cmd == "untpwalk" then
+		_G.DisableTPWalk()
+
+-- Super Jump
+	elseif cmd == "superjump" then
+		_G.EnableSuperJump(args)
+
+	elseif cmd == "unsuperjump" then
+		_G.DisableSuperJump()
+
+-- Gravity
+	elseif cmd == "gravity" then
+		_G.SetGravity(args)
+
+	elseif cmd == "resetgravity" then
+		_G.ResetGravity()
+
+-- Camlock
+	elseif cmd == "camlock" then
+		_G.StartCamlock(args)
+
+	elseif cmd == "uncamlock" then
+		_G.StopCamlock()
+
+-- Zoom (PC Only)
+	elseif cmd == "zoom" then
+		_G.SetZoom(args)
+
+	elseif cmd == "unzoom" then
+		_G.ClearZoom()
+
+-- XRay
+	elseif cmd == "xray" then
+		_G.EnableXray()
+
+	elseif cmd == "unxray" then
+		_G.DisableXray()
+
+-- Time Set
+	elseif cmd == "timeset" then
+		_G.SetTime(args)
+
+	elseif cmd == "resettime" then
+		_G.ResetTime()
+
+-- Copy Chat
+	elseif cmd == "copychat" then
+		_G.StartCopyChat(args)
+
+	elseif cmd == "uncopychat" then
+		_G.StopCopyChat()
+
 	elseif cmd == "bang" then
 		_G.StartBang(args)
 
@@ -10847,7 +11481,7 @@ tabBar.ZIndex = 2147483647
 
 cmdTab = Instance.new("TextButton", tabBar)
 cmdTab.Name = "CmdTab"
-cmdTab.Size = UDim2.new(0.5, -5, 1, 0)
+cmdTab.Size = UDim2.new(0.333, -5, 1, 0)
 cmdTab.BackgroundColor3 = currentTheme.accent
 cmdTab.Text = "Commands"
 cmdTab.Font = Enum.Font.Code
@@ -10859,8 +11493,8 @@ Instance.new("UICorner", cmdTab).CornerRadius = UDim.new(0, 6)
 
 setTab = Instance.new("TextButton", tabBar)
 setTab.Name = "SetTab"
-setTab.Size = UDim2.new(0.5, -5, 1, 0)
-setTab.Position = UDim2.new(0.5, 5, 0, 0)
+setTab.Size = UDim2.new(0.333, -5, 1, 0)
+setTab.Position = UDim2.new(0.333, 2.5, 0, 0)
 setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 setTab.Text = "Settings"
 setTab.Font = Enum.Font.Code
@@ -11040,15 +11674,17 @@ a.Padding = UDim.new(0, math.floor(2 * scale))
 
 -- All commands for dropdown and panel
 allCommands = {
-	"!aimbot", "!autoexec", "!boombox", "!bang", "!unbang", "!clicktp", "!cmdbar", "!console", "!crosshair", "!unload",
-	"!disablefalldamage", "!enable inventory", "!enable playerlist", "!esp all", "!explode", "!fire",
-	"!firstp", "!fling", "!fly", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jump", "!jerk", "!unjerk", "!kill",
-	"!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll", "!rejoin", "!removewaypoint",
-	"!resetspeed", "!sit", "!speed", "!serverhop", "!spin", "!stopwatch", "!thirdp", "!to", "!trip", "!tracers",
-	"!uncrosshair", "!unautoexec", "!unesp all", "!unfire", "!unfly", "!unfreecam", "!unfreeze",
-	"!sunglare", "!unsunglare", "!uninfjump", "!unnoclip", "!unragdoll", "!unspin",
-	"!untracers", "!unview", "!view", "!vehiclefly", "!unvehiclefly", "!volume", "!waypoint", "!fov",
-	"!kick", "!unlockmouse"
+"!aimbot", "!autoexec", "!bang", "!unbang", "!boombox", "!camlock", "!uncamlock", "!clicktp", "!cmdbar", "!console", "!copychat", "!uncopychat", "!crosshair", "!unload",
+	"!disablefalldamage", "!enable inventory", "!enable playerlist",
+	"!esp all", "!explode", "!fire", "!firstp", "!fling", "!flashlight", "!fly",
+	"!flyspeed", "!freecam", "!freeze", "!gravity", "!resetgravity", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump",
+	"!kill", "!lay", "!leave", "!logs", "!loopgoto", "!tpwalk", "!untpwalk", "!unloopgoto", "!noclip", "!mm2", "!orbit", "!unorbit", "!ping", "!ragdoll",
+	"!rejoin", "!removewaypoint", "!resetspeed", "!resettime", "!sit", "!speed", "!serverhop",
+	"!spin", "!stopwatch", "!sunglare", "!superjump", "!unsuperjump", "!thirdp", "!timeset", "!to", "!trip", "!tracers",
+	"!unautoexec", "!uncrosshair", "!unesp", "!unfire", "!unfling", "!unflashlight", "!unfly",
+	"!unfreecam", "!unfreeze", "!unnoclip", "!unragdoll",
+	"!unsunglare", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", "!view", "!vehiclefly", "!volume", "!waypoint",
+	"!walkonwater", "!xray", "!zoom", "!fov", "!kick", "!unlockmouse"
 }
 
 -- Populate command list panel (FIXED: Proper hover detection for ScrollingFrame)
@@ -11297,11 +11933,13 @@ cmdList.SortOrder = Enum.SortOrder.LayoutOrder
 local cmdDesc = {
 	["!aimbot"] = "Opens aimbot control panel",
 	["!autoexec"] = "Enables auto-run on join",
+	["!bang [user] [speed]"] = "Rape someone lol",
 	["!boombox"] = "Enables client sided boombox",
-	["!bang [user] [speed]"] = "rape someone lol",
+	["!camlock [player]"] = "Lock camera on a player",
 	["!clicktp"] = "Click to teleport",
 	["!cmdbar"] = "Toggle command bar",
 	["!console"] = "Opens dev console",
+	["!copychat [player]"] = "Copy everything a player says",
 	["!crosshair"] = "Loads custom crosshair",
 	["!disablefalldamage"] = "WIP",
 	["!enable inventory"] = "Toggle backpack",
@@ -11317,36 +11955,45 @@ local cmdDesc = {
 	["!fov [1-120]"] = "Set camera FOV",
 	["!freecam"] = "Free camera mode",
 	["!freeze"] = "Freezes player",
+	["!gravity [num]"] = "Set gravity",
 	["!infjump"] = "Infinite jump toggle",
-	["!joinlogs"] = "Show join/leave logs",
 	["!jerk"] = "Gives jerk off tool",
-	["!unjerk"] = "Removes jerk off tool",
+	["!joinlogs"] = "Show join/leave logs",
 	["!jump [power]"] = "Set jump power",
 	["!kick"] = "Kick yourself",
 	["!kill"] = "Kill self",
 	["!lay"] = "Makes character lay down",
 	["!leave"] = "Leave game",
 	["!logs"] = "Open chat logs",
+	["!loopgoto [player] [delay]"] = "Repeatedly teleport to a player",
 	["!mm2"] = "Enables mm2 esp by lunar",
 	["!noclip"] = "Walk through walls",
+	["!orbit [player] [speed]"] = "Orbit around a player like a moon",
 	["!ping"] = "Show ping",
 	["!ragdoll"] = "Ragdoll character(Broken?)",
 	["!rejoin"] = "Rejoin server",
 	["!removewaypoint"] = "Remove last waypoint",
+	["!resetgravity"] = "Reset gravity to normal",
+	["!resetspeed"] = "Reset walkspeed",
+	["!resettime"] = "Reset time of day",
 	["!serverhop"] = "(Broken)",
 	["!sit"] = "Makes character sit",
 	["!speed [plr] [num]"] = "Set walkspeed",
 	["!spin [speed]"] = "Spin character",
 	["!stopwatch"] = "Open stopwatch",
 	["!sunglare"] = "Enable sun glare effect",
+	["!superjump [power]"] = "Mega jump",
 	["!thirdp"] = "Third person mode",
+	["!timeset [0-24]"] = "Change time of day",
 	["!to [plr]"] = "Teleport to player",
+	["!tpwalk [speed]"] = "Teleport walk — move by teleporting",
 	["!trip [plr]"] = "Makes player trip",
 	["!tracers"] = "Show player tracers",
 	["!unautoexec"] = "Disables auto-run",
 	["!unbang"] = "unRape someone lol",
+	["!uncamlock"] = "Unlock camera",
+	["!uncopychat"] = "Stop copying chat",
 	["!uncrosshair"] = "Remove crosshair",
-	["!unload"] = "Closes script",
 	["!unesp [plr/all]"] = "Disable esp on player or all",
 	["!unfire"] = "Extinguish player(visual)",
 	["!unfling"] = "Close fling GUI",
@@ -11355,32 +12002,44 @@ local cmdDesc = {
 	["!unfreecam"] = "Disable freecam",
 	["!unfreeze"] = "Unfreeze player",
 	["!uninfjump"] = "Disable infinite jump",
+	["!unjerk"] = "Removes jerk off tool",
+	["!unloopgoto"] = "Stop loop teleport",
 	["!unnoclip"] = "Disable noclip",
+	["!unorbit"] = "Stop orbiting",
 	["!unragdoll"] = "Stop ragdoll",
 	["!unsunglare"] = "Disable sun glare effect",
+	["!unsuperjump"] = "Disable super jump",
 	["!unspin"] = "Stop spinning",
+	["!untpwalk"] = "Disable teleport walk",
 	["!untracers"] = "Hide tracers",
 	["!unvehiclefly"] = "unFly in cars!",
 	["!unview"] = "Stop spectating",
+	["!unwalkonwater"] = "Disable walk on water",
+	["!unxray"] = "Disable xray",
+	["!unzoom"] = "Reset zoom",
 	["!vehiclefly"] = "Fly in cars!",
 	["!view [plr]"] = "Spectate player",
 	["!volume"] = "Set game volume (0-10)",
+	["!walkonwater"] = "Walk on any water surface",
 	["!waypoint"] = "Create waypoint",
+	["!xray"] = "See through walls",
+	["!zoom [distance] [key]"] = "Custom zoom distance (PC only)",
 	["!unlockmouse"] = "Toggle mouse lock"
 }
 
 cmds = {
-	"!aimbot", "!autoexec", "!boombox", "!bang [user] [speed]", "!unbang", "!clicktp", "!cmdbar", "!console", "!crosshair",
+"!aimbot", "!autoexec", "!bang [user] [speed]", "!boombox", "!camlock [player]", "!clicktp", "!cmdbar", "!console", "!copychat [player]", "!crosshair",
 	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
 	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
-	"!flyspeed [num]", "!freecam", "!freeze", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump [power]",
-	"!kill", "!lay", "!leave", "!logs", "!noclip", "!mm2", "!ping", "!ragdoll",
-	"!rejoin", "!removewaypoint", "!sit", "!speed [plr] [num]", "!serverhop",
-	"!spin [speed]", "!stopwatch", "!thirdp", "!to [plr]", "!trip", "!tracers",
-	"!sunglare", "!unsunglare", "!uncrosshair", "!unautoexec", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
-	"!unfreecam", "!unfreeze", "!uninfjump", "!unnoclip", "!unragdoll",
-	"!unspin", "!untracers", "!unview", "!vehiclefly", "!unvehiclefly", "!view [plr]", "!volume", "!waypoint",
-	"!fov [1-120]", "!kick", "!unlockmouse"
+	"!flyspeed [num]", "!freecam", "!freeze", "!gravity [num]", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump [power]",
+	"!kill", "!lay", "!leave", "!logs", "!loopgoto [player] [delay]", "!noclip", "!mm2", "!orbit [player] [speed]", "!ping", "!ragdoll",
+	"!rejoin", "!removewaypoint", "!resetgravity", "!resetspeed", "!tpwalk [speed]", "!untpwalk", "!resettime", "!sit", "!speed [plr] [num]", "!serverhop",
+	"!spin [speed]", "!stopwatch", "!sunglare", "!superjump [power]", "!thirdp", "!timeset [0-24]", "!to [plr]", "!trip", "!tracers",
+	"!unautoexec", "!unbang", "!uncamlock", "!uncopychat", "!uncrosshair", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
+	"!unfreecam", "!unfreeze", "!uninfjump", "!unnoclip", "!unloopgoto", "!unorbit", "!unragdoll",
+	"!unsunglare", "!unsuperjump", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", 
+	"!view [plr]", "!vehiclefly", "!volume", "!waypoint",
+	"!walkonwater", "!xray", "!zoom [distance] [key]", "!fov [1-120]", "!kick", "!unlockmouse"
 }
 
 -- PC-only tooltip (follows mouse) — sharp corners, no border, like the screenshot
@@ -12068,23 +12727,317 @@ dBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- ========== UNIVERSAL TAB ==========
+uniFrame = Instance.new("Frame", contentFrame)
+uniFrame.Name = "UniFrame"
+uniFrame.Size = UDim2.new(1, 0, 1, 0)
+uniFrame.BackgroundTransparency = 1
+uniFrame.Visible = false
+uniFrame.ZIndex = 2147483647
+
+uniScroll = Instance.new("ScrollingFrame", uniFrame)
+uniScroll.Size = UDim2.new(1, 0, 1, 0)
+uniScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+uniScroll.BorderSizePixel = 0
+uniScroll.ScrollBarThickness = math.floor(6 * scale)
+uniScroll.ScrollBarImageColor3 = currentTheme.accent
+uniScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+uniScroll.ZIndex = 2147483647
+Instance.new("UICorner", uniScroll).CornerRadius = UDim.new(0, 6)
+
+uniList = Instance.new("UIListLayout", uniScroll)
+uniList.Padding = UDim.new(0, math.floor(10 * scale))
+uniList.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Helper to make a button
+local function makeUniBtn(name, label, color, callback)
+	local btn = Instance.new("TextButton", uniScroll)
+	btn.Name = name
+	btn.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(44 * scale))
+	btn.Position = UDim2.new(0, math.floor(8 * scale), 0, 0)
+	btn.BackgroundColor3 = color or currentTheme.btn or Color3.fromRGB(50, 50, 60)
+	btn.Text = label
+	btn.Font = Enum.Font.Code
+	btn.TextSize = math.floor(14 * fontScale)
+	btn.TextColor3 = globalConfig.textColor
+	btn.BorderSizePixel = 0
+	btn.ZIndex = 2147483647
+	btn.LayoutOrder = #uniScroll:GetChildren()
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+	btn.MouseButton1Click:Connect(callback)
+	return btn
+end
+
+-- TPWalk Section
+local tpwalkSection = makeSection(uniScroll, "TPWALK", 110)
+
+local tpwalkInput = Instance.new("TextBox", tpwalkSection)
+tpwalkInput.Size = UDim2.new(0.55, 0, 0, math.floor(32 * scale))
+tpwalkInput.Position = UDim2.new(0.05, 0, 0, math.floor(40 * scale))
+tpwalkInput.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+tpwalkInput.BorderSizePixel = 0
+tpwalkInput.Text = "5"
+tpwalkInput.PlaceholderText = "Speed..."
+tpwalkInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+tpwalkInput.Font = Enum.Font.Code
+tpwalkInput.TextSize = math.floor(13 * fontScale)
+tpwalkInput.TextColor3 = globalConfig.textColor
+tpwalkInput.ZIndex = 2147483647
+Instance.new("UICorner", tpwalkInput).CornerRadius = UDim.new(0, 6)
+
+local tpwalkBtn = Instance.new("TextButton", tpwalkSection)
+tpwalkBtn.Size = UDim2.new(0.32, 0, 0, math.floor(32 * scale))
+tpwalkBtn.Position = UDim2.new(0.63, 0, 0, math.floor(40 * scale))
+tpwalkBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+tpwalkBtn.Text = "▶ Start"
+tpwalkBtn.Font = Enum.Font.Code
+tpwalkBtn.TextSize = math.floor(12 * fontScale)
+tpwalkBtn.TextColor3 = Color3.new(1,1,1)
+tpwalkBtn.BorderSizePixel = 0
+tpwalkBtn.ZIndex = 2147483647
+Instance.new("UICorner", tpwalkBtn).CornerRadius = UDim.new(0, 5)
+
+tpwalkBtn.MouseButton1Click:Connect(function()
+	local speed = tonumber(tpwalkInput.Text) or 5
+	_G.EnableTPWalk({tostring(speed)})
+end)
+
+local tpwalkReset = Instance.new("TextButton", tpwalkSection)
+tpwalkReset.Size = UDim2.new(0.9, 0, 0, math.floor(28 * scale))
+tpwalkReset.Position = UDim2.new(0.05, 0, 0, math.floor(78 * scale))
+tpwalkReset.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+tpwalkReset.Text = "⏹ Reset / Stop"
+tpwalkReset.Font = Enum.Font.Code
+tpwalkReset.TextSize = math.floor(12 * fontScale)
+tpwalkReset.TextColor3 = Color3.new(1,1,1)
+tpwalkReset.BorderSizePixel = 0
+tpwalkReset.ZIndex = 2147483647
+Instance.new("UICorner", tpwalkReset).CornerRadius = UDim.new(0, 5)
+
+tpwalkReset.MouseButton1Click:Connect(function()
+	_G.DisableTPWalk()
+end)
+
+-- Quick Actions Section
+local quickSection = makeSection(uniScroll, "QUICK ACTIONS", 0)
+
+-- Calculate dynamic height based on button count
+local btnHeight = math.floor(44 * scale)
+local btnPadding = math.floor(10 * scale)
+local rows = 4 -- 2 columns, 7 buttons = 4 rows (last row has 1)
+quickSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(36 * scale) + (rows * btnHeight) + ((rows + 1) * btnPadding))
+
+local quickGrid = Instance.new("UIGridLayout", quickSection)
+quickGrid.CellSize = UDim2.new(0.47, 0, 0, btnHeight)
+quickGrid.CellPadding = UDim2.new(0, math.floor(8 * scale), 0, btnPadding)
+quickGrid.SortOrder = Enum.SortOrder.LayoutOrder
+quickGrid.FillDirection = Enum.FillDirection.Horizontal
+quickGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+quickGrid.StartCorner = Enum.StartCorner.TopLeft
+
+-- Fly Button
+local flyBtn = Instance.new("TextButton", quickSection)
+flyBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+flyBtn.Text = "✈️ Fly"
+flyBtn.Font = Enum.Font.Code
+flyBtn.TextSize = math.floor(12 * fontScale)
+flyBtn.TextColor3 = Color3.new(1,1,1)
+flyBtn.BorderSizePixel = 0
+flyBtn.ZIndex = 2147483647
+flyBtn.LayoutOrder = 1
+Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0, 6)
+flyBtn.MouseButton1Click:Connect(function()
+	if fly then
+		fly(client, nil)
+	else
+		-- Try common fly entry points
+		if _G.StartFly then _G.StartFly() end
+		if toggleFly then toggleFly() end
+	end
+end)
+
+-- Fling Button
+local flingBtn = Instance.new("TextButton", quickSection)
+flingBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+flingBtn.Text = "💥 Fling"
+flingBtn.Font = Enum.Font.Code
+flingBtn.TextSize = math.floor(12 * fontScale)
+flingBtn.TextColor3 = Color3.new(1,1,1)
+flingBtn.BorderSizePixel = 0
+flingBtn.ZIndex = 2147483647
+flingBtn.LayoutOrder = 2
+Instance.new("UICorner", flingBtn).CornerRadius = UDim.new(0, 6)
+flingBtn.MouseButton1Click:Connect(function()
+	if TouchFling and TouchFling.CreateGUI then
+		TouchFling:CreateGUI()
+		StarterGui:SetCore("SendNotification", {
+			Title = "Touch Fling", 
+			Text = "GUI Opened", 
+			Duration = 3
+		})
+	end
+end)
+
+-- Aimbot Button
+local aimbotBtn = Instance.new("TextButton", quickSection)
+aimbotBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
+aimbotBtn.Text = "🎯 Aimbot"
+aimbotBtn.Font = Enum.Font.Code
+aimbotBtn.TextSize = math.floor(12 * fontScale)
+aimbotBtn.TextColor3 = Color3.new(1,1,1)
+aimbotBtn.BorderSizePixel = 0
+aimbotBtn.ZIndex = 2147483647
+aimbotBtn.LayoutOrder = 3
+Instance.new("UICorner", aimbotBtn).CornerRadius = UDim.new(0, 6)
+aimbotBtn.MouseButton1Click:Connect(function()
+	if createAimbotPanel then
+		createAimbotPanel()
+	end
+end)
+
+-- Crosshair Button
+local crosshairBtn = Instance.new("TextButton", quickSection)
+crosshairBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+crosshairBtn.Text = "➕ Crosshair"
+crosshairBtn.Font = Enum.Font.Code
+crosshairBtn.TextSize = math.floor(12 * fontScale)
+crosshairBtn.TextColor3 = Color3.new(0,0,0)
+crosshairBtn.BorderSizePixel = 0
+crosshairBtn.ZIndex = 2147483647
+crosshairBtn.LayoutOrder = 4
+Instance.new("UICorner", crosshairBtn).CornerRadius = UDim.new(0, 6)
+crosshairBtn.MouseButton1Click:Connect(function()
+	if LoadLunarCrosshair then
+		LoadLunarCrosshair()
+	end
+end)
+
+-- Sit Button
+local sitBtn = Instance.new("TextButton", quickSection)
+sitBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
+sitBtn.Text = "🪑 Sit"
+sitBtn.Font = Enum.Font.Code
+sitBtn.TextSize = math.floor(12 * fontScale)
+sitBtn.TextColor3 = Color3.new(1,1,1)
+sitBtn.BorderSizePixel = 0
+sitBtn.ZIndex = 2147483647
+sitBtn.LayoutOrder = 5
+Instance.new("UICorner", sitBtn).CornerRadius = UDim.new(0, 6)
+sitBtn.MouseButton1Click:Connect(function()
+	if sit then
+		sit(client)
+	end
+end)
+
+-- Noclip Toggle Button
+local noclipBtn = Instance.new("TextButton", quickSection)
+noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+noclipBtn.Text = "👻 Noclip: OFF"
+noclipBtn.Font = Enum.Font.Code
+noclipBtn.TextSize = math.floor(12 * fontScale)
+noclipBtn.TextColor3 = Color3.new(0,0,0)
+noclipBtn.BorderSizePixel = 0
+noclipBtn.ZIndex = 2147483647
+noclipBtn.LayoutOrder = 6
+Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(0, 6)
+
+local noclipEnabled = false
+noclipBtn.MouseButton1Click:Connect(function()
+	noclipEnabled = not noclipEnabled
+	if noclipEnabled then
+		noclipBtn.Text = "👻 Noclip: ON"
+		noclipBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+		if noclip then noclip(client) end
+	else
+		noclipBtn.Text = "👻 Noclip: OFF"
+		noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+		if unnoclip then unnoclip(client) end
+	end
+end)
+
+-- Rejoin Button
+local rejoinBtn = Instance.new("TextButton", quickSection)
+rejoinBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+rejoinBtn.Text = "🔄 Rejoin"
+rejoinBtn.Font = Enum.Font.Code
+rejoinBtn.TextSize = math.floor(12 * fontScale)
+rejoinBtn.TextColor3 = Color3.new(0,0,0)
+rejoinBtn.BorderSizePixel = 0
+rejoinBtn.ZIndex = 2147483647
+rejoinBtn.LayoutOrder = 7
+Instance.new("UICorner", rejoinBtn).CornerRadius = UDim.new(0, 6)
+rejoinBtn.MouseButton1Click:Connect(function()
+	if rejoin then
+		rejoin(LocalPlayer, {})
+	end
+end)
+
+-- Serverhop Button
+local serverhopBtn = Instance.new("TextButton", quickSection)
+serverhopBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+serverhopBtn.Text = "🌐 Serverhop"
+serverhopBtn.Font = Enum.Font.Code
+serverhopBtn.TextSize = math.floor(12 * fontScale)
+serverhopBtn.TextColor3 = Color3.new(0,0,0)
+serverhopBtn.BorderSizePixel = 0
+serverhopBtn.ZIndex = 2147483647
+serverhopBtn.LayoutOrder = 8
+Instance.new("UICorner", serverhopBtn).CornerRadius = UDim.new(0, 6)
+serverhopBtn.MouseButton1Click:Connect(function()
+	if serverhop then
+		serverhop(client, {})
+	end
+end)
+
+-- Universal Tab Button
+uniTab = Instance.new("TextButton", tabBar)
+uniTab.Name = "UniTab"
+uniTab.Size = UDim2.new(0.333, -5, 1, 0)
+uniTab.Position = UDim2.new(0.667, 5, 0, 0)
+uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+uniTab.Text = "Universal"
+uniTab.Font = Enum.Font.Code
+uniTab.TextSize = math.floor(16 * fontScale)
+uniTab.TextColor3 = globalConfig.textColor
+uniTab.BorderSizePixel = 0
+uniTab.ZIndex = 2147483647
+Instance.new("UICorner", uniTab).CornerRadius = UDim.new(0, 6)
+
 -- Tab switching
 cmdTab.MouseButton1Click:Connect(function()
 	cmdFrame.Visible = true
 	setFrame.Visible = false
+	uniFrame.Visible = false
 	cmdTab.BackgroundColor3 = currentTheme.accent
 	cmdTab.TextColor3 = Color3.new(0,0,0)
 	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	setTab.TextColor3 = globalConfig.textColor
+	uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	uniTab.TextColor3 = globalConfig.textColor
 end)
 
 setTab.MouseButton1Click:Connect(function()
 	cmdFrame.Visible = false
 	setFrame.Visible = true
+	uniFrame.Visible = false
 	setTab.BackgroundColor3 = currentTheme.accent
 	setTab.TextColor3 = Color3.new(0,0,0)
 	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	cmdTab.TextColor3 = globalConfig.textColor
+	uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	uniTab.TextColor3 = globalConfig.textColor
+end)
+
+uniTab.MouseButton1Click:Connect(function()
+	cmdFrame.Visible = false
+	setFrame.Visible = false
+	uniFrame.Visible = true
+	uniTab.BackgroundColor3 = currentTheme.accent
+	uniTab.TextColor3 = Color3.new(0,0,0)
+	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	cmdTab.TextColor3 = globalConfig.textColor
+	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	setTab.TextColor3 = globalConfig.textColor
 end)
 
 -- =============================================================
