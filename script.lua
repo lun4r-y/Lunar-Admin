@@ -3177,45 +3177,27 @@ local function serverhop(plr, args)
 	end
 end
 -- ============================================
--- BOOMBOX SYSTEM - Debug version
+-- BOOMBOX SYSTEM - Ultra low local count
 -- ============================================
-local boomboxCode = [[
-	local Players = game:GetService("Players")
-	local CoreGui = game:GetService("CoreGui")
-	local RunService = game:GetService("RunService")
-	local UserInputService = game:GetService("UserInputService")
-	local MarketplaceService = game:GetService("MarketplaceService")
-	local HttpService = game:GetService("HttpService")
+
+do
+	
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local HttpService = game:GetService("HttpService")
 
 	local player = Players.LocalPlayer
-
-	-- Detect mobile
 	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 	local scale = isMobile and 0.65 or 1
 
-	_G.Boombox = _G.Boombox or {
-		gui = {},
-		sound = nil,
-		playing = false,
-		looping = false,
-		duration = 0,
-		dragging = false,
-		conn = nil,
-		history = {}
-	}
+	_G.Boombox = _G.Boombox or {gui = {}, sound = nil, playing = false, looping = false, duration = 0, dragging = false, conn = nil, history = {}}
 	local BB = _G.Boombox
 
-	local C = {
-		BG = Color3.fromRGB(30, 30, 35),
-		DARK = Color3.fromRGB(25, 25, 30),
-		ACCENT = Color3.fromRGB(173, 216, 230),
-		WHITE = Color3.fromRGB(255, 255, 255),
-		GRAY = Color3.fromRGB(180, 180, 180),
-		SLIDER_BG = Color3.fromRGB(60, 60, 65),
-		GREEN = Color3.fromRGB(100, 255, 100),
-		RED = Color3.fromRGB(255, 100, 100),
-		DARK_GRAY = Color3.fromRGB(50, 50, 55)
-	}
+	-- Reuse single element reference for ALL Instance creation
+	local e
 
 	local function fmtTime(sec)
 		sec = math.floor(sec or 0)
@@ -3233,24 +3215,26 @@ local boomboxCode = [[
 	end
 
 	local function updatePlayBtn()
+		if not BB.gui.playBtn then return end
 		if BB.playing then
 			BB.gui.playBtn.Text = "PAUSE"
-			BB.gui.playBtn.BackgroundColor3 = C.RED
+			BB.gui.playBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 		else
 			BB.gui.playBtn.Text = "PLAY"
-			BB.gui.playBtn.BackgroundColor3 = C.GREEN
+			BB.gui.playBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 		end
 	end
 
 	local function updateLoopBtn()
+		if not BB.gui.loopBtn then return end
 		if BB.looping then
 			BB.gui.loopBtn.Text = "LOOP ON"
-			BB.gui.loopBtn.BackgroundColor3 = C.GREEN
-			BB.gui.loopBtn.TextColor3 = C.BG
+			BB.gui.loopBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+			BB.gui.loopBtn.TextColor3 = Color3.fromRGB(30, 30, 35)
 		else
 			BB.gui.loopBtn.Text = "LOOP OFF"
-			BB.gui.loopBtn.BackgroundColor3 = C.DARK_GRAY
-			BB.gui.loopBtn.TextColor3 = C.WHITE
+			BB.gui.loopBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+			BB.gui.loopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 		end
 	end
 
@@ -3270,61 +3254,58 @@ local boomboxCode = [[
 
 		BB.playing = false
 		updatePlayBtn()
-		BB.gui.progFill.Size = UDim2.new(0, 0, 1, 0)
-		BB.gui.curTime.Text = "0:00"
-		BB.gui.totTime.Text = "0:00"
+		if BB.gui.progFill then BB.gui.progFill.Size = UDim2.new(0, 0, 1, 0) end
+		if BB.gui.curTime then BB.gui.curTime.Text = "0:00" end
+		if BB.gui.totTime then BB.gui.totTime.Text = "0:00" end
 
 		local name, artist = getInfo(id)
-		BB.gui.songName.Text = name
-		BB.gui.artistName.Text = artist
-		BB.gui.idBox.Text = id
+		if BB.gui.songName then BB.gui.songName.Text = name end
+		if BB.gui.artistName then BB.gui.artistName.Text = artist end
+		if BB.gui.idBox then BB.gui.idBox.Text = id end
 
 		local exists = false
-		for _, e in ipairs(BB.history) do
-			if e.id == id then exists = true break end
+		for _, h in ipairs(BB.history) do
+			if h.id == id then exists = true break end
 		end
 		if not exists then
-			for i, e in ipairs(BB.history) do
-				if e.id == id then table.remove(BB.history, i) break end
-			end
 			table.insert(BB.history, 1, {id = id, name = name})
 			if #BB.history > 20 then table.remove(BB.history, 21) end
 
 			if BB.gui.histFrame then
-				local btn = Instance.new("TextButton")
-				btn.Size = UDim2.new(1, -10, 0, 32)
-				btn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-				btn.BorderSizePixel = 0
-				btn.Text = ""
-				btn.AutoButtonColor = false
-				btn.Parent = BB.gui.histFrame
+				e = Instance.new("TextButton")
+				e.Size = UDim2.new(1, -10, 0, 32)
+				e.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+				e.BorderSizePixel = 0
+				e.Text = ""
+				e.AutoButtonColor = false
+				e.Parent = BB.gui.histFrame
 
 				local nl = Instance.new("TextLabel")
 				nl.Size = UDim2.new(1, -60, 1, 0)
 				nl.Position = UDim2.new(0, 10, 0, 0)
 				nl.BackgroundTransparency = 1
 				nl.Text = name
-				nl.TextColor3 = C.WHITE
+				nl.TextColor3 = Color3.fromRGB(255, 255, 255)
 				nl.TextSize = 13
 				nl.Font = Enum.Font.Code
 				nl.TextXAlignment = Enum.TextXAlignment.Left
 				nl.TextTruncate = Enum.TextTruncate.AtEnd
-				nl.Parent = btn
+				nl.Parent = e
 
 				local il = Instance.new("TextLabel")
 				il.Size = UDim2.new(0, 50, 1, 0)
 				il.Position = UDim2.new(1, -55, 0, 0)
 				il.BackgroundTransparency = 1
 				il.Text = id
-				il.TextColor3 = C.GRAY
+				il.TextColor3 = Color3.fromRGB(180, 180, 180)
 				il.TextSize = 11
 				il.Font = Enum.Font.Code
 				il.TextXAlignment = Enum.TextXAlignment.Right
-				il.Parent = btn
+				il.Parent = e
 
-				btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(55, 55, 60) end)
-				btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end)
-				btn.MouseButton1Click:Connect(function() playSong(id) end)
+				e.MouseEnter:Connect(function() e.BackgroundColor3 = Color3.fromRGB(55, 55, 60) end)
+				e.MouseLeave:Connect(function() e.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end)
+				e.MouseButton1Click:Connect(function() playSong(id) end)
 
 				BB.gui.histFrame.CanvasSize = UDim2.new(0, 0, 0, BB.gui.histList.AbsoluteContentSize.Y)
 			end
@@ -3349,12 +3330,12 @@ local boomboxCode = [[
 			if not snd.IsLoaded then
 				local ok = pcall(function() snd.Loaded:Wait() end)
 				if not ok then
-					BB.gui.songName.Text = "Failed to load"
+					if BB.gui.songName then BB.gui.songName.Text = "Failed to load" end
 					return
 				end
 			end
 			BB.duration = snd.TimeLength
-			BB.gui.totTime.Text = fmtTime(BB.duration)
+			if BB.gui.totTime then BB.gui.totTime.Text = fmtTime(BB.duration) end
 			snd:Play()
 			BB.playing = true
 			updatePlayBtn()
@@ -3362,8 +3343,8 @@ local boomboxCode = [[
 			BB.conn = RunService.Heartbeat:Connect(function()
 				if not BB.sound or not BB.playing or BB.dragging then return end
 				local p = BB.duration > 0 and BB.sound.TimePosition / BB.duration or 0
-				BB.gui.progFill.Size = UDim2.new(math.clamp(p, 0, 1), 0, 1, 0)
-				BB.gui.curTime.Text = fmtTime(BB.sound.TimePosition)
+				if BB.gui.progFill then BB.gui.progFill.Size = UDim2.new(math.clamp(p, 0, 1), 0, 1, 0) end
+				if BB.gui.curTime then BB.gui.curTime.Text = fmtTime(BB.sound.TimePosition) end
 			end)
 		end)
 
@@ -3371,8 +3352,8 @@ local boomboxCode = [[
 			if not BB.looping then
 				BB.playing = false
 				updatePlayBtn()
-				BB.gui.progFill.Size = UDim2.new(0, 0, 1, 0)
-				BB.gui.curTime.Text = "0:00"
+				if BB.gui.progFill then BB.gui.progFill.Size = UDim2.new(0, 0, 1, 0) end
+				if BB.gui.curTime then BB.gui.curTime.Text = "0:00" end
 			end
 		end)
 	end
@@ -3383,39 +3364,47 @@ local boomboxCode = [[
 			return
 		end
 
+		local C_BG = Color3.fromRGB(30, 30, 35)
+		local C_DARK = Color3.fromRGB(25, 25, 30)
+		local C_ACCENT = Color3.fromRGB(173, 216, 230)
+		local C_WHITE = Color3.fromRGB(255, 255, 255)
+		local C_GRAY = Color3.fromRGB(180, 180, 180)
+		local C_SLIDER = Color3.fromRGB(60, 60, 65)
+		local C_GREEN = Color3.fromRGB(100, 255, 100)
+		local C_RED = Color3.fromRGB(255, 100, 100)
+		local C_DGRAY = Color3.fromRGB(50, 50, 55)
+
 		BB.gui.screen = Instance.new("ScreenGui")
 		BB.gui.screen.Name = "BoomboxGUI"
 		BB.gui.screen.ResetOnSpawn = false
 		BB.gui.screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 		BB.gui.screen.Parent = CoreGui
 
-		-- Scale container
-		BB.gui.scaleFrame = Instance.new("Frame")
-		BB.gui.scaleFrame.Size = UDim2.new(1, 0, 1, 0)
-		BB.gui.scaleFrame.BackgroundTransparency = 1
-		BB.gui.scaleFrame.Parent = BB.gui.screen
+		e = Instance.new("Frame")
+		e.Size = UDim2.new(1, 0, 1, 0)
+		e.BackgroundTransparency = 1
+		e.Parent = BB.gui.screen
 
 		BB.gui.main = Instance.new("Frame")
 		BB.gui.main.Size = UDim2.new(0, 380 * scale, 0, 460 * scale)
 		BB.gui.main.Position = UDim2.new(0.5, -190 * scale, 0.5, -230 * scale)
-		BB.gui.main.BackgroundColor3 = C.BG
+		BB.gui.main.BackgroundColor3 = C_BG
 		BB.gui.main.BorderSizePixel = 0
 		BB.gui.main.Active = true
-		BB.gui.main.Visible = false
-		BB.gui.main.Parent = BB.gui.scaleFrame
+		BB.gui.main.Visible = true
+		BB.gui.main.Parent = e
 
-		-- Title Bar (ONLY draggable part)
-		local bar = Instance.new("Frame")
-		bar.Name = "TitleBar"
-		bar.Size = UDim2.new(1, 0, 0, 45 * scale)
-		bar.BackgroundColor3 = C.DARK
-		bar.BorderSizePixel = 0
-		bar.Active = true
-		bar.Parent = BB.gui.main
+		-- Title Bar
+		e = Instance.new("Frame")
+		e.Name = "TitleBar"
+		e.Size = UDim2.new(1, 0, 0, 45 * scale)
+		e.BackgroundColor3 = C_DARK
+		e.BorderSizePixel = 0
+		e.Active = true
+		e.Parent = BB.gui.main
 
-		-- Draggable on BOTH mouse and touch
 		local drag, dragStart, startPos = false, nil, nil
-		bar.InputBegan:Connect(function(input)
+		e.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 				drag = true
 				dragStart = input.Position
@@ -3434,30 +3423,30 @@ local boomboxCode = [[
 			end
 		end)
 
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(0.6, 0, 1, 0)
-		title.Position = UDim2.new(0, 15 * scale, 0, 0)
-		title.BackgroundTransparency = 1
-		title.Text = "lun4rs boomboxys"
-		title.TextColor3 = C.WHITE
-		title.TextSize = 18 * scale
-		title.Font = Enum.Font.Code
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.Parent = bar
+		e = Instance.new("TextLabel")
+		e.Size = UDim2.new(0.6, 0, 1, 0)
+		e.Position = UDim2.new(0, 15 * scale, 0, 0)
+		e.BackgroundTransparency = 1
+		e.Text = "lun4rs boomboxys"
+		e.TextColor3 = C_WHITE
+		e.TextSize = 18 * scale
+		e.Font = Enum.Font.Code
+		e.TextXAlignment = Enum.TextXAlignment.Left
+		e.Parent = BB.gui.main:FindFirstChild("TitleBar")
 
-		local close = Instance.new("TextButton")
-		close.Size = UDim2.new(0, 35 * scale, 0, 35 * scale)
-		close.Position = UDim2.new(1, -40 * scale, 0, 5 * scale)
-		close.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-		close.BorderSizePixel = 0
-		close.Text = "×"
-		close.TextColor3 = C.WHITE
-		close.TextSize = 22 * scale
-		close.Font = Enum.Font.Code
-		close.Parent = bar
-		close.MouseEnter:Connect(function() close.BackgroundColor3 = Color3.fromRGB(255, 80, 80) end)
-		close.MouseLeave:Connect(function() close.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end)
-		close.MouseButton1Click:Connect(function()
+		e = Instance.new("TextButton")
+		e.Size = UDim2.new(0, 35 * scale, 0, 35 * scale)
+		e.Position = UDim2.new(1, -40 * scale, 0, 5 * scale)
+		e.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+		e.BorderSizePixel = 0
+		e.Text = "×"
+		e.TextColor3 = C_WHITE
+		e.TextSize = 22 * scale
+		e.Font = Enum.Font.Code
+		e.Parent = BB.gui.main:FindFirstChild("TitleBar")
+		e.MouseEnter:Connect(function() e.BackgroundColor3 = C_RED end)
+		e.MouseLeave:Connect(function() e.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end)
+		e.MouseButton1Click:Connect(function()
 			BB.gui.main.Visible = false
 			if BB.sound then
 				BB.sound:Pause()
@@ -3466,12 +3455,13 @@ local boomboxCode = [[
 			end
 		end)
 
+		-- Song info
 		BB.gui.songName = Instance.new("TextLabel")
 		BB.gui.songName.Size = UDim2.new(1, -30 * scale, 0, 28 * scale)
 		BB.gui.songName.Position = UDim2.new(0, 15 * scale, 0, 55 * scale)
 		BB.gui.songName.BackgroundTransparency = 1
 		BB.gui.songName.Text = "No song playing"
-		BB.gui.songName.TextColor3 = C.WHITE
+		BB.gui.songName.TextColor3 = C_WHITE
 		BB.gui.songName.TextSize = 20 * scale
 		BB.gui.songName.Font = Enum.Font.Code
 		BB.gui.songName.TextXAlignment = Enum.TextXAlignment.Left
@@ -3483,7 +3473,7 @@ local boomboxCode = [[
 		BB.gui.artistName.Position = UDim2.new(0, 15 * scale, 0, 83 * scale)
 		BB.gui.artistName.BackgroundTransparency = 1
 		BB.gui.artistName.Text = "Enter a Roblox audio ID"
-		BB.gui.artistName.TextColor3 = C.GRAY
+		BB.gui.artistName.TextColor3 = C_GRAY
 		BB.gui.artistName.TextSize = 13 * scale
 		BB.gui.artistName.Font = Enum.Font.Code
 		BB.gui.artistName.TextXAlignment = Enum.TextXAlignment.Left
@@ -3494,7 +3484,7 @@ local boomboxCode = [[
 		BB.gui.curTime.Position = UDim2.new(0, 15 * scale, 0, 110 * scale)
 		BB.gui.curTime.BackgroundTransparency = 1
 		BB.gui.curTime.Text = "0:00"
-		BB.gui.curTime.TextColor3 = C.WHITE
+		BB.gui.curTime.TextColor3 = C_WHITE
 		BB.gui.curTime.TextSize = 13 * scale
 		BB.gui.curTime.Font = Enum.Font.Code
 		BB.gui.curTime.TextXAlignment = Enum.TextXAlignment.Left
@@ -3505,22 +3495,23 @@ local boomboxCode = [[
 		BB.gui.totTime.Position = UDim2.new(1, -65 * scale, 0, 110 * scale)
 		BB.gui.totTime.BackgroundTransparency = 1
 		BB.gui.totTime.Text = "0:00"
-		BB.gui.totTime.TextColor3 = C.WHITE
+		BB.gui.totTime.TextColor3 = C_WHITE
 		BB.gui.totTime.TextSize = 13 * scale
 		BB.gui.totTime.Font = Enum.Font.Code
 		BB.gui.totTime.TextXAlignment = Enum.TextXAlignment.Right
 		BB.gui.totTime.Parent = BB.gui.main
 
+		-- Progress bar
 		local progBg = Instance.new("Frame")
 		progBg.Size = UDim2.new(1, -30 * scale, 0, 4 * scale)
 		progBg.Position = UDim2.new(0, 15 * scale, 0, 132 * scale)
-		progBg.BackgroundColor3 = C.SLIDER_BG
+		progBg.BackgroundColor3 = C_SLIDER
 		progBg.BorderSizePixel = 0
 		progBg.Parent = BB.gui.main
 
 		BB.gui.progFill = Instance.new("Frame")
 		BB.gui.progFill.Size = UDim2.new(0, 0, 1, 0)
-		BB.gui.progFill.BackgroundColor3 = C.ACCENT
+		BB.gui.progFill.BackgroundColor3 = C_ACCENT
 		BB.gui.progFill.BorderSizePixel = 0
 		BB.gui.progFill.Parent = progBg
 
@@ -3550,32 +3541,35 @@ local boomboxCode = [[
 			end
 		end)
 
+		-- Controls
 		local ctrl = Instance.new("Frame")
 		ctrl.Size = UDim2.new(1, -30 * scale, 0, 40 * scale)
 		ctrl.Position = UDim2.new(0, 15 * scale, 0, 148 * scale)
 		ctrl.BackgroundTransparency = 1
 		ctrl.Parent = BB.gui.main
 
-		local prev = Instance.new("TextButton")
-		prev.Size = UDim2.new(0, 50 * scale, 0, 30 * scale)
-		prev.Position = UDim2.new(0, 0, 0, 5 * scale)
-		prev.BackgroundColor3 = C.DARK_GRAY
-		prev.BorderSizePixel = 0
-		prev.Text = "PREV"
-		prev.TextColor3 = C.WHITE
-		prev.TextSize = 12 * scale
-		prev.Font = Enum.Font.Code
-		prev.Parent = ctrl
-		prev.MouseEnter:Connect(function() prev.BackgroundColor3 = Color3.fromRGB(70, 70, 75) end)
-		prev.MouseLeave:Connect(function() prev.BackgroundColor3 = C.DARK_GRAY end)
+		-- Prev
+		e = Instance.new("TextButton")
+		e.Size = UDim2.new(0, 50 * scale, 0, 30 * scale)
+		e.Position = UDim2.new(0, 0, 0, 5 * scale)
+		e.BackgroundColor3 = C_DGRAY
+		e.BorderSizePixel = 0
+		e.Text = "PREV"
+		e.TextColor3 = C_WHITE
+		e.TextSize = 12 * scale
+		e.Font = Enum.Font.Code
+		e.Parent = ctrl
+		e.MouseEnter:Connect(function() e.BackgroundColor3 = Color3.fromRGB(70, 70, 75) end)
+		e.MouseLeave:Connect(function() e.BackgroundColor3 = C_DGRAY end)
 
+		-- Play
 		BB.gui.playBtn = Instance.new("TextButton")
 		BB.gui.playBtn.Size = UDim2.new(0, 80 * scale, 0, 30 * scale)
 		BB.gui.playBtn.Position = UDim2.new(0.5, -40 * scale, 0, 5 * scale)
-		BB.gui.playBtn.BackgroundColor3 = C.GREEN
+		BB.gui.playBtn.BackgroundColor3 = C_GREEN
 		BB.gui.playBtn.BorderSizePixel = 0
 		BB.gui.playBtn.Text = "PLAY"
-		BB.gui.playBtn.TextColor3 = C.BG
+		BB.gui.playBtn.TextColor3 = C_BG
 		BB.gui.playBtn.TextSize = 14 * scale
 		BB.gui.playBtn.Font = Enum.Font.Code
 		BB.gui.playBtn.Parent = ctrl
@@ -3599,26 +3593,28 @@ local boomboxCode = [[
 			updatePlayBtn()
 		end)
 
-		local nextB = Instance.new("TextButton")
-		nextB.Size = UDim2.new(0, 50 * scale, 0, 30 * scale)
-		nextB.Position = UDim2.new(1, -50 * scale, 0, 5 * scale)
-		nextB.BackgroundColor3 = C.DARK_GRAY
-		nextB.BorderSizePixel = 0
-		nextB.Text = "NEXT"
-		nextB.TextColor3 = C.WHITE
-		nextB.TextSize = 12 * scale
-		nextB.Font = Enum.Font.Code
-		nextB.Parent = ctrl
-		nextB.MouseEnter:Connect(function() nextB.BackgroundColor3 = Color3.fromRGB(70, 70, 75) end)
-		nextB.MouseLeave:Connect(function() nextB.BackgroundColor3 = C.DARK_GRAY end)
+		-- Next
+		e = Instance.new("TextButton")
+		e.Size = UDim2.new(0, 50 * scale, 0, 30 * scale)
+		e.Position = UDim2.new(1, -50 * scale, 0, 5 * scale)
+		e.BackgroundColor3 = C_DGRAY
+		e.BorderSizePixel = 0
+		e.Text = "NEXT"
+		e.TextColor3 = C_WHITE
+		e.TextSize = 12 * scale
+		e.Font = Enum.Font.Code
+		e.Parent = ctrl
+		e.MouseEnter:Connect(function() e.BackgroundColor3 = Color3.fromRGB(70, 70, 75) end)
+		e.MouseLeave:Connect(function() e.BackgroundColor3 = C_DGRAY end)
 
+		-- Loop
 		BB.gui.loopBtn = Instance.new("TextButton")
 		BB.gui.loopBtn.Size = UDim2.new(0, 70 * scale, 0, 25 * scale)
 		BB.gui.loopBtn.Position = UDim2.new(1, -75 * scale, 0, 42 * scale)
-		BB.gui.loopBtn.BackgroundColor3 = C.DARK_GRAY
+		BB.gui.loopBtn.BackgroundColor3 = C_DGRAY
 		BB.gui.loopBtn.BorderSizePixel = 0
 		BB.gui.loopBtn.Text = "LOOP OFF"
-		BB.gui.loopBtn.TextColor3 = C.WHITE
+		BB.gui.loopBtn.TextColor3 = C_WHITE
 		BB.gui.loopBtn.TextSize = 11 * scale
 		BB.gui.loopBtn.Font = Enum.Font.Code
 		BB.gui.loopBtn.Parent = ctrl
@@ -3636,21 +3632,21 @@ local boomboxCode = [[
 			updateLoopBtn()
 		end)
 
-		-- Volume with working slider
+		-- Volume
 		local volFrame = Instance.new("Frame")
 		volFrame.Size = UDim2.new(1, -30 * scale, 0, 30 * scale)
 		volFrame.Position = UDim2.new(0, 15 * scale, 0, 195 * scale)
 		volFrame.BackgroundTransparency = 1
 		volFrame.Parent = BB.gui.main
 
-		local volLabel = Instance.new("TextLabel")
-		volLabel.Size = UDim2.new(0, 50 * scale, 1, 0)
-		volLabel.BackgroundTransparency = 1
-		volLabel.Text = "VOL"
-		volLabel.TextColor3 = C.GRAY
-		volLabel.TextSize = 12 * scale
-		volLabel.Font = Enum.Font.Code
-		volLabel.Parent = volFrame
+		e = Instance.new("TextLabel")
+		e.Size = UDim2.new(0, 50 * scale, 1, 0)
+		e.BackgroundTransparency = 1
+		e.Text = "VOL"
+		e.TextColor3 = C_GRAY
+		e.TextSize = 12 * scale
+		e.Font = Enum.Font.Code
+		e.Parent = volFrame
 
 		local volHit = Instance.new("Frame")
 		volHit.Size = UDim2.new(1, -55 * scale, 0, 20 * scale)
@@ -3662,13 +3658,13 @@ local boomboxCode = [[
 		local volSlider = Instance.new("Frame")
 		volSlider.Size = UDim2.new(1, 0, 0, 4 * scale)
 		volSlider.Position = UDim2.new(0, 0, 0.5, -2 * scale)
-		volSlider.BackgroundColor3 = C.SLIDER_BG
+		volSlider.BackgroundColor3 = C_SLIDER
 		volSlider.BorderSizePixel = 0
 		volSlider.Parent = volHit
 
 		local volFill = Instance.new("Frame")
 		volFill.Size = UDim2.new(0.5, 0, 1, 0)
-		volFill.BackgroundColor3 = C.ACCENT
+		volFill.BackgroundColor3 = C_ACCENT
 		volFill.BorderSizePixel = 0
 		volFill.Parent = volSlider
 
@@ -3676,9 +3672,7 @@ local boomboxCode = [[
 		local function setVol(input)
 			local rel = math.clamp((input.Position.X - volHit.AbsolutePosition.X) / volHit.AbsoluteSize.X, 0, 1)
 			volFill.Size = UDim2.new(rel, 0, 1, 0)
-			if BB.sound then
-				BB.sound.Volume = rel
-			end
+			if BB.sound then BB.sound.Volume = rel end
 		end
 		volHit.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -3697,10 +3691,11 @@ local boomboxCode = [[
 			end
 		end)
 
+		-- Input
 		local inFrame = Instance.new("Frame")
 		inFrame.Size = UDim2.new(1, -30 * scale, 0, 35 * scale)
 		inFrame.Position = UDim2.new(0, 15 * scale, 0, 235 * scale)
-		inFrame.BackgroundColor3 = C.DARK
+		inFrame.BackgroundColor3 = C_DARK
 		inFrame.BorderSizePixel = 0
 		inFrame.Parent = BB.gui.main
 
@@ -3710,24 +3705,24 @@ local boomboxCode = [[
 		BB.gui.idBox.BackgroundTransparency = 1
 		BB.gui.idBox.Text = ""
 		BB.gui.idBox.PlaceholderText = "Enter Audio ID..."
-		BB.gui.idBox.TextColor3 = C.WHITE
-		BB.gui.idBox.PlaceholderColor3 = C.GRAY
+		BB.gui.idBox.TextColor3 = C_WHITE
+		BB.gui.idBox.PlaceholderColor3 = C_GRAY
 		BB.gui.idBox.TextSize = 14 * scale
 		BB.gui.idBox.Font = Enum.Font.Code
 		BB.gui.idBox.ClearTextOnFocus = false
 		BB.gui.idBox.Parent = inFrame
 
-		local submitBtn = Instance.new("TextButton")
-		submitBtn.Size = UDim2.new(0, 70 * scale, 1, -4 * scale)
-		submitBtn.Position = UDim2.new(1, -75 * scale, 0, 2 * scale)
-		submitBtn.BackgroundColor3 = C.ACCENT
-		submitBtn.BorderSizePixel = 0
-		submitBtn.Text = "LOAD"
-		submitBtn.TextColor3 = C.BG
-		submitBtn.TextSize = 14 * scale
-		submitBtn.Font = Enum.Font.Code
-		submitBtn.Parent = inFrame
-		submitBtn.MouseButton1Click:Connect(function()
+		e = Instance.new("TextButton")
+		e.Size = UDim2.new(0, 70 * scale, 1, -4 * scale)
+		e.Position = UDim2.new(1, -75 * scale, 0, 2 * scale)
+		e.BackgroundColor3 = C_ACCENT
+		e.BorderSizePixel = 0
+		e.Text = "LOAD"
+		e.TextColor3 = C_BG
+		e.TextSize = 14 * scale
+		e.Font = Enum.Font.Code
+		e.Parent = inFrame
+		e.MouseButton1Click:Connect(function()
 			local cleanId = BB.gui.idBox.Text:gsub("%D", "")
 			if cleanId ~= "" then playSong(cleanId) end
 		end)
@@ -3738,24 +3733,25 @@ local boomboxCode = [[
 			end
 		end)
 
-		local histLabel = Instance.new("TextLabel")
-		histLabel.Size = UDim2.new(1, -30 * scale, 0, 20 * scale)
-		histLabel.Position = UDim2.new(0, 15 * scale, 0, 280 * scale)
-		histLabel.BackgroundTransparency = 1
-		histLabel.Text = "RECENTLY PLAYED"
-		histLabel.TextColor3 = C.GRAY
-		histLabel.TextSize = 12 * scale
-		histLabel.Font = Enum.Font.Code
-		histLabel.TextXAlignment = Enum.TextXAlignment.Left
-		histLabel.Parent = BB.gui.main
+		-- History
+		e = Instance.new("TextLabel")
+		e.Size = UDim2.new(1, -30 * scale, 0, 20 * scale)
+		e.Position = UDim2.new(0, 15 * scale, 0, 280 * scale)
+		e.BackgroundTransparency = 1
+		e.Text = "RECENTLY PLAYED"
+		e.TextColor3 = C_GRAY
+		e.TextSize = 12 * scale
+		e.Font = Enum.Font.Code
+		e.TextXAlignment = Enum.TextXAlignment.Left
+		e.Parent = BB.gui.main
 
 		BB.gui.histFrame = Instance.new("ScrollingFrame")
 		BB.gui.histFrame.Size = UDim2.new(1, -30 * scale, 0, 140 * scale)
 		BB.gui.histFrame.Position = UDim2.new(0, 15 * scale, 0, 305 * scale)
-		BB.gui.histFrame.BackgroundColor3 = C.DARK
+		BB.gui.histFrame.BackgroundColor3 = C_DARK
 		BB.gui.histFrame.BorderSizePixel = 0
 		BB.gui.histFrame.ScrollBarThickness = 4 * scale
-		BB.gui.histFrame.ScrollBarImageColor3 = C.ACCENT
+		BB.gui.histFrame.ScrollBarImageColor3 = C_ACCENT
 		BB.gui.histFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 		BB.gui.histFrame.Parent = BB.gui.main
 
@@ -3769,43 +3765,30 @@ local boomboxCode = [[
 			return v and HttpService:JSONDecode(v.Value) or {}
 		end)
 		if ok then
-			for _, e in ipairs(saved) do
-				table.insert(BB.history, e)
+			for _, h in ipairs(saved) do
+				table.insert(BB.history, h)
 			end
 		end
 	end
 
-	local function openBoombox()
+	-- Public functions
+	function _G.OpenBoombox()
 		buildGUI()
-		BB.gui.main.Visible = true
 	end
 
-	player.Chatted:Connect(function(message)
-		local args = message:split(" ")
-		local cmd = args[1]:lower()
-
-		if cmd == "!boombox" then
-			openBoombox()
-			if args[2] then
-				local id = tostring(args[2]):gsub("%D", "")
+	function _G.BoomboxRun(msg)
+		local args = {}
+		for word in msg:sub(2):gmatch("%S+") do
+			table.insert(args, word)
+		end
+		local cmd = table.remove(args, 1)
+		if cmd == "boombox" then
+			_G.OpenBoombox()
+			if args[1] then
+				local id = tostring(args[1]):gsub("%D", "")
 				if id ~= "" then
 					task.wait(0.1)
 					playSong(id)
-				end
-			end
-		end
-	end)
-
-	function _G.Boombox:run(msg)
-		local args = msg:split(" ")
-		local cmd = args[1]:lower()
-		if cmd == "!boombox" then
-			self:open()
-			if args[2] then
-				local id = tostring(args[2]):gsub("%D", "")
-				if id ~= "" then
-					task.wait(0.1)
-					self:play(id)
 				end
 			end
 			return true
@@ -3813,15 +3796,7 @@ local boomboxCode = [[
 		return false
 	end
 
-	print("[Boombox CoreGui] Loaded! Type !boombox or !boombox [id]")
-]]
-
-local success, err = pcall(function()
-	loadstring(boomboxCode)()
-end)
-
-if not success then
-	warn("[Boombox] Failed to load: " .. tostring(err))
+	print("[Boombox] Loaded! Type !boombox or !boombox [id]")
 end
 -- ============================================
 -- Crosshair tingy
@@ -10965,7 +10940,7 @@ function processCmd(msg)
 		autoexecCommand()
 		
 	elseif cmd == "boombox" then
-	_G.Boombox:run(msg)
+		_G.BoomboxRun(msg)
 		
 -- Orbit
 	elseif cmd == "orbit" then
