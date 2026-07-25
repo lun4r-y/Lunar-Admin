@@ -11481,7 +11481,7 @@ tabBar.ZIndex = 2147483647
 
 cmdTab = Instance.new("TextButton", tabBar)
 cmdTab.Name = "CmdTab"
-cmdTab.Size = UDim2.new(0.333, -5, 1, 0)
+cmdTab.Size = UDim2.new(0.5, -5, 1, 0)
 cmdTab.BackgroundColor3 = currentTheme.accent
 cmdTab.Text = "Commands"
 cmdTab.Font = Enum.Font.Code
@@ -11493,8 +11493,8 @@ Instance.new("UICorner", cmdTab).CornerRadius = UDim.new(0, 6)
 
 setTab = Instance.new("TextButton", tabBar)
 setTab.Name = "SetTab"
-setTab.Size = UDim2.new(0.333, -5, 1, 0)
-setTab.Position = UDim2.new(0.333, 2.5, 0, 0)
+setTab.Size = UDim2.new(0.5, -5, 1, 0)
+setTab.Position = UDim2.new(0.5, 5, 0, 0)
 setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 setTab.Text = "Settings"
 setTab.Font = Enum.Font.Code
@@ -12727,317 +12727,23 @@ dBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ========== UNIVERSAL TAB ==========
-uniFrame = Instance.new("Frame", contentFrame)
-uniFrame.Name = "UniFrame"
-uniFrame.Size = UDim2.new(1, 0, 1, 0)
-uniFrame.BackgroundTransparency = 1
-uniFrame.Visible = false
-uniFrame.ZIndex = 2147483647
-
-uniScroll = Instance.new("ScrollingFrame", uniFrame)
-uniScroll.Size = UDim2.new(1, 0, 1, 0)
-uniScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-uniScroll.BorderSizePixel = 0
-uniScroll.ScrollBarThickness = math.floor(6 * scale)
-uniScroll.ScrollBarImageColor3 = currentTheme.accent
-uniScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-uniScroll.ZIndex = 2147483647
-Instance.new("UICorner", uniScroll).CornerRadius = UDim.new(0, 6)
-
-uniList = Instance.new("UIListLayout", uniScroll)
-uniList.Padding = UDim.new(0, math.floor(10 * scale))
-uniList.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Helper to make a button
-local function makeUniBtn(name, label, color, callback)
-	local btn = Instance.new("TextButton", uniScroll)
-	btn.Name = name
-	btn.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(44 * scale))
-	btn.Position = UDim2.new(0, math.floor(8 * scale), 0, 0)
-	btn.BackgroundColor3 = color or currentTheme.btn or Color3.fromRGB(50, 50, 60)
-	btn.Text = label
-	btn.Font = Enum.Font.Code
-	btn.TextSize = math.floor(14 * fontScale)
-	btn.TextColor3 = globalConfig.textColor
-	btn.BorderSizePixel = 0
-	btn.ZIndex = 2147483647
-	btn.LayoutOrder = #uniScroll:GetChildren()
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-	btn.MouseButton1Click:Connect(callback)
-	return btn
-end
-
--- TPWalk Section
-local tpwalkSection = makeSection(uniScroll, "TPWALK", 110)
-
-local tpwalkInput = Instance.new("TextBox", tpwalkSection)
-tpwalkInput.Size = UDim2.new(0.55, 0, 0, math.floor(32 * scale))
-tpwalkInput.Position = UDim2.new(0.05, 0, 0, math.floor(40 * scale))
-tpwalkInput.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-tpwalkInput.BorderSizePixel = 0
-tpwalkInput.Text = "5"
-tpwalkInput.PlaceholderText = "Speed..."
-tpwalkInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-tpwalkInput.Font = Enum.Font.Code
-tpwalkInput.TextSize = math.floor(13 * fontScale)
-tpwalkInput.TextColor3 = globalConfig.textColor
-tpwalkInput.ZIndex = 2147483647
-Instance.new("UICorner", tpwalkInput).CornerRadius = UDim.new(0, 6)
-
-local tpwalkBtn = Instance.new("TextButton", tpwalkSection)
-tpwalkBtn.Size = UDim2.new(0.32, 0, 0, math.floor(32 * scale))
-tpwalkBtn.Position = UDim2.new(0.63, 0, 0, math.floor(40 * scale))
-tpwalkBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
-tpwalkBtn.Text = "▶ Start"
-tpwalkBtn.Font = Enum.Font.Code
-tpwalkBtn.TextSize = math.floor(12 * fontScale)
-tpwalkBtn.TextColor3 = Color3.new(1,1,1)
-tpwalkBtn.BorderSizePixel = 0
-tpwalkBtn.ZIndex = 2147483647
-Instance.new("UICorner", tpwalkBtn).CornerRadius = UDim.new(0, 5)
-
-tpwalkBtn.MouseButton1Click:Connect(function()
-	local speed = tonumber(tpwalkInput.Text) or 5
-	_G.EnableTPWalk({tostring(speed)})
-end)
-
-local tpwalkReset = Instance.new("TextButton", tpwalkSection)
-tpwalkReset.Size = UDim2.new(0.9, 0, 0, math.floor(28 * scale))
-tpwalkReset.Position = UDim2.new(0.05, 0, 0, math.floor(78 * scale))
-tpwalkReset.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-tpwalkReset.Text = "⏹ Reset / Stop"
-tpwalkReset.Font = Enum.Font.Code
-tpwalkReset.TextSize = math.floor(12 * fontScale)
-tpwalkReset.TextColor3 = Color3.new(1,1,1)
-tpwalkReset.BorderSizePixel = 0
-tpwalkReset.ZIndex = 2147483647
-Instance.new("UICorner", tpwalkReset).CornerRadius = UDim.new(0, 5)
-
-tpwalkReset.MouseButton1Click:Connect(function()
-	_G.DisableTPWalk()
-end)
-
--- Quick Actions Section
-local quickSection = makeSection(uniScroll, "QUICK ACTIONS", 0)
-
--- Calculate dynamic height based on button count
-local btnHeight = math.floor(44 * scale)
-local btnPadding = math.floor(10 * scale)
-local rows = 4 -- 2 columns, 7 buttons = 4 rows (last row has 1)
-quickSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(36 * scale) + (rows * btnHeight) + ((rows + 1) * btnPadding))
-
-local quickGrid = Instance.new("UIGridLayout", quickSection)
-quickGrid.CellSize = UDim2.new(0.47, 0, 0, btnHeight)
-quickGrid.CellPadding = UDim2.new(0, math.floor(8 * scale), 0, btnPadding)
-quickGrid.SortOrder = Enum.SortOrder.LayoutOrder
-quickGrid.FillDirection = Enum.FillDirection.Horizontal
-quickGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-quickGrid.StartCorner = Enum.StartCorner.TopLeft
-
--- Fly Button
-local flyBtn = Instance.new("TextButton", quickSection)
-flyBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
-flyBtn.Text = "✈️ Fly"
-flyBtn.Font = Enum.Font.Code
-flyBtn.TextSize = math.floor(12 * fontScale)
-flyBtn.TextColor3 = Color3.new(1,1,1)
-flyBtn.BorderSizePixel = 0
-flyBtn.ZIndex = 2147483647
-flyBtn.LayoutOrder = 1
-Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0, 6)
-flyBtn.MouseButton1Click:Connect(function()
-	if fly then
-		fly(client, nil)
-	else
-		-- Try common fly entry points
-		if _G.StartFly then _G.StartFly() end
-		if toggleFly then toggleFly() end
-	end
-end)
-
--- Fling Button
-local flingBtn = Instance.new("TextButton", quickSection)
-flingBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-flingBtn.Text = "💥 Fling"
-flingBtn.Font = Enum.Font.Code
-flingBtn.TextSize = math.floor(12 * fontScale)
-flingBtn.TextColor3 = Color3.new(1,1,1)
-flingBtn.BorderSizePixel = 0
-flingBtn.ZIndex = 2147483647
-flingBtn.LayoutOrder = 2
-Instance.new("UICorner", flingBtn).CornerRadius = UDim.new(0, 6)
-flingBtn.MouseButton1Click:Connect(function()
-	if TouchFling and TouchFling.CreateGUI then
-		TouchFling:CreateGUI()
-		StarterGui:SetCore("SendNotification", {
-			Title = "Touch Fling", 
-			Text = "GUI Opened", 
-			Duration = 3
-		})
-	end
-end)
-
--- Aimbot Button
-local aimbotBtn = Instance.new("TextButton", quickSection)
-aimbotBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
-aimbotBtn.Text = "🎯 Aimbot"
-aimbotBtn.Font = Enum.Font.Code
-aimbotBtn.TextSize = math.floor(12 * fontScale)
-aimbotBtn.TextColor3 = Color3.new(1,1,1)
-aimbotBtn.BorderSizePixel = 0
-aimbotBtn.ZIndex = 2147483647
-aimbotBtn.LayoutOrder = 3
-Instance.new("UICorner", aimbotBtn).CornerRadius = UDim.new(0, 6)
-aimbotBtn.MouseButton1Click:Connect(function()
-	if createAimbotPanel then
-		createAimbotPanel()
-	end
-end)
-
--- Crosshair Button
-local crosshairBtn = Instance.new("TextButton", quickSection)
-crosshairBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-crosshairBtn.Text = "➕ Crosshair"
-crosshairBtn.Font = Enum.Font.Code
-crosshairBtn.TextSize = math.floor(12 * fontScale)
-crosshairBtn.TextColor3 = Color3.new(0,0,0)
-crosshairBtn.BorderSizePixel = 0
-crosshairBtn.ZIndex = 2147483647
-crosshairBtn.LayoutOrder = 4
-Instance.new("UICorner", crosshairBtn).CornerRadius = UDim.new(0, 6)
-crosshairBtn.MouseButton1Click:Connect(function()
-	if LoadLunarCrosshair then
-		LoadLunarCrosshair()
-	end
-end)
-
--- Sit Button
-local sitBtn = Instance.new("TextButton", quickSection)
-sitBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-sitBtn.Text = "🪑 Sit"
-sitBtn.Font = Enum.Font.Code
-sitBtn.TextSize = math.floor(12 * fontScale)
-sitBtn.TextColor3 = Color3.new(1,1,1)
-sitBtn.BorderSizePixel = 0
-sitBtn.ZIndex = 2147483647
-sitBtn.LayoutOrder = 5
-Instance.new("UICorner", sitBtn).CornerRadius = UDim.new(0, 6)
-sitBtn.MouseButton1Click:Connect(function()
-	if sit then
-		sit(client)
-	end
-end)
-
--- Noclip Toggle Button
-local noclipBtn = Instance.new("TextButton", quickSection)
-noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
-noclipBtn.Text = "👻 Noclip: OFF"
-noclipBtn.Font = Enum.Font.Code
-noclipBtn.TextSize = math.floor(12 * fontScale)
-noclipBtn.TextColor3 = Color3.new(0,0,0)
-noclipBtn.BorderSizePixel = 0
-noclipBtn.ZIndex = 2147483647
-noclipBtn.LayoutOrder = 6
-Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(0, 6)
-
-local noclipEnabled = false
-noclipBtn.MouseButton1Click:Connect(function()
-	noclipEnabled = not noclipEnabled
-	if noclipEnabled then
-		noclipBtn.Text = "👻 Noclip: ON"
-		noclipBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-		if noclip then noclip(client) end
-	else
-		noclipBtn.Text = "👻 Noclip: OFF"
-		noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
-		if unnoclip then unnoclip(client) end
-	end
-end)
-
--- Rejoin Button
-local rejoinBtn = Instance.new("TextButton", quickSection)
-rejoinBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-rejoinBtn.Text = "🔄 Rejoin"
-rejoinBtn.Font = Enum.Font.Code
-rejoinBtn.TextSize = math.floor(12 * fontScale)
-rejoinBtn.TextColor3 = Color3.new(0,0,0)
-rejoinBtn.BorderSizePixel = 0
-rejoinBtn.ZIndex = 2147483647
-rejoinBtn.LayoutOrder = 7
-Instance.new("UICorner", rejoinBtn).CornerRadius = UDim.new(0, 6)
-rejoinBtn.MouseButton1Click:Connect(function()
-	if rejoin then
-		rejoin(LocalPlayer, {})
-	end
-end)
-
--- Serverhop Button
-local serverhopBtn = Instance.new("TextButton", quickSection)
-serverhopBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
-serverhopBtn.Text = "🌐 Serverhop"
-serverhopBtn.Font = Enum.Font.Code
-serverhopBtn.TextSize = math.floor(12 * fontScale)
-serverhopBtn.TextColor3 = Color3.new(0,0,0)
-serverhopBtn.BorderSizePixel = 0
-serverhopBtn.ZIndex = 2147483647
-serverhopBtn.LayoutOrder = 8
-Instance.new("UICorner", serverhopBtn).CornerRadius = UDim.new(0, 6)
-serverhopBtn.MouseButton1Click:Connect(function()
-	if serverhop then
-		serverhop(client, {})
-	end
-end)
-
--- Universal Tab Button
-uniTab = Instance.new("TextButton", tabBar)
-uniTab.Name = "UniTab"
-uniTab.Size = UDim2.new(0.333, -5, 1, 0)
-uniTab.Position = UDim2.new(0.667, 5, 0, 0)
-uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-uniTab.Text = "Universal"
-uniTab.Font = Enum.Font.Code
-uniTab.TextSize = math.floor(16 * fontScale)
-uniTab.TextColor3 = globalConfig.textColor
-uniTab.BorderSizePixel = 0
-uniTab.ZIndex = 2147483647
-Instance.new("UICorner", uniTab).CornerRadius = UDim.new(0, 6)
-
 -- Tab switching
 cmdTab.MouseButton1Click:Connect(function()
 	cmdFrame.Visible = true
 	setFrame.Visible = false
-	uniFrame.Visible = false
 	cmdTab.BackgroundColor3 = currentTheme.accent
 	cmdTab.TextColor3 = Color3.new(0,0,0)
 	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	setTab.TextColor3 = globalConfig.textColor
-	uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	uniTab.TextColor3 = globalConfig.textColor
 end)
 
 setTab.MouseButton1Click:Connect(function()
 	cmdFrame.Visible = false
 	setFrame.Visible = true
-	uniFrame.Visible = false
 	setTab.BackgroundColor3 = currentTheme.accent
 	setTab.TextColor3 = Color3.new(0,0,0)
 	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	cmdTab.TextColor3 = globalConfig.textColor
-	uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	uniTab.TextColor3 = globalConfig.textColor
-end)
-
-uniTab.MouseButton1Click:Connect(function()
-	cmdFrame.Visible = false
-	setFrame.Visible = false
-	uniFrame.Visible = true
-	uniTab.BackgroundColor3 = currentTheme.accent
-	uniTab.TextColor3 = Color3.new(0,0,0)
-	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	cmdTab.TextColor3 = globalConfig.textColor
-	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	setTab.TextColor3 = globalConfig.textColor
 end)
 
 -- =============================================================
@@ -13083,7 +12789,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			else
 				playClose()
 			end
-		end
+		ende
 	end
 end)
 --- =============================================================
