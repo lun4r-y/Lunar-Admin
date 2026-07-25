@@ -12739,254 +12739,179 @@ uniScroll = Instance.new("ScrollingFrame", uniFrame)
 uniScroll.Size = UDim2.new(1, 0, 1, 0)
 uniScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 uniScroll.BorderSizePixel = 0
-uniScroll.ScrollBarThickness = math.floor(6 * scale)
+uniScroll.ScrollBarThickness = math.floor(4 * scale)
 uniScroll.ScrollBarImageColor3 = currentTheme.accent
 uniScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 uniScroll.ZIndex = 2147483647
 Instance.new("UICorner", uniScroll).CornerRadius = UDim.new(0, 6)
 
 uniList = Instance.new("UIListLayout", uniScroll)
-uniList.Padding = UDim.new(0, math.floor(10 * scale))
+uniList.Padding = UDim.new(0, math.floor(8 * scale))
 uniList.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Helper to make a button
-local function makeUniBtn(name, label, color, callback)
-	local btn = Instance.new("TextButton", uniScroll)
-	btn.Name = name
-	btn.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(44 * scale))
-	btn.Position = UDim2.new(0, math.floor(8 * scale), 0, 0)
-	btn.BackgroundColor3 = color or currentTheme.btn or Color3.fromRGB(50, 50, 60)
-	btn.Text = label
-	btn.Font = Enum.Font.Code
-	btn.TextSize = math.floor(14 * fontScale)
-	btn.TextColor3 = globalConfig.textColor
-	btn.BorderSizePixel = 0
-	btn.ZIndex = 2147483647
-	btn.LayoutOrder = #uniScroll:GetChildren()
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-	btn.MouseButton1Click:Connect(callback)
-	return btn
-end
+-- Reusable element reference
+local el
 
 -- TPWalk Section
-local tpwalkSection = makeSection(uniScroll, "TPWALK", 110)
+el = makeSection(uniScroll, "TPWALK", 100)
 
-local tpwalkInput = Instance.new("TextBox", tpwalkSection)
-tpwalkInput.Size = UDim2.new(0.55, 0, 0, math.floor(32 * scale))
-tpwalkInput.Position = UDim2.new(0.05, 0, 0, math.floor(40 * scale))
-tpwalkInput.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-tpwalkInput.BorderSizePixel = 0
-tpwalkInput.Text = "5"
-tpwalkInput.PlaceholderText = "Speed..."
-tpwalkInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-tpwalkInput.Font = Enum.Font.Code
-tpwalkInput.TextSize = math.floor(13 * fontScale)
-tpwalkInput.TextColor3 = globalConfig.textColor
-tpwalkInput.ZIndex = 2147483647
-Instance.new("UICorner", tpwalkInput).CornerRadius = UDim.new(0, 6)
+el = Instance.new("TextBox", el)
+el.Name = "TPWalkInput"
+el.Size = UDim2.new(0.5, 0, 0, math.floor(28 * scale))
+el.Position = UDim2.new(0.05, 0, 0, math.floor(36 * scale))
+el.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+el.BorderSizePixel = 0
+el.Text = "5"
+el.PlaceholderText = "Speed..."
+el.PlaceholderColor3 = Color3.fromRGB(80, 80, 90)
+el.Font = Enum.Font.Code
+el.TextSize = math.floor(12 * fontScale)
+el.TextColor3 = globalConfig.textColor
+el.ZIndex = 2147483647
+Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
+local tpwalkInput = el
 
-local tpwalkBtn = Instance.new("TextButton", tpwalkSection)
-tpwalkBtn.Size = UDim2.new(0.32, 0, 0, math.floor(32 * scale))
-tpwalkBtn.Position = UDim2.new(0.63, 0, 0, math.floor(40 * scale))
-tpwalkBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
-tpwalkBtn.Text = "▶ Start"
-tpwalkBtn.Font = Enum.Font.Code
-tpwalkBtn.TextSize = math.floor(12 * fontScale)
-tpwalkBtn.TextColor3 = Color3.new(1,1,1)
-tpwalkBtn.BorderSizePixel = 0
-tpwalkBtn.ZIndex = 2147483647
-Instance.new("UICorner", tpwalkBtn).CornerRadius = UDim.new(0, 5)
-
-tpwalkBtn.MouseButton1Click:Connect(function()
-	local speed = tonumber(tpwalkInput.Text) or 5
-	_G.EnableTPWalk({tostring(speed)})
+el = Instance.new("TextButton", tpwalkInput.Parent)
+el.Size = UDim2.new(0.35, 0, 0, math.floor(28 * scale))
+el.Position = UDim2.new(0.6, 0, 0, math.floor(36 * scale))
+el.BackgroundColor3 = Color3.fromRGB(45, 100, 70)
+el.Text = "Start"
+el.Font = Enum.Font.Code
+el.TextSize = math.floor(11 * fontScale)
+el.TextColor3 = Color3.fromRGB(220, 255, 220)
+el.BorderSizePixel = 0
+el.ZIndex = 2147483647
+Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
+el.MouseButton1Click:Connect(function()
+	local spd = tonumber(tpwalkInput.Text) or 5
+	_G.EnableTPWalk({tostring(spd)})
 end)
 
-local tpwalkReset = Instance.new("TextButton", tpwalkSection)
-tpwalkReset.Size = UDim2.new(0.9, 0, 0, math.floor(28 * scale))
-tpwalkReset.Position = UDim2.new(0.05, 0, 0, math.floor(78 * scale))
-tpwalkReset.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-tpwalkReset.Text = "⏹ Reset / Stop"
-tpwalkReset.Font = Enum.Font.Code
-tpwalkReset.TextSize = math.floor(12 * fontScale)
-tpwalkReset.TextColor3 = Color3.new(1,1,1)
-tpwalkReset.BorderSizePixel = 0
-tpwalkReset.ZIndex = 2147483647
-Instance.new("UICorner", tpwalkReset).CornerRadius = UDim.new(0, 5)
-
-tpwalkReset.MouseButton1Click:Connect(function()
+el = Instance.new("TextButton", tpwalkInput.Parent)
+el.Size = UDim2.new(0.9, 0, 0, math.floor(24 * scale))
+el.Position = UDim2.new(0.05, 0, 0, math.floor(68 * scale))
+el.BackgroundColor3 = Color3.fromRGB(80, 45, 45)
+el.Text = "Reset / Stop"
+el.Font = Enum.Font.Code
+el.TextSize = math.floor(11 * fontScale)
+el.TextColor3 = Color3.fromRGB(255, 180, 180)
+el.BorderSizePixel = 0
+el.ZIndex = 2147483647
+Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
+el.MouseButton1Click:Connect(function()
 	_G.DisableTPWalk()
 end)
 
 -- Quick Actions Section
-local quickSection = makeSection(uniScroll, "QUICK ACTIONS", 0)
+el = makeSection(uniScroll, "QUICK ACTIONS", 0)
 
--- Calculate dynamic height based on button count
-local btnHeight = math.floor(44 * scale)
-local btnPadding = math.floor(10 * scale)
-local rows = 4 -- 2 columns, 7 buttons = 4 rows (last row has 1)
-quickSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(36 * scale) + (rows * btnHeight) + ((rows + 1) * btnPadding))
+-- Modern muted colors
+local btnColors = {
+	fly = Color3.fromRGB(55, 75, 110),
+	fling = Color3.fromRGB(110, 55, 55),
+	aimbot = Color3.fromRGB(110, 70, 40),
+	crosshair = Color3.fromRGB(55, 110, 55),
+	sit = Color3.fromRGB(75, 55, 110),
+	noclip = Color3.fromRGB(90, 80, 40),
+	rejoin = Color3.fromRGB(55, 85, 110),
+	serverhop = Color3.fromRGB(110, 80, 45),
+	firstp = Color3.fromRGB(60, 60, 70),
+	thirdp = Color3.fromRGB(60, 60, 70)
+}
 
-local quickGrid = Instance.new("UIGridLayout", quickSection)
-quickGrid.CellSize = UDim2.new(0.47, 0, 0, btnHeight)
-quickGrid.CellPadding = UDim2.new(0, math.floor(8 * scale), 0, btnPadding)
-quickGrid.SortOrder = Enum.SortOrder.LayoutOrder
-quickGrid.FillDirection = Enum.FillDirection.Horizontal
-quickGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-quickGrid.StartCorner = Enum.StartCorner.TopLeft
+local btnTextColors = {
+	fly = Color3.fromRGB(180, 200, 255),
+	fling = Color3.fromRGB(255, 180, 180),
+	aimbot = Color3.fromRGB(255, 200, 160),
+	crosshair = Color3.fromRGB(180, 255, 180),
+	sit = Color3.fromRGB(200, 180, 255),
+	noclip = Color3.fromRGB(255, 240, 180),
+	rejoin = Color3.fromRGB(180, 210, 255),
+	serverhop = Color3.fromRGB(255, 210, 160),
+	firstp = Color3.fromRGB(200, 200, 210),
+	thirdp = Color3.fromRGB(200, 200, 210)
+}
 
--- Fly Button
-local flyBtn = Instance.new("TextButton", quickSection)
-flyBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
-flyBtn.Text = "✈️ Fly"
-flyBtn.Font = Enum.Font.Code
-flyBtn.TextSize = math.floor(12 * fontScale)
-flyBtn.TextColor3 = Color3.new(1,1,1)
-flyBtn.BorderSizePixel = 0
-flyBtn.ZIndex = 2147483647
-flyBtn.LayoutOrder = 1
-Instance.new("UICorner", flyBtn).CornerRadius = UDim.new(0, 6)
-flyBtn.MouseButton1Click:Connect(function()
-	if fly then
-		fly(client, nil)
-	else
-		-- Try common fly entry points
-		if _G.StartFly then _G.StartFly() end
-		if toggleFly then toggleFly() end
-	end
+local bH = math.floor(38 * scale)
+local bP = math.floor(6 * scale)
+el.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(32 * scale) + (5 * bH) + (6 * bP))
+
+local grid = Instance.new("UIGridLayout", el)
+grid.CellSize = UDim2.new(0.48, 0, 0, bH)
+grid.CellPadding = UDim2.new(0, bP, 0, bP)
+grid.SortOrder = Enum.SortOrder.LayoutOrder
+grid.FillDirection = Enum.FillDirection.Horizontal
+grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Helper to make a quick button (no new locals per button)
+local function qBtn(parent, name, label, colorKey, callback)
+	local b = Instance.new("TextButton", parent)
+	b.Name = name
+	b.BackgroundColor3 = btnColors[colorKey]
+	b.Text = label
+	b.Font = Enum.Font.Code
+	b.TextSize = math.floor(11 * fontScale)
+	b.TextColor3 = btnTextColors[colorKey]
+	b.BorderSizePixel = 0
+	b.ZIndex = 2147483647
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
+	b.MouseButton1Click:Connect(callback)
+	return b
+end
+
+qBtn(el, "FlyBtn", "Fly", "fly", function()
+	if fly then fly(client, nil) end
 end)
 
--- Fling Button
-local flingBtn = Instance.new("TextButton", quickSection)
-flingBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-flingBtn.Text = "💥 Fling"
-flingBtn.Font = Enum.Font.Code
-flingBtn.TextSize = math.floor(12 * fontScale)
-flingBtn.TextColor3 = Color3.new(1,1,1)
-flingBtn.BorderSizePixel = 0
-flingBtn.ZIndex = 2147483647
-flingBtn.LayoutOrder = 2
-Instance.new("UICorner", flingBtn).CornerRadius = UDim.new(0, 6)
-flingBtn.MouseButton1Click:Connect(function()
+qBtn(el, "FlingBtn", "Fling", "fling", function()
 	if TouchFling and TouchFling.CreateGUI then
 		TouchFling:CreateGUI()
-		StarterGui:SetCore("SendNotification", {
-			Title = "Touch Fling", 
-			Text = "GUI Opened", 
-			Duration = 3
-		})
+		StarterGui:SetCore("SendNotification", {Title = "Touch Fling", Text = "GUI Opened", Duration = 3})
 	end
 end)
 
--- Aimbot Button
-local aimbotBtn = Instance.new("TextButton", quickSection)
-aimbotBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
-aimbotBtn.Text = "🎯 Aimbot"
-aimbotBtn.Font = Enum.Font.Code
-aimbotBtn.TextSize = math.floor(12 * fontScale)
-aimbotBtn.TextColor3 = Color3.new(1,1,1)
-aimbotBtn.BorderSizePixel = 0
-aimbotBtn.ZIndex = 2147483647
-aimbotBtn.LayoutOrder = 3
-Instance.new("UICorner", aimbotBtn).CornerRadius = UDim.new(0, 6)
-aimbotBtn.MouseButton1Click:Connect(function()
-	if createAimbotPanel then
-		createAimbotPanel()
-	end
+qBtn(el, "AimbotBtn", "Aimbot", "aimbot", function()
+	if createAimbotPanel then createAimbotPanel() end
 end)
 
--- Crosshair Button
-local crosshairBtn = Instance.new("TextButton", quickSection)
-crosshairBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-crosshairBtn.Text = "➕ Crosshair"
-crosshairBtn.Font = Enum.Font.Code
-crosshairBtn.TextSize = math.floor(12 * fontScale)
-crosshairBtn.TextColor3 = Color3.new(0,0,0)
-crosshairBtn.BorderSizePixel = 0
-crosshairBtn.ZIndex = 2147483647
-crosshairBtn.LayoutOrder = 4
-Instance.new("UICorner", crosshairBtn).CornerRadius = UDim.new(0, 6)
-crosshairBtn.MouseButton1Click:Connect(function()
-	if LoadLunarCrosshair then
-		LoadLunarCrosshair()
-	end
+qBtn(el, "CrosshairBtn", "Crosshair", "crosshair", function()
+	if LoadLunarCrosshair then LoadLunarCrosshair() end
 end)
 
--- Sit Button
-local sitBtn = Instance.new("TextButton", quickSection)
-sitBtn.BackgroundColor3 = Color3.fromRGB(150, 100, 255)
-sitBtn.Text = "🪑 Sit"
-sitBtn.Font = Enum.Font.Code
-sitBtn.TextSize = math.floor(12 * fontScale)
-sitBtn.TextColor3 = Color3.new(1,1,1)
-sitBtn.BorderSizePixel = 0
-sitBtn.ZIndex = 2147483647
-sitBtn.LayoutOrder = 5
-Instance.new("UICorner", sitBtn).CornerRadius = UDim.new(0, 6)
-sitBtn.MouseButton1Click:Connect(function()
-	if sit then
-		sit(client)
-	end
+qBtn(el, "SitBtn", "Sit", "sit", function()
+	if sit then sit(client) end
 end)
 
--- Noclip Toggle Button
-local noclipBtn = Instance.new("TextButton", quickSection)
-noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
-noclipBtn.Text = "👻 Noclip: OFF"
-noclipBtn.Font = Enum.Font.Code
-noclipBtn.TextSize = math.floor(12 * fontScale)
-noclipBtn.TextColor3 = Color3.new(0,0,0)
-noclipBtn.BorderSizePixel = 0
-noclipBtn.ZIndex = 2147483647
-noclipBtn.LayoutOrder = 6
-Instance.new("UICorner", noclipBtn).CornerRadius = UDim.new(0, 6)
-
-local noclipEnabled = false
-noclipBtn.MouseButton1Click:Connect(function()
-	noclipEnabled = not noclipEnabled
-	if noclipEnabled then
-		noclipBtn.Text = "👻 Noclip: ON"
-		noclipBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+-- Noclip toggle (needs state tracking)
+local ncBtn = qBtn(el, "NoclipBtn", "Noclip: OFF", "noclip", function() end)
+local ncOn = false
+ncBtn.MouseButton1Click:Connect(function()
+	ncOn = not ncOn
+	if ncOn then
+		ncBtn.Text = "Noclip: ON"
+		ncBtn.BackgroundColor3 = Color3.fromRGB(55, 90, 55)
 		if noclip then noclip(client) end
 	else
-		noclipBtn.Text = "👻 Noclip: OFF"
-		noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+		ncBtn.Text = "Noclip: OFF"
+		ncBtn.BackgroundColor3 = btnColors.noclip
 		if unnoclip then unnoclip(client) end
 	end
 end)
 
--- Rejoin Button
-local rejoinBtn = Instance.new("TextButton", quickSection)
-rejoinBtn.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-rejoinBtn.Text = "🔄 Rejoin"
-rejoinBtn.Font = Enum.Font.Code
-rejoinBtn.TextSize = math.floor(12 * fontScale)
-rejoinBtn.TextColor3 = Color3.new(0,0,0)
-rejoinBtn.BorderSizePixel = 0
-rejoinBtn.ZIndex = 2147483647
-rejoinBtn.LayoutOrder = 7
-Instance.new("UICorner", rejoinBtn).CornerRadius = UDim.new(0, 6)
-rejoinBtn.MouseButton1Click:Connect(function()
-	if rejoin then
-		rejoin(LocalPlayer, {})
-	end
+qBtn(el, "RejoinBtn", "Rejoin", "rejoin", function()
+	if rejoin then rejoin(LocalPlayer, {}) end
 end)
 
--- Serverhop Button
-local serverhopBtn = Instance.new("TextButton", quickSection)
-serverhopBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
-serverhopBtn.Text = "🌐 Serverhop"
-serverhopBtn.Font = Enum.Font.Code
-serverhopBtn.TextSize = math.floor(12 * fontScale)
-serverhopBtn.TextColor3 = Color3.new(0,0,0)
-serverhopBtn.BorderSizePixel = 0
-serverhopBtn.ZIndex = 2147483647
-serverhopBtn.LayoutOrder = 8
-Instance.new("UICorner", serverhopBtn).CornerRadius = UDim.new(0, 6)
-serverhopBtn.MouseButton1Click:Connect(function()
-	if serverhop then
-		serverhop(client, {})
-	end
+qBtn(el, "ServerhopBtn", "Serverhop", "serverhop", function()
+	if serverhop then serverhop(client, {}) end
+end)
+
+qBtn(el, "FirstPBtn", "First Person", "firstp", function()
+	if firstp then firstp() end
+end)
+
+qBtn(el, "ThirdPBtn", "Third Person", "thirdp", function()
+	if thirdp then thirdp() end
 end)
 
 -- Universal Tab Button
