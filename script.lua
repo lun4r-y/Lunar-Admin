@@ -12789,7 +12789,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			else
 				playClose()
 			end
-		ende
+		end
 	end
 end)
 --- =============================================================
