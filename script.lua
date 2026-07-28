@@ -2998,7 +2998,199 @@ function MM2ESP:SetupLoop()
 		if self.ESP_Enabled then self:UpdateAllESP() end
 	end)
 end
+-- ═══════════════════════════════════════════════════════════
+-- Anti-lag
+-- ═══════════════════════════════════════════════════════════
 
+_G.AntiLagActive = false
+_G.AntiLagOriginals = {
+	Lighting = {},
+	Parts = {},
+	Textures = {},
+	Graphics = {},
+}
+
+-- Helper: recursively collect all descendants
+local function getAllDescendants(parent)
+	local list = {}
+	for _, v in ipairs(parent:GetDescendants()) do
+		table.insert(list, v)
+	end
+	return list
+end
+
+_G.StartAntiLag = function()
+	if _G.AntiLagActive then return end
+	_G.AntiLagActive = true
+
+	local Lighting = game:GetService("Lighting")
+	local Workspace = game:GetService("Workspace")
+	local Settings = UserSettings():GetService("UserGameSettings")
+
+	-- 1) Save & strip Lighting
+	local lightSave = {}
+	for _, prop in ipairs({"FogStart","FogEnd","FogColor","Brightness","GlobalShadows","ShadowSoftness","EnvironmentDiffuseScale","EnvironmentSpecularScale","OutdoorAmbient","Ambient","ClockTime","GeographicLatitude"}) do
+		local ok, val = pcall(function() return Lighting[prop] end)
+		if ok then
+			lightSave[prop] = val
+			pcall(function() Lighting[prop] = (prop == "FogStart" and 0 or prop == "FogEnd" and 9e9 or prop == "FogColor" and Color3.new(0,0,0) or prop == "Brightness" and 1 or prop == "GlobalShadows" and false or prop == "ShadowSoftness" and 0 or prop == "EnvironmentDiffuseScale" and 0 or prop == "EnvironmentSpecularScale" and 0 or prop == "OutdoorAmbient" and Color3.new(1,1,1) or prop == "Ambient" and Color3.new(1,1,1) or prop == "ClockTime" and 12 or prop == "GeographicLatitude" and 0) end)
+		end
+	end
+	_G.AntiLagOriginals.Lighting = lightSave
+
+	-- Remove atmosphere / blur / color correction / bloom effects
+	for _, effect in ipairs(Lighting:GetChildren()) do
+		if effect:IsA("Atmosphere") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") then
+			effect.Enabled = false
+		end
+	end
+
+	-- 2) Save & lower graphics
+	local okGfx, savedGfx = pcall(function()
+		return {
+			SavedQualityLevel = Settings.SavedQualityLevel,
+			MasterVolume = Settings.MasterVolume,
+		}
+	end)
+	if okGfx then
+		_G.AntiLagOriginals.Graphics = savedGfx
+		pcall(function() Settings.SavedQualityLevel = 1 end) -- lowest quality
+	end
+
+	-- 3) Save & strip Workspace parts
+	local partSave = {}
+	local texSave = {}
+	for _, obj in ipairs(getAllDescendants(Workspace)) do
+		-- Materials
+		if obj:IsA("BasePart") and not obj:IsA("Terrain") then
+			partSave[obj] = obj.Material
+			pcall(function() obj.Material = Enum.Material.SmoothPlastic end)
+			pcall(function() obj.Reflectance = 0 end)
+			-- Optional: make everything same color so no texture cost
+			-- pcall(function() obj.Color = Color3.fromRGB(163,162,165) end)
+		end
+
+		-- Textures / Decals / SurfaceGuis / ParticleEmitters
+		if obj:IsA("Texture") or obj:IsA("Decal") then
+			texSave[obj] = obj.Transparency
+			pcall(function() obj.Transparency = 1 end)
+		elseif obj:IsA("SurfaceGui") or obj:IsA("BillboardGui") then
+			texSave[obj] = obj.Enabled
+			pcall(function() obj.Enabled = false end)
+		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+			texSave[obj] = obj.Enabled
+			pcall(function() obj.Enabled = false end)
+		elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+			texSave[obj] = obj.Enabled
+			pcall(function() obj.Enabled = false end)
+		elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+			texSave[obj] = obj.Enabled
+			pcall(function() obj.Enabled = false end)
+		elseif obj:IsA("MeshPart") then
+			-- Some MeshParts have TextureID
+			if obj.TextureID and obj.TextureID ~= "" then
+				texSave[obj] = obj.TextureID
+				pcall(function() obj.TextureID = "" end)
+			end
+		end
+	end
+	_G.AntiLagOriginals.Parts = partSave
+	_G.AntiLagOriginals.Textures = texSave
+
+	-- 4) Terrain
+	pcall(function()
+		_G.AntiLagOriginals.TerrainMaterial = Workspace.Terrain.Material
+		Workspace.Terrain.Material = Enum.Material.Air -- visually clears terrain (restores on unantilag)
+	end)
+	pcall(function()
+		Workspace.Terrain.WaterReflectance = 0
+		Workspace.Terrain.WaterTransparency = 1
+		Workspace.Terrain.WaterWaveSize = 0
+		Workspace.Terrain.WaterWaveSpeed = 0
+	end)
+
+	-- 5) Sky (disable custom sky)
+	for _, sky in ipairs(Lighting:GetChildren()) do
+		if sky:IsA("Sky") then
+			sky.Parent = nil -- hide, don't destroy
+			_G.AntiLagOriginals.Sky = sky
+			break
+		end
+	end
+
+	-- Notify
+	game:GetService("StarterGui"):SetCore("SendNotification", {
+		Title = "AntiLag",
+		Text = "FPS mode enabled. Textures & effects removed.",
+		Duration = 3
+	})
+end
+
+_G.StopAntiLag = function()
+	if not _G.AntiLagActive then return end
+	_G.AntiLagActive = false
+
+	local Lighting = game:GetService("Lighting")
+	local Workspace = game:GetService("Workspace")
+	local Settings = UserSettings():GetService("UserGameSettings")
+
+	-- 1) Restore Lighting
+	for prop, val in pairs(_G.AntiLagOriginals.Lighting) do
+		pcall(function() Lighting[prop] = val end)
+	end
+	-- Re-enable effects
+	for _, effect in ipairs(Lighting:GetChildren()) do
+		if effect:IsA("Atmosphere") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") then
+			effect.Enabled = true
+		end
+	end
+
+	-- 2) Restore graphics
+	if _G.AntiLagOriginals.Graphics.SavedQualityLevel then
+		pcall(function() Settings.SavedQualityLevel = _G.AntiLagOriginals.Graphics.SavedQualityLevel end)
+	end
+
+	-- 3) Restore parts
+	for part, mat in pairs(_G.AntiLagOriginals.Parts) do
+		if part and part.Parent then
+			pcall(function() part.Material = mat end)
+		end
+	end
+
+	-- 4) Restore textures / decals / guis / particles / lights
+	for obj, original in pairs(_G.AntiLagOriginals.Textures) do
+		if obj and obj.Parent then
+			if obj:IsA("Texture") or obj:IsA("Decal") then
+				pcall(function() obj.Transparency = original end)
+			elseif obj:IsA("SurfaceGui") or obj:IsA("BillboardGui") or obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+				pcall(function() obj.Enabled = original end)
+			elseif obj:IsA("MeshPart") then
+				pcall(function() obj.TextureID = original end)
+			end
+		end
+	end
+
+	-- 5) Restore Terrain
+	pcall(function()
+		if _G.AntiLagOriginals.TerrainMaterial then
+			Workspace.Terrain.Material = _G.AntiLagOriginals.TerrainMaterial
+		end
+	end)
+
+	-- 6) Restore Sky
+	if _G.AntiLagOriginals.Sky then
+		_G.AntiLagOriginals.Sky.Parent = Lighting
+	end
+
+	-- Clear saved state
+	_G.AntiLagOriginals = { Lighting = {}, Parts = {}, Textures = {}, Graphics = {} }
+
+	game:GetService("StarterGui"):SetCore("SendNotification", {
+		Title = "AntiLag",
+		Text = "Settings restored.",
+		Duration = 3
+	})
+end
 -- ═══════════════════════════════════════════════════════════
 -- MAIN OPEN FUNCTION
 -- ═══════════════════════════════════════════════════════════
@@ -10936,9 +11128,12 @@ function processCmd(msg)
 	if cmd == "aimbot" then
 		createAimbotPanel()
 		
-	elseif cmd == "autoexec" then
-		autoexecCommand()
-		
+	elseif cmd == "antilag" then
+		_G.StartAntiLag(msg)
+
+	elseif cmd == "unantilag" then
+		_G.StopAntiLag(msg)
+
 	elseif cmd == "boombox" then
 		_G.BoomboxRun(msg)
 		
@@ -11649,14 +11844,14 @@ a.Padding = UDim.new(0, math.floor(2 * scale))
 
 -- All commands for dropdown and panel
 allCommands = {
-"!aimbot", "!autoexec", "!bang", "!unbang", "!boombox", "!camlock", "!uncamlock", "!clicktp", "!cmdbar", "!console", "!copychat", "!uncopychat", "!crosshair", "!unload",
+"!aimbot", "!antilag", "!bang", "!unbang", "!boombox", "!camlock", "!uncamlock", "!clicktp", "!cmdbar", "!console", "!copychat", "!uncopychat", "!crosshair", "!unload",
 	"!disablefalldamage", "!enable inventory", "!enable playerlist",
 	"!esp all", "!explode", "!fire", "!firstp", "!fling", "!flashlight", "!fly",
 	"!flyspeed", "!freecam", "!freeze", "!gravity", "!resetgravity", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump",
 	"!kill", "!lay", "!leave", "!logs", "!loopgoto", "!tpwalk", "!untpwalk", "!unloopgoto", "!noclip", "!mm2", "!orbit", "!unorbit", "!ping", "!ragdoll",
 	"!rejoin", "!removewaypoint", "!resetspeed", "!resettime", "!sit", "!speed", "!serverhop",
 	"!spin", "!stopwatch", "!sunglare", "!superjump", "!unsuperjump", "!thirdp", "!timeset", "!to", "!trip", "!tracers",
-	"!unautoexec", "!uncrosshair", "!unesp", "!unfire", "!unfling", "!unflashlight", "!unfly",
+	"!unantilag", "!uncrosshair", "!unesp", "!unfire", "!unfling", "!unflashlight", "!unfly",
 	"!unfreecam", "!unfreeze", "!unnoclip", "!unragdoll",
 	"!unsunglare", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", "!view", "!vehiclefly", "!volume", "!waypoint",
 	"!walkonwater", "!xray", "!zoom", "!fov", "!kick", "!unlockmouse"
@@ -11907,7 +12102,7 @@ cmdList.SortOrder = Enum.SortOrder.LayoutOrder
 
 local cmdDesc = {
 	["!aimbot"] = "Opens aimbot control panel",
-	["!autoexec"] = "Enables auto-run on join",
+	["!antilag"] = "antilag",
 	["!bang [user] [speed]"] = "Rape someone lol",
 	["!boombox"] = "Enables client sided boombox",
 	["!camlock [player]"] = "Lock camera on a player",
@@ -11964,7 +12159,7 @@ local cmdDesc = {
 	["!tpwalk [speed]"] = "Teleport walk — move by teleporting",
 	["!trip [plr]"] = "Makes player trip",
 	["!tracers"] = "Show player tracers",
-	["!unautoexec"] = "Disables auto-run",
+	["!unantilag"] = "unantilag",
 	["!unbang"] = "unRape someone lol",
 	["!uncamlock"] = "Unlock camera",
 	["!uncopychat"] = "Stop copying chat",
@@ -12003,14 +12198,14 @@ local cmdDesc = {
 }
 
 cmds = {
-"!aimbot", "!autoexec", "!bang [user] [speed]", "!boombox", "!camlock [player]", "!clicktp", "!cmdbar", "!console", "!copychat [player]", "!crosshair",
+"!aimbot", "!antilag", "!bang [user] [speed]", "!boombox", "!camlock [player]", "!clicktp", "!cmdbar", "!console", "!copychat [player]", "!crosshair",
 	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
 	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
 	"!flyspeed [num]", "!freecam", "!freeze", "!gravity [num]", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump [power]",
 	"!kill", "!lay", "!leave", "!logs", "!loopgoto [player] [delay]", "!noclip", "!mm2", "!orbit [player] [speed]", "!ping", "!ragdoll",
 	"!rejoin", "!removewaypoint", "!resetgravity", "!resetspeed", "!tpwalk [speed]", "!untpwalk", "!resettime", "!sit", "!speed [plr] [num]", "!serverhop",
 	"!spin [speed]", "!stopwatch", "!sunglare", "!superjump [power]", "!thirdp", "!timeset [0-24]", "!to [plr]", "!trip", "!tracers",
-	"!unautoexec", "!unbang", "!uncamlock", "!uncopychat", "!uncrosshair", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
+	"!unantilag", "!unbang", "!uncamlock", "!uncopychat", "!uncrosshair", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
 	"!unfreecam", "!unfreeze", "!uninfjump", "!unnoclip", "!unloopgoto", "!unorbit", "!unragdoll",
 	"!unsunglare", "!unsuperjump", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", 
 	"!view [plr]", "!vehiclefly", "!volume", "!waypoint",
