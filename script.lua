@@ -13,16 +13,16 @@ local SoundService = game:GetService("SoundService")
 local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 
-local client = Players.LocalPlayer
-local Mouse = client:GetMouse()
-local prefix = "!"
-local waypoints = {}
-local tracerLines = {}
+client = Players.LocalPlayer
+Mouse = client:GetMouse()
+_G.LunarPrefix = _G.LunarPrefix or "!"
+waypoints = {}
+tracerLines = {}
 
 -- Wait for character to load
-local char = client.Character or client.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart", 10)
-local hum = char:WaitForChild("Humanoid", 10)
+char = client.Character or client.CharacterAdded:Wait()
+hrp = char:WaitForChild("HumanoidRootPart", 10)
+hum = char:WaitForChild("Humanoid", 10)
 
 if not hrp or not hum then
 	StarterGui:SetCore("SendNotification", {Title = "Lunar Error", Text = "Character not loaded. Re-execute after spawn.", Duration = 10})
@@ -36,13 +36,13 @@ client.Chatted:Connect(processCmd)
 
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
-local client = Players.LocalPlayer
+client = Players.LocalPlayer
 
 -- CONFIG: Adjust this if mobile UI is still too big/small
-local MOBILE_SCALE = 0.55
+MOBILE_SCALE = 0.55
 
 -- EXACT list of your admin UI names - add more if you create new ones
-local LUNAR_UI_NAMES = {
+LUNAR_UI_NAMES = {
     ["LunarGui"] = true,
     ["LunarNotifs"] = true,
     ["LunarWatermark"] = true,
@@ -72,7 +72,7 @@ local function isMobile()
         return true
     end
     
-    local screenSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+    screenSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
     if screenSize then
         if math.min(screenSize.X, screenSize.Y) < 600 then
             return true
@@ -145,19 +145,19 @@ local function createInstantSplash(imageId)
 	end
 
 	-- PRELOAD IMAGE
-	local preload = Instance.new("ImageLabel")
+	preload = Instance.new("ImageLabel")
 	preload.Image = imageId
 	ContentProvider:PreloadAsync({ preload })
 	preload:Destroy()
 
 	-- REMOVE OLD
-	local old = player.PlayerGui:FindFirstChild("LunarSplash")
+	old = player.PlayerGui:FindFirstChild("LunarSplash")
 	if old then
 		old:Destroy()
 	end
 
 	-- GUI
-	local gui = Instance.new("ScreenGui")
+	gui = Instance.new("ScreenGui")
 	gui.Name = "LunarSplash"
 	gui.IgnoreGuiInset = true
 	gui.ResetOnSpawn = false
@@ -165,7 +165,7 @@ local function createInstantSplash(imageId)
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	local bg = Instance.new("Frame")
+	bg = Instance.new("Frame")
 	bg.Size = UDim2.fromScale(1, 1)
 	bg.BackgroundColor3 = Color3.fromRGB(3, 3, 3)
 	bg.BackgroundTransparency = 1
@@ -173,7 +173,7 @@ local function createInstantSplash(imageId)
 	bg.Parent = gui
 
 	-- animated gradient
-	local gradient = Instance.new("UIGradient")
+	gradient = Instance.new("UIGradient")
 	gradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(5, 5, 5)),
 		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 20, 20)),
@@ -182,11 +182,11 @@ local function createInstantSplash(imageId)
 	gradient.Rotation = 25
 	gradient.Parent = bg
 
-	local blur = Instance.new("BlurEffect")
+	blur = Instance.new("BlurEffect")
 	blur.Size = 0
 	blur.Parent = Lighting
 
-	local vignette = Instance.new("ImageLabel")
+	vignette = Instance.new("ImageLabel")
 	vignette.Size = UDim2.fromScale(1.2, 1.2)
 	vignette.Position = UDim2.fromScale(-0.1, -0.1)
 	vignette.BackgroundTransparency = 1
@@ -196,7 +196,7 @@ local function createInstantSplash(imageId)
 	vignette.ZIndex = 2
 	vignette.Parent = gui
 
-	local frame = Instance.new("Frame")
+	frame = Instance.new("Frame")
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
 	frame.Size = UDim2.fromOffset(420, 420)
@@ -205,19 +205,19 @@ local function createInstantSplash(imageId)
 	frame.BorderSizePixel = 0
 	frame.Parent = gui
 
-	local corner = Instance.new("UICorner")
+	corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 28)
 	corner.Parent = frame
 
 	-- glass stroke
-	local stroke = Instance.new("UIStroke")
+	stroke = Instance.new("UIStroke")
 	stroke.Thickness = 1.5
 	stroke.Transparency = 0.4
 	stroke.Color = Color3.fromRGB(255, 255, 255)
 	stroke.Parent = frame
 
 	-- glow
-	local glow = Instance.new("ImageLabel")
+	glow = Instance.new("ImageLabel")
 	glow.AnchorPoint = Vector2.new(0.5, 0.5)
 	glow.Position = UDim2.fromScale(0.5, 0.5)
 	glow.Size = UDim2.fromScale(1.8, 1.8)
@@ -228,7 +228,7 @@ local function createInstantSplash(imageId)
 	glow.ZIndex = 0
 	glow.Parent = frame
 
-	local image = Instance.new("ImageLabel")
+	image = Instance.new("ImageLabel")
 	image.AnchorPoint = Vector2.new(0.5, 0.5)
 	image.Position = UDim2.fromScale(0.5, 0.5)
 	image.Size = UDim2.fromScale(0.78, 0.78)
@@ -239,14 +239,14 @@ local function createInstantSplash(imageId)
 	image.ZIndex = 3
 	image.Parent = frame
 
-local shineHolder = Instance.new("Frame")
+shineHolder = Instance.new("Frame")
 shineHolder.Size = UDim2.fromScale(1, 1)
 shineHolder.BackgroundTransparency = 1
 shineHolder.ClipsDescendants = true
 shineHolder.ZIndex = 4
 shineHolder.Parent = frame
 
-local shine = Instance.new("ImageLabel")
+shine = Instance.new("ImageLabel")
 shine.AnchorPoint = Vector2.new(0.5, 0.5)
 shine.Position = UDim2.fromScale(-0.6, 0.5)
 shine.Size = UDim2.fromScale(0.45, 1.8)
@@ -259,11 +259,11 @@ shine.ScaleType = Enum.ScaleType.Stretch
 shine.ZIndex = 4
 shine.Parent = shineHolder
 
-	local scale = Instance.new("UIScale")
+	scale = Instance.new("UIScale")
 	scale.Scale = 0.45
 	scale.Parent = frame
 
-	local text = Instance.new("TextLabel")
+	text = Instance.new("TextLabel")
 	text.AnchorPoint = Vector2.new(0.5, 0)
 	text.Position = UDim2.fromScale(0.5, 0.87)
 	text.Size = UDim2.fromOffset(300, 40)
@@ -276,10 +276,10 @@ shine.Parent = shineHolder
 	text.ZIndex = 5
 	text.Parent = frame
 
-	local attachment = Instance.new("Attachment")
+	attachment = Instance.new("Attachment")
 	attachment.Parent = frame
 
-	local particles = Instance.new("ParticleEmitter")
+	particles = Instance.new("ParticleEmitter")
 	particles.Texture = "rbxassetid://243660364"
 	particles.Rate = 0
 	particles.Lifetime = NumberRange.new(1, 1.5)
@@ -337,7 +337,7 @@ task.spawn(function()
 	while gui.Parent do
 		shine.Position = UDim2.fromScale(-0.6, 0.5)
 
-		local tween = TweenService:Create(
+		tween = TweenService:Create(
 			shine,
 			TweenInfo.new(
 				1.8,
@@ -356,7 +356,7 @@ task.spawn(function()
 end)
 
 	local connection
-	local start = tick()
+	start = tick()
 
 	connection = RunService.RenderStepped:Connect(function()
 		if not frame.Parent then
@@ -364,7 +364,7 @@ end)
 			return
 		end
 
-		local t = tick() - start
+		t = tick() - start
 
 		frame.Position = UDim2.fromScale(
 			0.5,
@@ -376,7 +376,7 @@ end)
 
 	task.wait(3)
 
-	local outro = TweenInfo.new(
+	outro = TweenInfo.new(
 		0.45,
 		Enum.EasingStyle.Quint,
 		Enum.EasingDirection.In
@@ -432,15 +432,15 @@ createInstantSplash("rbxassetid://115041688502921")
 -- =============================================================
 -- GLOBAL CONFIGURATION
 -- =============================================================
-local globalConfig = {
+globalConfig = {
 	textColor = Color3.new(1, 1, 1),
 	uiTransparency = 0.1,
 	strokeTransparency = 0.5
 }
 
 -- Store main UI references for transparency control
-local lunarGui = nil
-local mainFrame = nil
+lunarGui = nil
+mainFrame = nil
 
 -- =============================================================
 -- GLASS EFFECT UTILITY
@@ -476,7 +476,7 @@ end
 -- =============================================================
 -- THEMES
 -- =============================================================
-local themes = {
+themes = {
 	Default = {
 		main = Color3.fromRGB(25, 25, 35),
 		grad1 = Color3.fromRGB(40, 40, 55),
@@ -745,11 +745,11 @@ local themes = {
 	}
 }
 
-local currentTheme = themes.Default
+currentTheme = themes.Default
 -- =============================================================
 -- SOUND EFFECTS
 -- =============================================================
-local currentHoverSound = nil
+currentHoverSound = nil
 
 local function playOpen()
 	if soundMuted then return end
@@ -777,7 +777,7 @@ local function playHover()
 		currentHoverSound:Stop()
 	end
 
-	local s = Instance.new("Sound")
+	s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://107677435338382"
 	s.Volume = 1 * (_G.uiSoundVol or 1)
 	s.Parent = SoundService
@@ -793,7 +793,7 @@ local function playClick()
 		currentHoverSound:Stop()
 	end
 
-	local s = Instance.new("Sound")
+	s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://109439703653606"
 	s.Volume = 5 * (_G.uiSoundVol or 1)
 	s.Parent = SoundService
@@ -838,7 +838,7 @@ end
 -- =============================================================
 -- better notis
 -- =============================================================
-local notifGui = Instance.new("ScreenGui")
+notifGui = Instance.new("ScreenGui")
 notifGui.Name = "LunarNotifs"
 notifGui.ResetOnSpawn = false
 notifGui.DisplayOrder = 2147483647
@@ -847,20 +847,20 @@ notifGui.ScreenInsets = Enum.ScreenInsets.None
 notifGui.IgnoreGuiInset = true
 notifGui.Parent = game:GetService("CoreGui")
 
-local UserInputService = game:GetService("UserInputService")
+UserInputService = game:GetService("UserInputService")
 
-local isMobile = UserInputService.TouchEnabled
+isMobile = UserInputService.TouchEnabled
 
-local notifWidth = 340
-local notifHeight = 76
-local notifSpacing = 12
-local startY = 20
-local notifOffscreen = 120
-local notifTargetX = -360
+notifWidth = 340
+notifHeight = 76
+notifSpacing = 12
+startY = 20
+notifOffscreen = 120
+notifTargetX = -360
 
 if isMobile then
-	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
-	local smallestSide = math.min(viewport.X, viewport.Y)
+	viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
+	smallestSide = math.min(viewport.X, viewport.Y)
 
 	-- Phone
 	if smallestSide < 700 then
@@ -882,13 +882,13 @@ if isMobile then
 	end
 end
 
-local activeNotifications = {}
-local notifHeight = 76
-local notifSpacing = 12
-local startY = 20 -- top padding
-local notifDuration = 5
+activeNotifications = {}
+notifHeight = 76
+notifSpacing = 12
+startY = 20 -- top padding
+notifDuration = 5
 
-local currentNotifSound = nil
+currentNotifSound = nil
 
 local function playNotifSound()
 	if notifSoundMuted then return end  -- Only checks notif mute, not UI mute
@@ -896,7 +896,7 @@ local function playNotifSound()
 		currentNotifSound:Stop()
 	end
 
-	local s = Instance.new("Sound")
+	s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://97643101798871"
 	s.Volume = 0.55
 	s.Parent = SoundService
@@ -1085,7 +1085,7 @@ local function notify(text, col)
 
 	-- Limit to 6 notifications (remove oldest from top)
 	if #activeNotifications > 6 then
-		local old = table.remove(activeNotifications, 1) -- remove first (oldest)
+		old = table.remove(activeNotifications, 1) -- remove first (oldest)
 		if old and old.Parent then
 			TweenService:Create(old, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
 				Position = UDim2.new(1, notifOffscreen, 0, old.Position.Y.Offset),
@@ -1103,26 +1103,26 @@ end
 -- Project Lunar watermakr yea
 -- =============================================================
 task.spawn(function()
-	local Players = game:GetService("Players")
-	local RunService = game:GetService("RunService")
-	local UserInputService = game:GetService("UserInputService")
-	local Stats = game:GetService("Stats")
-	local CoreGui = game:GetService("CoreGui")
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	Players = game:GetService("Players")
+	RunService = game:GetService("RunService")
+	UserInputService = game:GetService("UserInputService")
+	Stats = game:GetService("Stats")
+	CoreGui = game:GetService("CoreGui")
+	ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-	local client = Players.LocalPlayer
+	client = Players.LocalPlayer
 
-	local isMobile = UserInputService.TouchEnabled
+	isMobile = UserInputService.TouchEnabled
 
-	local frameWidth = 380
-	local frameHeight = 34
-	local frameX = -390
-	local textSize = 16
-	local moonSize = 22
+	frameWidth = 380
+	frameHeight = 34
+	frameX = -390
+	textSize = 16
+	moonSize = 22
 
 	if isMobile then
-		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800,600)
-		local smallestSide = math.min(viewport.X, viewport.Y)
+		viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800,600)
+		smallestSide = math.min(viewport.X, viewport.Y)
 
 		if smallestSide < 700 then
 			frameWidth = 300
@@ -1143,7 +1143,7 @@ task.spawn(function()
 		CoreGui.LunarWatermark:Destroy()
 	end
 
-	local serverRunTime = workspace:FindFirstChild("ServerRunTime")
+	serverRunTime = workspace:FindFirstChild("ServerRunTime")
 	if not serverRunTime then
 		serverRunTime = Instance.new("NumberValue")
 		serverRunTime.Name = "ServerRunTime"
@@ -1151,14 +1151,14 @@ task.spawn(function()
 		serverRunTime.Parent = workspace
 	end
 
-	local pingEvent = ReplicatedStorage:FindFirstChild("PingEvent")
+	pingEvent = ReplicatedStorage:FindFirstChild("PingEvent")
 	if not pingEvent then
 		pingEvent = Instance.new("RemoteEvent")
 		pingEvent.Name = "PingEvent"
 		pingEvent.Parent = ReplicatedStorage
 	end
 
-	local sg = Instance.new("ScreenGui")
+	sg = Instance.new("ScreenGui")
 	sg.Name = "LunarWatermark"
 	sg.ResetOnSpawn = false
 	sg.IgnoreGuiInset = true
@@ -1167,7 +1167,7 @@ task.spawn(function()
 	sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	sg.Parent = CoreGui
 
-	local frame = Instance.new("Frame")
+	frame = Instance.new("Frame")
 	frame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
 	frame.Position = UDim2.new(1, frameX, 0, 15)
 	frame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
@@ -1177,7 +1177,7 @@ task.spawn(function()
 
 	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
 
-	local dragTab = Instance.new("Frame")
+	dragTab = Instance.new("Frame")
 	dragTab.Size = UDim2.new(0, 30, 1, 0)
 	dragTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	dragTab.BackgroundTransparency = 0.2
@@ -1186,7 +1186,7 @@ task.spawn(function()
 
 	Instance.new("UICorner", dragTab).CornerRadius = UDim.new(0, 16)
 
-	local tabLabel = Instance.new("TextLabel")
+	tabLabel = Instance.new("TextLabel")
 	tabLabel.Size = UDim2.fromScale(1, 1)
 	tabLabel.BackgroundTransparency = 1
 	tabLabel.Text = "≡"
@@ -1196,7 +1196,7 @@ task.spawn(function()
 	tabLabel.ZIndex = 2147483647
 	tabLabel.Parent = dragTab
 
-	local moon = Instance.new("TextLabel", frame)
+	moon = Instance.new("TextLabel", frame)
 	moon.Size = UDim2.new(0, 32, 1, 0)
 	moon.Position = UDim2.new(0, 42, 0, 0)
 	moon.BackgroundTransparency = 1
@@ -1206,7 +1206,7 @@ task.spawn(function()
 	moon.Font = Enum.Font.Code
 	moon.ZIndex = 2147483647
 
-	local label = Instance.new("TextLabel", frame)
+	label = Instance.new("TextLabel", frame)
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.new(1, -90, 1, 0)
 	label.Position = UDim2.new(0, 80, 0, 0)
@@ -1218,7 +1218,7 @@ task.spawn(function()
 	label.RichText = true
 	label.ZIndex = 2147483647
 
-	local visible = true
+	visible = true
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if gp then return end
 		if input.KeyCode == Enum.KeyCode.P then
@@ -1227,10 +1227,10 @@ task.spawn(function()
 		end
 	end)
 
-	local dragging = false
+	dragging = false
 	local dragStart
 	local startPos
-	local targetPos = frame.Position
+	targetPos = frame.Position
 
 	dragTab.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -1252,7 +1252,7 @@ task.spawn(function()
 		if not dragging then return end
 		if input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch then
-			local delta = input.Position - dragStart
+			delta = input.Position - dragStart
 			targetPos = UDim2.new(
 				startPos.X.Scale,
 				startPos.X.Offset + delta.X,
@@ -1266,36 +1266,36 @@ task.spawn(function()
 		frame.Position = frame.Position:Lerp(targetPos, 0.25)
 	end)
 
-	local fps = 60
-	local frameCount = 0
-	local fpsTimer = 0
-	local fpsUpdateInterval = 0.5
+	fps = 60
+	frameCount = 0
+	fpsTimer = 0
+	fpsUpdateInterval = 0.5
 
 	RunService.RenderStepped:Connect(function(dt)
 		frameCount += 1
 		fpsTimer += dt
 		if fpsTimer >= fpsUpdateInterval then
-			local measuredFPS = frameCount / fpsTimer
+			measuredFPS = frameCount / fpsTimer
 			fps = fps + (measuredFPS - fps) * 0.3
 			frameCount = 0
 			fpsTimer = 0
 		end
 	end)
 
-	local ping = 0
-	local latestPing = 0
-	local lastPingRequest = 0
-	local pingRequestSent = false
-	local serverTimeOffset = 0
-	local serverTimeValid = false
+	ping = 0
+	latestPing = 0
+	lastPingRequest = 0
+	pingRequestSent = false
+	serverTimeOffset = 0
+	serverTimeValid = false
 
 	pingEvent.OnClientEvent:Connect(function(data)
 		if type(data) == "number" then
 			latestPing = data
 			pingRequestSent = false
 		elseif type(data) == "table" and data.serverTime then
-			local clientTime = tick()
-			local roundTrip = (clientTime - lastPingRequest) * 1000
+			clientTime = tick()
+			roundTrip = (clientTime - lastPingRequest) * 1000
 			latestPing = roundTrip / 2
 			serverTimeOffset = data.serverTime - clientTime
 			serverTimeValid = true
@@ -1324,7 +1324,7 @@ task.spawn(function()
 
 	pingEvent.OnClientEvent:Connect(function(data)
 		if type(data) == "table" and data.action == "pong" and data.clientTime then
-			local roundTrip = (tick() - data.clientTime) * 1000
+			roundTrip = (tick() - data.clientTime) * 1000
 			latestPing = roundTrip
 			pingRequestSent = false
 		end
@@ -1339,7 +1339,7 @@ task.spawn(function()
 				measureSelfPing()
 			end
 
-			local targetPing = latestPing
+			targetPing = latestPing
 			if targetPing <= 0 then
 				pcall(function()
 					targetPing = client:GetNetworkPing() * 1000
@@ -1349,27 +1349,27 @@ task.spawn(function()
 				targetPing = 0
 			end
 
-			local diff = targetPing - ping
+			diff = targetPing - ping
 			if diff > 0 then
 				ping = ping + diff * 0.9
 			else
 				ping = ping + diff * 0.15
 			end
 
-			local fpsDisplay = math.floor(fps + 0.5)
-			local pingDisplay = math.floor(ping + 0.5)
+			fpsDisplay = math.floor(fps + 0.5)
+			pingDisplay = math.floor(ping + 0.5)
 
 			local pingColor
 			if pingDisplay < 50 then
 				pingColor = Color3.fromRGB(0, 255, 100)
 			elseif pingDisplay < 150 then
-				local t = (pingDisplay - 50) / 100
+				t = (pingDisplay - 50) / 100
 				pingColor = Color3.fromRGB(0, 255, 100):Lerp(Color3.fromRGB(255, 255, 0), t)
 			elseif pingDisplay < 300 then
-				local t = (pingDisplay - 150) / 150
+				t = (pingDisplay - 150) / 150
 				pingColor = Color3.fromRGB(255, 255, 0):Lerp(Color3.fromRGB(255, 150, 0), t)
 			else
-				local t = math.clamp((pingDisplay - 300) / 700, 0, 1)
+				t = math.clamp((pingDisplay - 300) / 700, 0, 1)
 				pingColor = Color3.fromRGB(255, 150, 0):Lerp(Color3.fromRGB(255, 50, 50), t)
 			end
 
@@ -1384,9 +1384,9 @@ task.spawn(function()
 				pingText = tostring(pingDisplay)
 			end
 
-			local r = math.floor(pingColor.R * 255)
-			local g = math.floor(pingColor.G * 255)
-			local b = math.floor(pingColor.B * 255)
+			r = math.floor(pingColor.R * 255)
+			g = math.floor(pingColor.G * 255)
+			b = math.floor(pingColor.B * 255)
 
 			if isMobile then
 				label.Text = string.format([[Lunar | %d FPS | <font color="rgb(%d,%d,%d)">%s ms</font>]], fpsDisplay, r, g, b, pingText)
@@ -1533,7 +1533,7 @@ function _G.StartOrbit(args)
 	end
 
 	targetName = targetName:lower()
-	local targetPlr = nil
+	targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -1552,15 +1552,15 @@ function _G.StartOrbit(args)
 
 	_G._orbitData.conn = RunService.Heartbeat:Connect(function(dt)
 		pcall(function()
-			local myChar = client.Character
-			local theirChar = targetPlr.Character
+			myChar = client.Character
+			theirChar = targetPlr.Character
 			if not myChar or not theirChar then return end
-			local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart")
+			myRoot = myChar:FindFirstChild("HumanoidRootPart")
+			theirRoot = theirChar:FindFirstChild("HumanoidRootPart")
 			if not myRoot or not theirRoot then return end
 
 			_G._orbitData.angle = _G._orbitData.angle + (_G._orbitData.speed * dt)
-			local offset = Vector3.new(
+			offset = Vector3.new(
 				math.cos(_G._orbitData.angle) * _G._orbitData.radius,
 				0,
 				math.sin(_G._orbitData.angle) * _G._orbitData.radius
@@ -1599,7 +1599,7 @@ function _G.StartLoopGoto(args)
 	end
 
 	targetName = targetName:lower()
-	local targetPlr = nil
+	targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -1665,7 +1665,7 @@ function _G.EnableTPWalk(args)
 		return
 	end
 
-	local hum = char:FindFirstChildWhichIsA("Humanoid")
+	hum = char:FindFirstChildWhichIsA("Humanoid")
 	if not hum then
 		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
 		return
@@ -1675,9 +1675,9 @@ function _G.EnableTPWalk(args)
 
 	_G._tpwalkData.conn = RunService.Heartbeat:Connect(function(delta)
 		pcall(function()
-			local char = client.Character
+			char = client.Character
 			if not char then return end
-			local hum = char:FindFirstChildWhichIsA("Humanoid")
+			hum = char:FindFirstChildWhichIsA("Humanoid")
 			if not hum or not hum.Parent then
 				_G.DisableTPWalk()
 				return
@@ -1765,20 +1765,20 @@ function _G.EnableSuperJump(args)
 		return
 	end
 
-	local hum = char:FindFirstChildOfClass("Humanoid")
+	hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then
 		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
 		return
 	end
 
 	_G._superJumpData.originalPower = hum.JumpPower
-	local power = tonumber(args[1]) or 100
+	power = tonumber(args[1]) or 100
 	hum.JumpPower = power
 
 	-- Keep reapplying on respawn
 	_G._superJumpData.conn = client.CharacterAdded:Connect(function(newChar)
 		task.wait(0.3)
-		local newHum = newChar:FindFirstChildOfClass("Humanoid")
+		newHum = newChar:FindFirstChildOfClass("Humanoid")
 		if newHum then newHum.JumpPower = power end
 	end)
 
@@ -1789,9 +1789,9 @@ function _G.DisableSuperJump()
 	if _G._superJumpData.conn then
 		pcall(function() _G._superJumpData.conn:Disconnect() end)
 	end
-	local char = client.Character
+	char = client.Character
 	if char then
-		local hum = char:FindFirstChildOfClass("Humanoid")
+		hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then hum.JumpPower = _G._superJumpData.originalPower end
 	end
 	_G._superJumpData = {originalPower = 50, conn = nil}
@@ -1837,7 +1837,7 @@ function _G.StartCamlock(args)
 	end
 
 	targetName = targetName:lower()
-	local targetPlr = nil
+	targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -1856,14 +1856,14 @@ function _G.StartCamlock(args)
 
 	_G._camlockData.conn = RunService.RenderStepped:Connect(function()
 		pcall(function()
-			local theirChar = targetPlr.Character
+			theirChar = targetPlr.Character
 			if not theirChar then return end
-			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Head")
+			theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Head")
 			if not theirRoot then return end
 
-			local cam = workspace.CurrentCamera
-			local myChar = client.Character
-			local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+			cam = workspace.CurrentCamera
+			myChar = client.Character
+			myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
 			if myRoot then
 				cam.CFrame = CFrame.new(myRoot.Position + Vector3.new(0, 5, 10), theirRoot.Position)
 			else
@@ -1905,7 +1905,7 @@ function _G.SetZoom(args)
 
 	_G.ClearZoom()
 
-	local distance = tonumber(args[1])
+	distance = tonumber(args[1])
 	if not distance then
 		if notify then notify("❌ Usage: !zoom [distance] [key]", Color3.fromRGB(255,100,100)) end
 		return
@@ -1914,14 +1914,14 @@ function _G.SetZoom(args)
 	_G._zoomData.zoomDistance = distance
 	_G._zoomData.zoomKey = args[2] and Enum.KeyCode[args[2]:upper()] or Enum.KeyCode.Z
 
-	local zoomed = false
-	local originalMaxZoom = nil
+	zoomed = false
+	originalMaxZoom = nil
 
 	_G._zoomData.conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.KeyCode == _G._zoomData.zoomKey then
 			zoomed = not zoomed
-			local cam = workspace.CurrentCamera
+			cam = workspace.CurrentCamera
 			if zoomed then
 				originalMaxZoom = cam.MaxZoomDistance
 				cam.MaxZoomDistance = _G._zoomData.zoomDistance
@@ -1942,7 +1942,7 @@ function _G.ClearZoom()
 	if _G._zoomData.conn then
 		pcall(function() _G._zoomData.conn:Disconnect() end)
 	end
-	local cam = workspace.CurrentCamera
+	cam = workspace.CurrentCamera
 	cam.MaxZoomDistance = 400
 	cam.MinZoomDistance = 0.5
 	_G._zoomData = {conn = nil, zoomKey = nil, zoomDistance = 50}
@@ -2028,7 +2028,7 @@ function _G.StartCopyChat(args)
 	end
 
 	targetName = targetName:lower()
-	local targetPlr = nil
+	targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -2046,13 +2046,13 @@ function _G.StartCopyChat(args)
 	_G._copyChatData.conn = targetPlr.Chatted:Connect(function(msg)
 		pcall(function()
 			if TextChatService then
-				local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+				channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 				if channel then
 					channel:SendAsync("[" .. targetPlr.Name .. "]: " .. msg)
 				end
 			elseif game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents") then
 				-- Legacy chat
-				local chatRemote = game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
+				chatRemote = game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
 				chatRemote:FireServer("[" .. targetPlr.Name .. "]: " .. msg, "All")
 			end
 		end)
@@ -2091,14 +2091,14 @@ function _G.GiveJerkTool()
 		return
 	end
 
-	local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-	local backpack = client:FindFirstChildWhichIsA("Backpack")
+	humanoid = char:FindFirstChildWhichIsA("Humanoid")
+	backpack = client:FindFirstChildWhichIsA("Backpack")
 	if not humanoid or not backpack then
 		if notify then notify("❌ Humanoid or Backpack not found", Color3.fromRGB(255,100,100)) end
 		return
 	end
 
-	local tool = Instance.new("Tool")
+	tool = Instance.new("Tool")
 	tool.Name = "Jerk Off"
 	tool.ToolTip = "in the stripped club. straight up \"jorking it\" . and by \"it\" , haha, well. let's justr say. My peanits."
 	tool.RequiresHandle = false
@@ -2126,9 +2126,9 @@ function _G.GiveJerkTool()
 			if not _G._jerkData.tool or not _G._jerkData.tool.Parent then break end
 			if not _G._jerkData.jorkin then continue end
 
-			local isR15 = char:FindFirstChild("UpperTorso") ~= nil
+			isR15 = char:FindFirstChild("UpperTorso") ~= nil
 			if not _G._jerkData.track then
-				local anim = Instance.new("Animation")
+				anim = Instance.new("Animation")
 				anim.AnimationId = not isR15 and "rbxassetid://72042024" or "rbxassetid://698251653"
 				_G._jerkData.track = humanoid:LoadAnimation(anim)
 			end
@@ -2199,17 +2199,17 @@ function _G.StartBang(args)
 		return
 	end
 
-	local hum = char:FindFirstChildOfClass("Humanoid")
+	hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then
 		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
 		return
 	end
 
 	-- Detect R15
-	local isR15 = char:FindFirstChild("UpperTorso") ~= nil
-	local animId = isR15 and "rbxassetid://5918726674" or "rbxassetid://148840371"
+	isR15 = char:FindFirstChild("UpperTorso") ~= nil
+	animId = isR15 and "rbxassetid://5918726674" or "rbxassetid://148840371"
 
-	local speed = tonumber(args[2]) or 3
+	speed = tonumber(args[2]) or 3
 
 	_G._bangData.anim = Instance.new("Animation")
 	_G._bangData.anim.AnimationId = animId
@@ -2223,9 +2223,9 @@ function _G.StartBang(args)
 	end)
 
 	-- Target lock
-	local targetPlr = nil
+	targetPlr = nil
 	if args[1] then
-		local targetName = args[1]:lower()
+		targetName = args[1]:lower()
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 				targetPlr = plr
@@ -2237,14 +2237,14 @@ function _G.StartBang(args)
 	_G._bangData.target = targetPlr
 
 	if targetPlr and targetPlr.Character then
-		local offset = CFrame.new(0, 0, 1.1)
+		offset = CFrame.new(0, 0, 1.1)
 		_G._bangData.steppedConn = RunService.Stepped:Connect(function()
 			pcall(function()
-				local myChar = client.Character
-				local theirChar = targetPlr.Character
+				myChar = client.Character
+				theirChar = targetPlr.Character
 				if not myChar or not theirChar then return end
-				local myRoot = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
-				local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Torso")
+				myRoot = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
+				theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Torso")
 				if myRoot and theirRoot then
 					myRoot.CFrame = theirRoot.CFrame * offset
 				end
@@ -2355,7 +2355,7 @@ function MM2ESP:CreateESP(player)
 		self.ESPs[player] = nil
 	end
 	if not self.ESP_Enabled then return end
-	local hl = Instance.new("Highlight")
+	hl = Instance.new("Highlight")
 	hl.Name = "MM2ESP"
 	hl.FillColor = self:GetRoleColor(self:GetRole(player))
 	hl.OutlineColor = hl.FillColor
@@ -2399,9 +2399,9 @@ function MM2ESP:SetupSpeedBoostLoop()
 
 	self.speedConn = RunService.Heartbeat:Connect(function()
 		if not self.SpeedBoost_Enabled then return end
-		local char = LocalPlayer.Character
+		char = LocalPlayer.Character
 		if not char then return end
-		local hum = char:FindFirstChildOfClass("Humanoid")
+		hum = char:FindFirstChildOfClass("Humanoid")
 		if hum and hum.WalkSpeed < 30 then
 			hum.WalkSpeed = 30
 		end
@@ -2428,7 +2428,7 @@ function MM2ESP:ToggleSpeedBoost(state)
 		if self.charAddedConn then self.charAddedConn:Disconnect() end
 		self.charAddedConn = LocalPlayer.CharacterAdded:Connect(function(char)
 			task.wait(0.3)
-			local hum = char:FindFirstChildOfClass("Humanoid")
+			hum = char:FindFirstChildOfClass("Humanoid")
 			if hum and self.SpeedBoost_Enabled then
 				hum.WalkSpeed = 30
 			end
@@ -2460,7 +2460,7 @@ function MM2ESP:FindGunDrop()
 		end
 		-- Sometimes it's nested
 		if child:IsA("Folder") or child:IsA("Model") then
-			local nested = child:FindFirstChild("GunDrop")
+			nested = child:FindFirstChild("GunDrop")
 			if nested then return nested end
 		end
 	end
@@ -2475,13 +2475,13 @@ function MM2ESP:TeleportToGunDrop()
 		return
 	end
 
-	local myChar = LocalPlayer.Character
+	myChar = LocalPlayer.Character
 	if not myChar then 
 		if notify then notify("Character not loaded!", Color3.fromRGB(255, 100, 100)) end
 		return 
 	end
 
-	local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+	myHrp = myChar:FindFirstChild("HumanoidRootPart")
 	if not myHrp then
 		if notify then notify("HumanoidRootPart not found!", Color3.fromRGB(255, 100, 100)) end
 		return
@@ -2502,7 +2502,7 @@ function MM2ESP:SetupGunDropAutoTP()
 	if not self.GunDrop_AutoTP then return end
 
 	-- Check if gun drop already exists
-	local existingGun = self:FindGunDrop()
+	existingGun = self:FindGunDrop()
 	if existingGun then
 		task.spawn(function()
 			task.wait(0.5)
@@ -2601,7 +2601,7 @@ function MM2ESP:CreateMainFrame()
 	end
 	self.panel = mGui
 
-	local shadow = Instance.new("Frame")
+	shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
 	shadow.Size = UDim2.new(0, self.W + 8, 0, 200)
 	shadow.Position = UDim2.new(0, 50, 0, 50)
@@ -2612,7 +2612,7 @@ function MM2ESP:CreateMainFrame()
 	self.shadow = shadow
 	Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 16)
 
-	local main = Instance.new("Frame")
+	main = Instance.new("Frame")
 	main.Name = "MainPanel"
 	main.Size = UDim2.new(0, self.W, 0, 200)
 	main.Position = UDim2.new(0, 4, 0, 4)
@@ -2940,7 +2940,7 @@ function MM2ESP:SetupDragging()
 	end)
 	UserInputService.InputChanged:Connect(function(input)
 		if self.Dragging and dragStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
+			delta = input.Position - dragStart
 			self.shadow.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
 		end
 	end)
@@ -3023,14 +3023,14 @@ _G.StartAntiLag = function()
 	if _G.AntiLagActive then return end
 	_G.AntiLagActive = true
 
-	local Lighting = game:GetService("Lighting")
-	local Workspace = game:GetService("Workspace")
-	local Settings = UserSettings():GetService("UserGameSettings")
+	Lighting = game:GetService("Lighting")
+	Workspace = game:GetService("Workspace")
+	Settings = UserSettings():GetService("UserGameSettings")
 
 	-- 1) Save & strip Lighting
-	local lightSave = {}
+	lightSave = {}
 	for _, prop in ipairs({"FogStart","FogEnd","FogColor","Brightness","GlobalShadows","ShadowSoftness","EnvironmentDiffuseScale","EnvironmentSpecularScale","OutdoorAmbient","Ambient","ClockTime","GeographicLatitude"}) do
-		local ok, val = pcall(function() return Lighting[prop] end)
+		ok, val = pcall(function() return Lighting[prop] end)
 		if ok then
 			lightSave[prop] = val
 			pcall(function() Lighting[prop] = (prop == "FogStart" and 0 or prop == "FogEnd" and 9e9 or prop == "FogColor" and Color3.new(0,0,0) or prop == "Brightness" and 1 or prop == "GlobalShadows" and false or prop == "ShadowSoftness" and 0 or prop == "EnvironmentDiffuseScale" and 0 or prop == "EnvironmentSpecularScale" and 0 or prop == "OutdoorAmbient" and Color3.new(1,1,1) or prop == "Ambient" and Color3.new(1,1,1) or prop == "ClockTime" and 12 or prop == "GeographicLatitude" and 0) end)
@@ -3046,7 +3046,7 @@ _G.StartAntiLag = function()
 	end
 
 	-- 2) Save & lower graphics
-	local okGfx, savedGfx = pcall(function()
+	okGfx, savedGfx = pcall(function()
 		return {
 			SavedQualityLevel = Settings.SavedQualityLevel,
 			MasterVolume = Settings.MasterVolume,
@@ -3058,8 +3058,8 @@ _G.StartAntiLag = function()
 	end
 
 	-- 3) Save & strip Workspace parts
-	local partSave = {}
-	local texSave = {}
+	partSave = {}
+	texSave = {}
 	for _, obj in ipairs(getAllDescendants(Workspace)) do
 		-- Materials
 		if obj:IsA("BasePart") and not obj:IsA("Terrain") then
@@ -3130,9 +3130,9 @@ _G.StopAntiLag = function()
 	if not _G.AntiLagActive then return end
 	_G.AntiLagActive = false
 
-	local Lighting = game:GetService("Lighting")
-	local Workspace = game:GetService("Workspace")
-	local Settings = UserSettings():GetService("UserGameSettings")
+	Lighting = game:GetService("Lighting")
+	Workspace = game:GetService("Workspace")
+	Settings = UserSettings():GetService("UserGameSettings")
 
 	-- 1) Restore Lighting
 	for prop, val in pairs(_G.AntiLagOriginals.Lighting) do
@@ -3247,7 +3247,7 @@ local function Volume(plr, args)
 	end
 	
 	vol = math.clamp(vol, 0, 10)
-	local scale = vol / 10
+	scale = vol / 10
 	
 	-- Set all currently playing sounds in workspace
 	for _, sound in ipairs(workspace:GetDescendants()) do
@@ -3305,18 +3305,18 @@ local function rejoin(plr, args)
 
 	notify("🔄 Rejoining...", Color3.fromRGB(100, 200, 255))
 
-	local placeId = game.PlaceId
+	placeId = game.PlaceId
 
 	-- Use the SAME bypass method as serverhop: reserved server
 	-- This creates a fresh server slot that bypasses private restrictions
-	local ok, err = pcall(function()
-		local accessCode = TeleportService:ReserveServer(placeId)
+	ok, err = pcall(function()
+		accessCode = TeleportService:ReserveServer(placeId)
 		TeleportService:TeleportToPrivateServer(placeId, accessCode, {plr})
 	end)
 
 	if not ok then
 		-- Fallback: normal teleport (may land in public server)
-		local ok2, err2 = pcall(function()
+		ok2, err2 = pcall(function()
 			TeleportService:Teleport(placeId, plr)
 		end)
 
@@ -3336,12 +3336,12 @@ local function serverhop(plr, args)
 
 	notify("🚀 Finding different public server...", Color3.fromRGB(100, 255, 150))
 
-	local placeId = game.PlaceId
-	local currentJobId = game.JobId
+	placeId = game.PlaceId
+	currentJobId = game.JobId
 
 	-- Try 1: Use TeleportOptions to force public server (ignores friends/reserved)
-	local ok, err = pcall(function()
-		local teleportOptions = Instance.new("TeleportOptions")
+	ok, err = pcall(function()
+		teleportOptions = Instance.new("TeleportOptions")
 		teleportOptions.ShouldReserveServer = false
 		teleportOptions.ServerInstanceId = nil
 		TeleportService:Teleport(placeId, plr, teleportOptions)
@@ -3349,15 +3349,15 @@ local function serverhop(plr, args)
 
 	if not ok then
 		-- Try 2: Fallback using ReserveServer with delay to ensure different instance
-		local ok2, err2 = pcall(function()
-			local accessCode = TeleportService:ReserveServer(placeId)
+		ok2, err2 = pcall(function()
+			accessCode = TeleportService:ReserveServer(placeId)
 			task.wait(0.1)
 			TeleportService:TeleportToPrivateServer(placeId, accessCode, {plr})
 		end)
 
 		if not ok2 then
 			-- Try 3: Force teleport with random seed
-			local ok3, err3 = pcall(function()
+			ok3, err3 = pcall(function()
 				TeleportService:SetTeleportSetting("serverhop_seed", tostring(tick()))
 				TeleportService:Teleport(placeId, plr)
 			end)
@@ -3374,19 +3374,19 @@ end
 
 do
 	
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local MarketplaceService = game:GetService("MarketplaceService")
-local HttpService = game:GetService("HttpService")
+Players = game:GetService("Players")
+CoreGui = game:GetService("CoreGui")
+RunService = game:GetService("RunService")
+UserInputService = game:GetService("UserInputService")
+MarketplaceService = game:GetService("MarketplaceService")
+HttpService = game:GetService("HttpService")
 
-	local player = Players.LocalPlayer
-	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-	local scale = isMobile and 0.65 or 1
+	player = Players.LocalPlayer
+	isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	scale = isMobile and 0.65 or 1
 
 	_G.Boombox = _G.Boombox or {gui = {}, sound = nil, playing = false, looping = false, duration = 0, dragging = false, conn = nil, history = {}}
-	local BB = _G.Boombox
+	BB = _G.Boombox
 
 	-- Reuse single element reference for ALL Instance creation
 	local e
@@ -3450,12 +3450,12 @@ local HttpService = game:GetService("HttpService")
 		if BB.gui.curTime then BB.gui.curTime.Text = "0:00" end
 		if BB.gui.totTime then BB.gui.totTime.Text = "0:00" end
 
-		local name, artist = getInfo(id)
+		name, artist = getInfo(id)
 		if BB.gui.songName then BB.gui.songName.Text = name end
 		if BB.gui.artistName then BB.gui.artistName.Text = artist end
 		if BB.gui.idBox then BB.gui.idBox.Text = id end
 
-		local exists = false
+		exists = false
 		for _, h in ipairs(BB.history) do
 			if h.id == id then exists = true break end
 		end
@@ -3472,7 +3472,7 @@ local HttpService = game:GetService("HttpService")
 				e.AutoButtonColor = false
 				e.Parent = BB.gui.histFrame
 
-				local nl = Instance.new("TextLabel")
+				nl = Instance.new("TextLabel")
 				nl.Size = UDim2.new(1, -60, 1, 0)
 				nl.Position = UDim2.new(0, 10, 0, 0)
 				nl.BackgroundTransparency = 1
@@ -3484,7 +3484,7 @@ local HttpService = game:GetService("HttpService")
 				nl.TextTruncate = Enum.TextTruncate.AtEnd
 				nl.Parent = e
 
-				local il = Instance.new("TextLabel")
+				il = Instance.new("TextLabel")
 				il.Size = UDim2.new(0, 50, 1, 0)
 				il.Position = UDim2.new(1, -55, 0, 0)
 				il.BackgroundTransparency = 1
@@ -3502,7 +3502,7 @@ local HttpService = game:GetService("HttpService")
 				BB.gui.histFrame.CanvasSize = UDim2.new(0, 0, 0, BB.gui.histList.AbsoluteContentSize.Y)
 			end
 
-			local v = player:FindFirstChild("BoomboxHistory")
+			v = player:FindFirstChild("BoomboxHistory")
 			if not v then
 				v = Instance.new("StringValue")
 				v.Name = "BoomboxHistory"
@@ -3511,7 +3511,7 @@ local HttpService = game:GetService("HttpService")
 			v.Value = HttpService:JSONEncode(BB.history)
 		end
 
-		local snd = Instance.new("Sound")
+		snd = Instance.new("Sound")
 		snd.SoundId = "rbxassetid://" .. id
 		snd.Parent = CoreGui
 		snd.Looped = BB.looping
@@ -3520,7 +3520,7 @@ local HttpService = game:GetService("HttpService")
 
 		task.spawn(function()
 			if not snd.IsLoaded then
-				local ok = pcall(function() snd.Loaded:Wait() end)
+				ok = pcall(function() snd.Loaded:Wait() end)
 				if not ok then
 					if BB.gui.songName then BB.gui.songName.Text = "Failed to load" end
 					return
@@ -3534,7 +3534,7 @@ local HttpService = game:GetService("HttpService")
 
 			BB.conn = RunService.Heartbeat:Connect(function()
 				if not BB.sound or not BB.playing or BB.dragging then return end
-				local p = BB.duration > 0 and BB.sound.TimePosition / BB.duration or 0
+				p = BB.duration > 0 and BB.sound.TimePosition / BB.duration or 0
 				if BB.gui.progFill then BB.gui.progFill.Size = UDim2.new(math.clamp(p, 0, 1), 0, 1, 0) end
 				if BB.gui.curTime then BB.gui.curTime.Text = fmtTime(BB.sound.TimePosition) end
 			end)
@@ -3556,15 +3556,15 @@ local HttpService = game:GetService("HttpService")
 			return
 		end
 
-		local C_BG = Color3.fromRGB(30, 30, 35)
-		local C_DARK = Color3.fromRGB(25, 25, 30)
-		local C_ACCENT = Color3.fromRGB(173, 216, 230)
-		local C_WHITE = Color3.fromRGB(255, 255, 255)
-		local C_GRAY = Color3.fromRGB(180, 180, 180)
-		local C_SLIDER = Color3.fromRGB(60, 60, 65)
-		local C_GREEN = Color3.fromRGB(100, 255, 100)
-		local C_RED = Color3.fromRGB(255, 100, 100)
-		local C_DGRAY = Color3.fromRGB(50, 50, 55)
+		C_BG = Color3.fromRGB(30, 30, 35)
+		C_DARK = Color3.fromRGB(25, 25, 30)
+		C_ACCENT = Color3.fromRGB(173, 216, 230)
+		C_WHITE = Color3.fromRGB(255, 255, 255)
+		C_GRAY = Color3.fromRGB(180, 180, 180)
+		C_SLIDER = Color3.fromRGB(60, 60, 65)
+		C_GREEN = Color3.fromRGB(100, 255, 100)
+		C_RED = Color3.fromRGB(255, 100, 100)
+		C_DGRAY = Color3.fromRGB(50, 50, 55)
 
 		BB.gui.screen = Instance.new("ScreenGui")
 		BB.gui.screen.Name = "BoomboxGUI"
@@ -3595,7 +3595,7 @@ local HttpService = game:GetService("HttpService")
 		e.Active = true
 		e.Parent = BB.gui.main
 
-		local drag, dragStart, startPos = false, nil, nil
+		drag, dragStart, startPos = false, nil, nil
 		e.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 				drag = true
@@ -3605,7 +3605,7 @@ local HttpService = game:GetService("HttpService")
 		end)
 		UserInputService.InputChanged:Connect(function(input)
 			if drag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-				local d = input.Position - dragStart
+				d = input.Position - dragStart
 				BB.gui.main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
 			end
 		end)
@@ -3694,7 +3694,7 @@ local HttpService = game:GetService("HttpService")
 		BB.gui.totTime.Parent = BB.gui.main
 
 		-- Progress bar
-		local progBg = Instance.new("Frame")
+		progBg = Instance.new("Frame")
 		progBg.Size = UDim2.new(1, -30 * scale, 0, 4 * scale)
 		progBg.Position = UDim2.new(0, 15 * scale, 0, 132 * scale)
 		progBg.BackgroundColor3 = C_SLIDER
@@ -3734,7 +3734,7 @@ local HttpService = game:GetService("HttpService")
 		end)
 
 		-- Controls
-		local ctrl = Instance.new("Frame")
+		ctrl = Instance.new("Frame")
 		ctrl.Size = UDim2.new(1, -30 * scale, 0, 40 * scale)
 		ctrl.Position = UDim2.new(0, 15 * scale, 0, 148 * scale)
 		ctrl.BackgroundTransparency = 1
@@ -3825,7 +3825,7 @@ local HttpService = game:GetService("HttpService")
 		end)
 
 		-- Volume
-		local volFrame = Instance.new("Frame")
+		volFrame = Instance.new("Frame")
 		volFrame.Size = UDim2.new(1, -30 * scale, 0, 30 * scale)
 		volFrame.Position = UDim2.new(0, 15 * scale, 0, 195 * scale)
 		volFrame.BackgroundTransparency = 1
@@ -3840,27 +3840,27 @@ local HttpService = game:GetService("HttpService")
 		e.Font = Enum.Font.Code
 		e.Parent = volFrame
 
-		local volHit = Instance.new("Frame")
+		volHit = Instance.new("Frame")
 		volHit.Size = UDim2.new(1, -55 * scale, 0, 20 * scale)
 		volHit.Position = UDim2.new(0, 45 * scale, 0.5, -10 * scale)
 		volHit.BackgroundTransparency = 1
 		volHit.Active = true
 		volHit.Parent = volFrame
 
-		local volSlider = Instance.new("Frame")
+		volSlider = Instance.new("Frame")
 		volSlider.Size = UDim2.new(1, 0, 0, 4 * scale)
 		volSlider.Position = UDim2.new(0, 0, 0.5, -2 * scale)
 		volSlider.BackgroundColor3 = C_SLIDER
 		volSlider.BorderSizePixel = 0
 		volSlider.Parent = volHit
 
-		local volFill = Instance.new("Frame")
+		volFill = Instance.new("Frame")
 		volFill.Size = UDim2.new(0.5, 0, 1, 0)
 		volFill.BackgroundColor3 = C_ACCENT
 		volFill.BorderSizePixel = 0
 		volFill.Parent = volSlider
 
-		local volDrag = false
+		volDrag = false
 		local function setVol(input)
 			local rel = math.clamp((input.Position.X - volHit.AbsolutePosition.X) / volHit.AbsoluteSize.X, 0, 1)
 			volFill.Size = UDim2.new(rel, 0, 1, 0)
@@ -3884,7 +3884,7 @@ local HttpService = game:GetService("HttpService")
 		end)
 
 		-- Input
-		local inFrame = Instance.new("Frame")
+		inFrame = Instance.new("Frame")
 		inFrame.Size = UDim2.new(1, -30 * scale, 0, 35 * scale)
 		inFrame.Position = UDim2.new(0, 15 * scale, 0, 235 * scale)
 		inFrame.BackgroundColor3 = C_DARK
@@ -3915,12 +3915,12 @@ local HttpService = game:GetService("HttpService")
 		e.Font = Enum.Font.Code
 		e.Parent = inFrame
 		e.MouseButton1Click:Connect(function()
-			local cleanId = BB.gui.idBox.Text:gsub("%D", "")
+			cleanId = BB.gui.idBox.Text:gsub("%D", "")
 			if cleanId ~= "" then playSong(cleanId) end
 		end)
 		BB.gui.idBox.FocusLost:Connect(function(entered)
 			if entered then
-				local cleanId = BB.gui.idBox.Text:gsub("%D", "")
+				cleanId = BB.gui.idBox.Text:gsub("%D", "")
 				if cleanId ~= "" then playSong(cleanId) end
 			end
 		end)
@@ -3952,8 +3952,8 @@ local HttpService = game:GetService("HttpService")
 		BB.gui.histList.Padding = UDim.new(0, 2 * scale)
 		BB.gui.histList.Parent = BB.gui.histFrame
 
-		local ok, saved = pcall(function()
-			local v = player:FindFirstChild("BoomboxHistory")
+		ok, saved = pcall(function()
+			v = player:FindFirstChild("BoomboxHistory")
 			return v and HttpService:JSONDecode(v.Value) or {}
 		end)
 		if ok then
@@ -3973,11 +3973,11 @@ local HttpService = game:GetService("HttpService")
 		for word in msg:sub(2):gmatch("%S+") do
 			table.insert(args, word)
 		end
-		local cmd = table.remove(args, 1)
+		cmd = table.remove(args, 1)
 		if cmd == "boombox" then
 			_G.OpenBoombox()
 			if args[1] then
-				local id = tostring(args[1]):gsub("%D", "")
+				id = tostring(args[1]):gsub("%D", "")
 				if id ~= "" then
 					task.wait(0.1)
 					playSong(id)
@@ -4028,7 +4028,7 @@ function LoadLunarCrosshair()
 	data.enabled = true
 
 	-- ================= GUI =================
-	local gui = Instance.new("ScreenGui")
+	gui = Instance.new("ScreenGui")
 	gui.Name = "LunarCrosshairCMD"
 	gui.IgnoreGuiInset = true
 	gui.ResetOnSpawn = false
@@ -4039,7 +4039,7 @@ function LoadLunarCrosshair()
 	data.gui = gui
 
 	-- Settings
-	local settings = {
+	settings = {
 		VertLength = 16,
 		HorzLength = 16,
 		Width = 3,
@@ -4078,14 +4078,14 @@ function LoadLunarCrosshair()
 	data.settings = settings
 
 	-- ================= CROSSHAIR CONTAINER =================
-	local center = Instance.new("Frame")
+	center = Instance.new("Frame")
 	center.BackgroundTransparency = 1
 	center.Size = UDim2.fromOffset(1,1)
 	center.AnchorPoint = Vector2.new(0.5, 0.5)
 	center.ZIndex = 2147483647
 	center.Parent = gui
 
-	local crosshairSymbol = Instance.new("TextLabel")
+	crosshairSymbol = Instance.new("TextLabel")
 	crosshairSymbol.BackgroundTransparency = 1
 	crosshairSymbol.Size = UDim2.fromScale(1,1)
 	crosshairSymbol.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -4098,7 +4098,7 @@ function LoadLunarCrosshair()
 	crosshairSymbol.Parent = center
 	crosshairSymbol.Visible = false
 
-	local crosshairParts = {}
+	crosshairParts = {}
 
 	local function clearCrosshairParts()
 		for _, part in pairs(crosshairParts) do
@@ -4119,7 +4119,7 @@ function LoadLunarCrosshair()
 		return f
 	end
 
-	local text = Instance.new("TextLabel")
+	text = Instance.new("TextLabel")
 	text.Text = settings.Text
 	text.Font = Enum.Font.Code
 	text.TextSize = 18
@@ -4140,28 +4140,28 @@ function LoadLunarCrosshair()
 	end
 
 	-- ================= PRESETS =================
-	local presets = {}
+	presets = {}
 
 	presets["Classic"] = function()
 		clearCrosshairParts()
-		local w, len = settings.Width, settings.VertLength
-		local halfLen, gap = len / 2, 3
-		local top = makeLine("Top")
+		w, len = settings.Width, settings.VertLength
+		halfLen, gap = len / 2, 3
+		top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		local bottom = makeLine("Bottom")
+		bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		local left = makeLine("Left")
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
@@ -4171,7 +4171,7 @@ function LoadLunarCrosshair()
 
 	presets["Dot"] = function()
 		clearCrosshairParts()
-		local dot = makeLine("Dot")
+		dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(settings.Width + 2, settings.Width + 2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4182,27 +4182,27 @@ function LoadLunarCrosshair()
 
 	presets["X"] = function()
 		clearCrosshairParts()
-		local size = math.max(settings.VertLength, settings.HorzLength)
-		local w, gap = settings.Width, 4
-		local tl = makeLine("TL")
+		size = math.max(settings.VertLength, settings.HorzLength)
+		w, gap = settings.Width, 4
+		tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(w, size/2 - gap)
 		tl.AnchorPoint = Vector2.new(0.5, 1)
 		tl.Position = UDim2.new(0.5, -gap, 0.5, -gap)
 		tl.Rotation = 45
 		tl:SetAttribute("OriginalPos", tl.Position)
-		local tr = makeLine("TR")
+		tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(w, size/2 - gap)
 		tr.AnchorPoint = Vector2.new(0.5, 1)
 		tr.Position = UDim2.new(0.5, gap, 0.5, -gap)
 		tr.Rotation = -45
 		tr:SetAttribute("OriginalPos", tr.Position)
-		local bl = makeLine("BL")
+		bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(w, size/2 - gap)
 		bl.AnchorPoint = Vector2.new(0.5, 0)
 		bl.Position = UDim2.new(0.5, -gap, 0.5, gap)
 		bl.Rotation = -45
 		bl:SetAttribute("OriginalPos", bl.Position)
-		local br = makeLine("BR")
+		br = makeLine("BR")
 		br.Size = UDim2.fromOffset(w, size/2 - gap)
 		br.AnchorPoint = Vector2.new(0.5, 0)
 		br.Position = UDim2.new(0.5, gap, 0.5, gap)
@@ -4213,29 +4213,29 @@ function LoadLunarCrosshair()
 
 	presets["Plus Dot"] = function()
 		clearCrosshairParts()
-		local w, len = settings.Width, settings.VertLength
-		local halfLen, gap = len / 2, 3
-		local top = makeLine("Top")
+		w, len = settings.Width, settings.VertLength
+		halfLen, gap = len / 2, 3
+		top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		local bottom = makeLine("Bottom")
+		bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		local left = makeLine("Left")
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
 		right:SetAttribute("OriginalPos", right.Position)
-		local dot = makeLine("CenterDot")
+		dot = makeLine("CenterDot")
 		dot.Size = UDim2.fromOffset(w + 2, w + 2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4246,23 +4246,23 @@ function LoadLunarCrosshair()
 
 	presets["Brackets"] = function()
 		clearCrosshairParts()
-		local len, w, gap = settings.VertLength, settings.Width, 5
-		local tl = makeLine("TL")
+		len, w, gap = settings.VertLength, settings.Width, 5
+		tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(len * 0.5, w)
 		tl.AnchorPoint = Vector2.new(1, 0.5)
 		tl.Position = UDim2.new(0.5, -gap, 0.5, -len * 0.4)
 		tl:SetAttribute("OriginalPos", tl.Position)
-		local bl = makeLine("BL")
+		bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(len * 0.5, w)
 		bl.AnchorPoint = Vector2.new(1, 0.5)
 		bl.Position = UDim2.new(0.5, -gap, 0.5, len * 0.4)
 		bl:SetAttribute("OriginalPos", bl.Position)
-		local tr = makeLine("TR")
+		tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(len * 0.5, w)
 		tr.AnchorPoint = Vector2.new(0, 0.5)
 		tr.Position = UDim2.new(0.5, gap, 0.5, -len * 0.4)
 		tr:SetAttribute("OriginalPos", tr.Position)
-		local br = makeLine("BR")
+		br = makeLine("BR")
 		br.Size = UDim2.fromOffset(len * 0.5, w)
 		br.AnchorPoint = Vector2.new(0, 0.5)
 		br.Position = UDim2.new(0.5, gap, 0.5, len * 0.4)
@@ -4272,18 +4272,18 @@ function LoadLunarCrosshair()
 
 	presets["Circle"] = function()
 		clearCrosshairParts()
-		local ringSize, w = settings.VertLength + 6, settings.Width
-		local ring = makeLine("Ring")
+		ringSize, w = settings.VertLength + 6, settings.Width
+		ring = makeLine("Ring")
 		ring.Size = UDim2.fromOffset(ringSize, ringSize)
 		ring.AnchorPoint = Vector2.new(0.5, 0.5)
 		ring.Position = UDim2.fromScale(0.5, 0.5)
 		ring.BackgroundTransparency = 1
 		ring:SetAttribute("OriginalPos", ring.Position)
-		local stroke = Instance.new("UIStroke", ring)
+		stroke = Instance.new("UIStroke", ring)
 		stroke.Color = Color3.new(1,1,1)
 		stroke.Thickness = w
 		Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
-		local dot = makeLine("CenterDot")
+		dot = makeLine("CenterDot")
 		dot.Size = UDim2.fromOffset(w, w)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4294,14 +4294,14 @@ function LoadLunarCrosshair()
 
 	presets["Chevron"] = function()
 		clearCrosshairParts()
-		local len, w, gap = settings.VertLength, settings.Width, 4
-		local left = makeLine("Left")
+		len, w, gap = settings.VertLength, settings.Width, 4
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(w, len * 0.5)
 		left.AnchorPoint = Vector2.new(0.5, 1)
 		left.Position = UDim2.new(0.5, -len * 0.25 - gap, 0.5, -gap)
 		left.Rotation = -25
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(w, len * 0.5)
 		right.AnchorPoint = Vector2.new(0.5, 1)
 		right.Position = UDim2.new(0.5, len * 0.25 + gap, 0.5, -gap)
@@ -4312,26 +4312,26 @@ function LoadLunarCrosshair()
 
 	presets["Wings"] = function()
 		clearCrosshairParts()
-		local len, w, gap = settings.VertLength, settings.Width, 3
-		local l1 = makeLine("L1")
+		len, w, gap = settings.VertLength, settings.Width, 3
+		l1 = makeLine("L1")
 		l1.Size = UDim2.fromOffset(w, len * 0.4)
 		l1.AnchorPoint = Vector2.new(0.5, 1)
 		l1.Position = UDim2.new(0.5, -len * 0.35 - gap, 0.5, -gap)
 		l1.Rotation = 15
 		l1:SetAttribute("OriginalPos", l1.Position)
-		local l2 = makeLine("L2")
+		l2 = makeLine("L2")
 		l2.Size = UDim2.fromOffset(w, len * 0.4)
 		l2.AnchorPoint = Vector2.new(0.5, 0)
 		l2.Position = UDim2.new(0.5, -len * 0.35 - gap, 0.5, gap)
 		l2.Rotation = -15
 		l2:SetAttribute("OriginalPos", l2.Position)
-		local r1 = makeLine("R1")
+		r1 = makeLine("R1")
 		r1.Size = UDim2.fromOffset(w, len * 0.4)
 		r1.AnchorPoint = Vector2.new(0.5, 1)
 		r1.Position = UDim2.new(0.5, len * 0.35 + gap, 0.5, -gap)
 		r1.Rotation = -15
 		r1:SetAttribute("OriginalPos", r1.Position)
-		local r2 = makeLine("R2")
+		r2 = makeLine("R2")
 		r2.Size = UDim2.fromOffset(w, len * 0.4)
 		r2.AnchorPoint = Vector2.new(0.5, 0)
 		r2.Position = UDim2.new(0.5, len * 0.35 + gap, 0.5, gap)
@@ -4342,13 +4342,13 @@ function LoadLunarCrosshair()
 
 	presets["T-Shape"] = function()
 		clearCrosshairParts()
-		local len, w, gap = settings.VertLength, settings.Width, 3
-		local top = makeLine("Top")
+		len, w, gap = settings.VertLength, settings.Width, 3
+		top = makeLine("Top")
 		top.Size = UDim2.fromOffset(len * 1.2, w)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		local drop = makeLine("Drop")
+		drop = makeLine("Drop")
 		drop.Size = UDim2.fromOffset(w, len * 0.6)
 		drop.AnchorPoint = Vector2.new(0.5, 0)
 		drop.Position = UDim2.new(0.5, 0, 0.5, gap)
@@ -4358,23 +4358,23 @@ function LoadLunarCrosshair()
 
 	presets["Diamond"] = function()
 		clearCrosshairParts()
-		local len, w, gap = settings.VertLength, settings.Width, 4
-		local t = makeLine("Top")
+		len, w, gap = settings.VertLength, settings.Width, 4
+		t = makeLine("Top")
 		t.Size = UDim2.fromOffset(w, len * 0.35)
 		t.AnchorPoint = Vector2.new(0.5, 1)
 		t.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		t:SetAttribute("OriginalPos", t.Position)
-		local b = makeLine("Bottom")
+		b = makeLine("Bottom")
 		b.Size = UDim2.fromOffset(w, len * 0.35)
 		b.AnchorPoint = Vector2.new(0.5, 0)
 		b.Position = UDim2.new(0.5, 0, 0.5, gap)
 		b:SetAttribute("OriginalPos", b.Position)
-		local l = makeLine("Left")
+		l = makeLine("Left")
 		l.Size = UDim2.fromOffset(len * 0.35, w)
 		l.AnchorPoint = Vector2.new(1, 0.5)
 		l.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		l:SetAttribute("OriginalPos", l.Position)
-		local r = makeLine("Right")
+		r = makeLine("Right")
 		r.Size = UDim2.fromOffset(len * 0.35, w)
 		r.AnchorPoint = Vector2.new(0, 0.5)
 		r.Position = UDim2.new(0.5, gap, 0.5, 0)
@@ -4384,29 +4384,29 @@ function LoadLunarCrosshair()
 
 	presets["Crosshair 2.0"] = function()
 		clearCrosshairParts()
-		local w, len = settings.Width, settings.VertLength
-		local halfLen, gap = len / 2, 2
-		local top = makeLine("Top")
+		w, len = settings.Width, settings.VertLength
+		halfLen, gap = len / 2, 2
+		top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		local bottom = makeLine("Bottom")
+		bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		local left = makeLine("Left")
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
 		right:SetAttribute("OriginalPos", right.Position)
-		local dot = makeLine("Dot")
+		dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w, w)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4417,33 +4417,33 @@ function LoadLunarCrosshair()
 
 	presets["Reticle"] = function()
 		clearCrosshairParts()
-		local ringSize, w, gap = settings.VertLength + 8, settings.Width, 3
-		local ring = makeLine("Ring")
+		ringSize, w, gap = settings.VertLength + 8, settings.Width, 3
+		ring = makeLine("Ring")
 		ring.Size = UDim2.fromOffset(ringSize, ringSize)
 		ring.AnchorPoint = Vector2.new(0.5, 0.5)
 		ring.Position = UDim2.fromScale(0.5, 0.5)
 		ring.BackgroundTransparency = 1
 		ring:SetAttribute("OriginalPos", ring.Position)
-		local stroke = Instance.new("UIStroke", ring)
+		stroke = Instance.new("UIStroke", ring)
 		stroke.Color = Color3.new(1,1,1)
 		stroke.Thickness = w
 		Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
-		local top = makeLine("Top")
+		top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, ringSize * 0.15)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		local bottom = makeLine("Bottom")
+		bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, ringSize * 0.15)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		local left = makeLine("Left")
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(ringSize * 0.15, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(ringSize * 0.15, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
@@ -4453,19 +4453,19 @@ function LoadLunarCrosshair()
 
 	presets["Arrow"] = function()
 		clearCrosshairParts()
-		local len, w, gap = settings.VertLength, settings.Width, 3
-		local shaft = makeLine("Shaft")
+		len, w, gap = settings.VertLength, settings.Width, 3
+		shaft = makeLine("Shaft")
 		shaft.Size = UDim2.fromOffset(w, len * 0.6)
 		shaft.AnchorPoint = Vector2.new(0.5, 1)
 		shaft.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		shaft:SetAttribute("OriginalPos", shaft.Position)
-		local left = makeLine("Left")
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(w, len * 0.35)
 		left.AnchorPoint = Vector2.new(0.5, 1)
 		left.Position = UDim2.new(0.5, -len * 0.12, 0.5, -gap)
 		left.Rotation = -35
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(w, len * 0.35)
 		right.AnchorPoint = Vector2.new(0.5, 1)
 		right.Position = UDim2.new(0.5, len * 0.12, 0.5, -gap)
@@ -4476,28 +4476,28 @@ function LoadLunarCrosshair()
 
 	presets["Target"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
-		local outer = makeLine("Outer")
+		len, w = settings.VertLength, settings.Width
+		outer = makeLine("Outer")
 		outer.Size = UDim2.fromOffset(len + 8, len + 8)
 		outer.AnchorPoint = Vector2.new(0.5, 0.5)
 		outer.Position = UDim2.fromScale(0.5, 0.5)
 		outer.BackgroundTransparency = 1
 		outer:SetAttribute("OriginalPos", outer.Position)
-		local s1 = Instance.new("UIStroke", outer)
+		s1 = Instance.new("UIStroke", outer)
 		s1.Color = Color3.new(1,1,1)
 		s1.Thickness = w
 		Instance.new("UICorner", outer).CornerRadius = UDim.new(1, 0)
-		local inner = makeLine("Inner")
+		inner = makeLine("Inner")
 		inner.Size = UDim2.fromOffset(len * 0.5, len * 0.5)
 		inner.AnchorPoint = Vector2.new(0.5, 0.5)
 		inner.Position = UDim2.fromScale(0.5, 0.5)
 		inner.BackgroundTransparency = 1
 		inner:SetAttribute("OriginalPos", inner.Position)
-		local s2 = Instance.new("UIStroke", inner)
+		s2 = Instance.new("UIStroke", inner)
 		s2.Color = Color3.new(1,1,1)
 		s2.Thickness = w
 		Instance.new("UICorner", inner).CornerRadius = UDim.new(1, 0)
-		local dot = makeLine("Dot")
+		dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w, w)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4508,10 +4508,10 @@ function LoadLunarCrosshair()
 
 	presets["Star"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
-		local gap = 2
+		len, w = settings.VertLength, settings.Width
+		gap = 2
 		for i = 0, 4 do
-			local arm = makeLine("Arm" .. i)
+			arm = makeLine("Arm" .. i)
 			arm.Size = UDim2.fromOffset(w, len * 0.5)
 			arm.AnchorPoint = Vector2.new(0.5, 1)
 			arm.Position = UDim2.fromScale(0.5, 0.5)
@@ -4523,12 +4523,12 @@ function LoadLunarCrosshair()
 
 	presets["Hexagon"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
+		len, w = settings.VertLength, settings.Width
 		for i = 0, 5 do
-			local side = makeLine("Side" .. i)
+			side = makeLine("Side" .. i)
 			side.Size = UDim2.fromOffset(len * 0.4, w)
 			side.AnchorPoint = Vector2.new(0.5, 0.5)
-			local angle = math.rad(i * 60)
+			angle = math.rad(i * 60)
 			side.Position = UDim2.new(0.5, math.cos(angle) * len * 0.3, 0.5, math.sin(angle) * len * 0.3)
 			side.Rotation = i * 60
 			side:SetAttribute("OriginalPos", side.Position)
@@ -4538,44 +4538,44 @@ function LoadLunarCrosshair()
 
 	presets["Crosshair 3.0"] = function()
 		clearCrosshairParts()
-		local w, len = settings.Width, settings.VertLength
-		local halfLen, gap = len / 2, 4
-		local top = makeLine("Top")
+		w, len = settings.Width, settings.VertLength
+		halfLen, gap = len / 2, 4
+		top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		local bottom = makeLine("Bottom")
+		bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		local left = makeLine("Left")
+		left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		local right = makeLine("Right")
+		right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
 		right:SetAttribute("OriginalPos", right.Position)
-		local tl = makeLine("TL")
+		tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(len * 0.2, w)
 		tl.AnchorPoint = Vector2.new(1, 0.5)
 		tl.Position = UDim2.new(0.5, -gap, 0.5, -len * 0.3)
 		tl:SetAttribute("OriginalPos", tl.Position)
-		local tr = makeLine("TR")
+		tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(len * 0.2, w)
 		tr.AnchorPoint = Vector2.new(0, 0.5)
 		tr.Position = UDim2.new(0.5, gap, 0.5, -len * 0.3)
 		tr:SetAttribute("OriginalPos", tr.Position)
-		local bl = makeLine("BL")
+		bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(len * 0.2, w)
 		bl.AnchorPoint = Vector2.new(1, 0.5)
 		bl.Position = UDim2.new(0.5, -gap, 0.5, len * 0.3)
 		bl:SetAttribute("OriginalPos", bl.Position)
-		local br = makeLine("BR")
+		br = makeLine("BR")
 		br.Size = UDim2.fromOffset(len * 0.2, w)
 		br.AnchorPoint = Vector2.new(0, 0.5)
 		br.Position = UDim2.new(0.5, gap, 0.5, len * 0.3)
@@ -4585,39 +4585,39 @@ function LoadLunarCrosshair()
 
 	presets["Scope"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
-		local h = makeLine("H")
+		len, w = settings.VertLength, settings.Width
+		h = makeLine("H")
 		h.Size = UDim2.fromOffset(len * 2, w)
 		h.AnchorPoint = Vector2.new(0.5, 0.5)
 		h.Position = UDim2.fromScale(0.5, 0.5)
 		h:SetAttribute("OriginalPos", h.Position)
-		local v = makeLine("V")
+		v = makeLine("V")
 		v.Size = UDim2.fromOffset(w, len * 2)
 		v.AnchorPoint = Vector2.new(0.5, 0.5)
 		v.Position = UDim2.fromScale(0.5, 0.5)
 		v:SetAttribute("OriginalPos", v.Position)
-		local dot = makeLine("Dot")
+		dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w + 2, w + 2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
 		dot:SetAttribute("OriginalPos", dot.Position)
 		Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-		local tl = makeLine("TL")
+		tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(len * 0.3, w)
 		tl.AnchorPoint = Vector2.new(1, 0.5)
 		tl.Position = UDim2.new(0.5, -len * 0.6, 0.5, -len * 0.6)
 		tl:SetAttribute("OriginalPos", tl.Position)
-		local tr = makeLine("TR")
+		tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(len * 0.3, w)
 		tr.AnchorPoint = Vector2.new(0, 0.5)
 		tr.Position = UDim2.new(0.5, len * 0.6, 0.5, -len * 0.6)
 		tr:SetAttribute("OriginalPos", tr.Position)
-		local bl = makeLine("BL")
+		bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(len * 0.3, w)
 		bl.AnchorPoint = Vector2.new(1, 0.5)
 		bl.Position = UDim2.new(0.5, -len * 0.6, 0.5, len * 0.6)
 		bl:SetAttribute("OriginalPos", bl.Position)
-		local br = makeLine("BR")
+		br = makeLine("BR")
 		br.Size = UDim2.fromOffset(len * 0.3, w)
 		br.AnchorPoint = Vector2.new(0, 0.5)
 		br.Position = UDim2.new(0.5, len * 0.6, 0.5, len * 0.6)
@@ -4627,15 +4627,15 @@ function LoadLunarCrosshair()
 
 	presets["Pixel"] = function()
 		clearCrosshairParts()
-		local w = settings.Width
-		local size = w + 1
-		local positions = {
+		w = settings.Width
+		size = w + 1
+		positions = {
 			{-1,-1}, {0,-1}, {1,-1},
 			{-1,0},         {1,0},
 			{-1,1}, {0,1}, {1,1}
 		}
 		for i, pos in ipairs(positions) do
-			local p = makeLine("P" .. i)
+			p = makeLine("P" .. i)
 			p.Size = UDim2.fromOffset(size, size)
 			p.AnchorPoint = Vector2.new(0.5, 0.5)
 			p.Position = UDim2.new(0.5, pos[1] * size * 2, 0.5, pos[2] * size * 2)
@@ -4646,29 +4646,29 @@ function LoadLunarCrosshair()
 
 	presets["Box"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
-		local gap = 4
-		local t = makeLine("T")
+		len, w = settings.VertLength, settings.Width
+		gap = 4
+		t = makeLine("T")
 		t.Size = UDim2.fromOffset(len, w)
 		t.AnchorPoint = Vector2.new(0.5, 1)
 		t.Position = UDim2.new(0.5, 0, 0.5, -len/2 - gap)
 		t:SetAttribute("OriginalPos", t.Position)
-		local b = makeLine("B")
+		b = makeLine("B")
 		b.Size = UDim2.fromOffset(len, w)
 		b.AnchorPoint = Vector2.new(0.5, 0)
 		b.Position = UDim2.new(0.5, 0, 0.5, len/2 + gap)
 		b:SetAttribute("OriginalPos", b.Position)
-		local l = makeLine("L")
+		l = makeLine("L")
 		l.Size = UDim2.fromOffset(w, len)
 		l.AnchorPoint = Vector2.new(1, 0.5)
 		l.Position = UDim2.new(0.5, -len/2 - gap, 0.5, 0)
 		l:SetAttribute("OriginalPos", l.Position)
-		local r = makeLine("R")
+		r = makeLine("R")
 		r.Size = UDim2.fromOffset(w, len)
 		r.AnchorPoint = Vector2.new(0, 0.5)
 		r.Position = UDim2.new(0.5, len/2 + gap, 0.5, 0)
 		r:SetAttribute("OriginalPos", r.Position)
-		local dot = makeLine("Dot")
+		dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w+1, w+1)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4679,26 +4679,26 @@ function LoadLunarCrosshair()
 
 	presets["Galaxy"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
+		len, w = settings.VertLength, settings.Width
 		for i = 0, 3 do
-			local arm = makeLine("Arm" .. i)
+			arm = makeLine("Arm" .. i)
 			arm.Size = UDim2.fromOffset(w, len * 0.6)
 			arm.AnchorPoint = Vector2.new(0.5, 1)
 			arm.Position = UDim2.fromScale(0.5, 0.5)
 			arm.Rotation = i * 90 + 45
 			arm:SetAttribute("OriginalPos", arm.Position)
 		end
-		local ring = makeLine("Ring")
+		ring = makeLine("Ring")
 		ring.Size = UDim2.fromOffset(len * 0.4, len * 0.4)
 		ring.AnchorPoint = Vector2.new(0.5, 0.5)
 		ring.Position = UDim2.fromScale(0.5, 0.5)
 		ring.BackgroundTransparency = 1
 		ring:SetAttribute("OriginalPos", ring.Position)
-		local stroke = Instance.new("UIStroke", ring)
+		stroke = Instance.new("UIStroke", ring)
 		stroke.Color = Color3.new(1,1,1)
 		stroke.Thickness = w
 		Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
-		local dot = makeLine("Dot")
+		dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w+2, w+2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4709,22 +4709,22 @@ function LoadLunarCrosshair()
 
 	presets["Ninja"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
+		len, w = settings.VertLength, settings.Width
 		for i = 0, 3 do
-			local blade = makeLine("Blade" .. i)
+			blade = makeLine("Blade" .. i)
 			blade.Size = UDim2.fromOffset(w, len * 0.5)
 			blade.AnchorPoint = Vector2.new(0.5, 1)
 			blade.Position = UDim2.fromScale(0.5, 0.5)
 			blade.Rotation = i * 90
 			blade:SetAttribute("OriginalPos", blade.Position)
-			local tip = makeLine("Tip" .. i)
+			tip = makeLine("Tip" .. i)
 			tip.Size = UDim2.fromOffset(w, len * 0.2)
 			tip.AnchorPoint = Vector2.new(0.5, 0)
 			tip.Position = UDim2.new(0.5, 0, 0.5, -len * 0.1)
 			tip.Rotation = i * 90 + 30
 			tip:SetAttribute("OriginalPos", tip.Position)
 		end
-		local centerDot = makeLine("Center")
+		centerDot = makeLine("Center")
 		centerDot.Size = UDim2.fromOffset(w+2, w+2)
 		centerDot.AnchorPoint = Vector2.new(0.5, 0.5)
 		centerDot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4735,28 +4735,28 @@ function LoadLunarCrosshair()
 
 	presets["Laser"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
-		local h1 = makeLine("H1")
+		len, w = settings.VertLength, settings.Width
+		h1 = makeLine("H1")
 		h1.Size = UDim2.fromOffset(len, w)
 		h1.AnchorPoint = Vector2.new(0.5, 0.5)
 		h1.Position = UDim2.new(0.5, 0, 0.5, -len * 0.15)
 		h1:SetAttribute("OriginalPos", h1.Position)
-		local h2 = makeLine("H2")
+		h2 = makeLine("H2")
 		h2.Size = UDim2.fromOffset(len, w)
 		h2.AnchorPoint = Vector2.new(0.5, 0.5)
 		h2.Position = UDim2.new(0.5, 0, 0.5, len * 0.15)
 		h2:SetAttribute("OriginalPos", h2.Position)
-		local v1 = makeLine("V1")
+		v1 = makeLine("V1")
 		v1.Size = UDim2.fromOffset(w, len)
 		v1.AnchorPoint = Vector2.new(0.5, 0.5)
 		v1.Position = UDim2.new(0.5, -len * 0.15, 0.5, 0)
 		v1:SetAttribute("OriginalPos", v1.Position)
-		local v2 = makeLine("V2")
+		v2 = makeLine("V2")
 		v2.Size = UDim2.fromOffset(w, len)
 		v2.AnchorPoint = Vector2.new(0.5, 0.5)
 		v2.Position = UDim2.new(0.5, len * 0.15, 0.5, 0)
 		v2:SetAttribute("OriginalPos", v2.Position)
-		local glow = makeLine("Glow")
+		glow = makeLine("Glow")
 		glow.Size = UDim2.fromOffset(len * 0.3, len * 0.3)
 		glow.AnchorPoint = Vector2.new(0.5, 0.5)
 		glow.Position = UDim2.fromScale(0.5, 0.5)
@@ -4768,27 +4768,27 @@ function LoadLunarCrosshair()
 
 	presets["Cyber"] = function()
 		clearCrosshairParts()
-		local len, w = settings.VertLength, settings.Width
+		len, w = settings.VertLength, settings.Width
 		for i = 0, 5 do
-			local side = makeLine("Side" .. i)
+			side = makeLine("Side" .. i)
 			side.Size = UDim2.fromOffset(len * 0.25, w)
 			side.AnchorPoint = Vector2.new(0.5, 0.5)
-			local angle = math.rad(i * 60)
+			angle = math.rad(i * 60)
 			side.Position = UDim2.new(0.5, math.cos(angle) * len * 0.4, 0.5, math.sin(angle) * len * 0.4)
 			side.Rotation = i * 60
 			side:SetAttribute("OriginalPos", side.Position)
 		end
-		local h = makeLine("H")
+		h = makeLine("H")
 		h.Size = UDim2.fromOffset(len * 0.4, w)
 		h.AnchorPoint = Vector2.new(0.5, 0.5)
 		h.Position = UDim2.fromScale(0.5, 0.5)
 		h:SetAttribute("OriginalPos", h.Position)
-		local v = makeLine("V")
+		v = makeLine("V")
 		v.Size = UDim2.fromOffset(w, len * 0.4)
 		v.AnchorPoint = Vector2.new(0.5, 0.5)
 		v.Position = UDim2.fromScale(0.5, 0.5)
 		v:SetAttribute("OriginalPos", v.Position)
-		local core = makeLine("Core")
+		core = makeLine("Core")
 		core.Size = UDim2.fromOffset(w+2, w+2)
 		core.AnchorPoint = Vector2.new(0.5, 0.5)
 		core.Position = UDim2.fromScale(0.5, 0.5)
@@ -4797,10 +4797,10 @@ function LoadLunarCrosshair()
 		return crosshairParts
 	end
 
-	local currentPresetParts = presets["Classic"]()
+	currentPresetParts = presets["Classic"]()
 
 	-- ================= SETTINGS PANEL =================
-	local panel = Instance.new("Frame")
+	panel = Instance.new("Frame")
 	panel.Name = "SettingsPanel"
 	panel.Size = UDim2.fromOffset(280, 0)
 	panel.Position = UDim2.fromOffset(30, 100)
@@ -4812,14 +4812,14 @@ function LoadLunarCrosshair()
 	panel.Parent = gui
 	panel.ClipsDescendants = true
 
-	local mainCorner = Instance.new("UICorner", panel)
+	mainCorner = Instance.new("UICorner", panel)
 	mainCorner.CornerRadius = UDim.new(0, 16)
 
-	local glowStroke = Instance.new("UIStroke", panel)
+	glowStroke = Instance.new("UIStroke", panel)
 	glowStroke.Color = Color3.fromRGB(100, 80, 255)
 	glowStroke.Thickness = 1.5
 
-	local shadow = Instance.new("Frame")
+	shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
 	shadow.Size = UDim2.new(1, 12, 1, 12)
 	shadow.Position = UDim2.new(0, -6, 0, -6)
@@ -4828,10 +4828,10 @@ function LoadLunarCrosshair()
 	shadow.BorderSizePixel = 0
 	shadow.ZIndex = 2147483645
 	shadow.Parent = panel
-	local shadowCorner = Instance.new("UICorner", shadow)
+	shadowCorner = Instance.new("UICorner", shadow)
 	shadowCorner.CornerRadius = UDim.new(0, 20)
 
-	local header = Instance.new("Frame")
+	header = Instance.new("Frame")
 	header.Name = "Header"
 	header.Size = UDim2.new(1, 0, 0, 48)
 	header.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
@@ -4840,10 +4840,10 @@ function LoadLunarCrosshair()
 	header.ZIndex = 2147483646
 	header.Parent = panel
 
-	local headerCorner = Instance.new("UICorner", header)
+	headerCorner = Instance.new("UICorner", header)
 	headerCorner.CornerRadius = UDim.new(0, 16)
 
-	local headerLine = Instance.new("Frame")
+	headerLine = Instance.new("Frame")
 	headerLine.Name = "AccentLine"
 	headerLine.Size = UDim2.new(1, 0, 0, 2)
 	headerLine.Position = UDim2.new(0, 0, 1, -1)
@@ -4853,7 +4853,7 @@ function LoadLunarCrosshair()
 	headerLine.ZIndex = 2147483646
 	headerLine.Parent = header
 
-	local moonIcon = Instance.new("TextLabel")
+	moonIcon = Instance.new("TextLabel")
 	moonIcon.Name = "MoonIcon"
 	moonIcon.Text = ""
 	moonIcon.Size = UDim2.fromOffset(32, 32)
@@ -4864,7 +4864,7 @@ function LoadLunarCrosshair()
 	moonIcon.ZIndex = 2147483646
 	moonIcon.Parent = header
 
-	local title = Instance.new("TextLabel")
+	title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Text = "Lunar Crosshair"
 	title.Size = UDim2.new(1, -60, 0, 24)
@@ -4877,7 +4877,7 @@ function LoadLunarCrosshair()
 	title.ZIndex = 2147483646
 	title.Parent = header
 
-	local subtitle = Instance.new("TextLabel")
+	subtitle = Instance.new("TextLabel")
 	subtitle.Name = "Subtitle"
 	subtitle.Text = "Right Shift to toggle"
 	subtitle.Size = UDim2.new(1, -60, 0, 16)
@@ -4890,7 +4890,7 @@ function LoadLunarCrosshair()
 	subtitle.ZIndex = 2147483646
 	subtitle.Parent = header
 
-	local toggleBtn = Instance.new("TextButton")
+	toggleBtn = Instance.new("TextButton")
 	toggleBtn.Name = "ToggleBtn"
 	toggleBtn.Text = "−"
 	toggleBtn.Size = UDim2.fromOffset(28, 28)
@@ -4902,10 +4902,10 @@ function LoadLunarCrosshair()
 	toggleBtn.BorderSizePixel = 0
 	toggleBtn.ZIndex = 2147483646
 	toggleBtn.Parent = header
-	local toggleBtnCorner = Instance.new("UICorner", toggleBtn)
+	toggleBtnCorner = Instance.new("UICorner", toggleBtn)
 	toggleBtnCorner.CornerRadius = UDim.new(0, 8)
 
-	local content = Instance.new("ScrollingFrame")
+	content = Instance.new("ScrollingFrame")
 	content.Name = "Content"
 	content.Size = UDim2.new(1, -20, 1, -58)
 	content.Position = UDim2.fromOffset(10, 54)
@@ -4917,11 +4917,11 @@ function LoadLunarCrosshair()
 	content.ZIndex = 2147483646
 	content.Parent = panel
 
-	local contentLayout = Instance.new("UIListLayout", content)
+	contentLayout = Instance.new("UIListLayout", content)
 	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	contentLayout.Padding = UDim.new(0, 10)
 
-	local topPad = Instance.new("UIPadding", content)
+	topPad = Instance.new("UIPadding", content)
 	topPad.PaddingTop = UDim.new(0, 4)
 	topPad.PaddingBottom = UDim.new(0, 8)
 
@@ -4936,7 +4936,7 @@ function LoadLunarCrosshair()
 	end)
 	UserInputService.InputChanged:Connect(function(input)
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
+			delta = input.Position - dragStart
 			panel.Position = UDim2.new(
 				startPos.X.Scale, startPos.X.Offset + delta.X,
 				startPos.Y.Scale, startPos.Y.Offset + delta.Y
@@ -5064,7 +5064,7 @@ function LoadLunarCrosshair()
 			end)
 
 			box.FocusLost:Connect(function()
-				local num = tonumber(box.Text)
+				num = tonumber(box.Text)
 				if num then
 					settings[key] = math.clamp(num, minVal, maxVal)
 					box.Text = tostring(settings[key])
@@ -5173,8 +5173,8 @@ function LoadLunarCrosshair()
 	end
 
 	-- Color picker
-	local colorPickerOpen = false
-	local colorPreview = nil
+	colorPickerOpen = false
+	colorPreview = nil
 
 	local function createColorPicker(parent)
 		local container = Instance.new("Frame")
@@ -5413,7 +5413,7 @@ function LoadLunarCrosshair()
 			end)
 
 			valueBox.FocusLost:Connect(function()
-				local num = tonumber(valueBox.Text)
+				num = tonumber(valueBox.Text)
 				if num then
 					num = math.clamp(math.round(num), 0, 255)
 					settings[colorKey] = num
@@ -5435,7 +5435,7 @@ function LoadLunarCrosshair()
 		makeSlider("B", "ColorB", 72, Color3.fromRGB(80, 140, 255))
 
 		-- Done button
-		local closePicker = Instance.new("TextButton")
+		closePicker = Instance.new("TextButton")
 		closePicker.Text = "✓ Done"
 		closePicker.Size = UDim2.new(1, -20, 0, 26)
 		closePicker.Position = UDim2.fromOffset(10, 108)
@@ -5460,7 +5460,7 @@ function LoadLunarCrosshair()
 			if colorPickerOpen then
 				colorRow.Size = UDim2.new(1, 0, 0, 196)
 				for key, refs in pairs(sliderRefs) do
-					local val = settings[key]
+					val = settings[key]
 					refs.fill.Size = UDim2.new(val / 255, 0, 1, 0)
 					refs.knob.Position = UDim2.new(val / 255, -7, 0.5, -7)
 					refs.valueBox.Text = tostring(val)
@@ -5483,8 +5483,8 @@ function LoadLunarCrosshair()
 	end
 
 	-- ================= PRESET SELECTOR =================
-	local presetNames = {"Classic", "Dot", "X", "Plus Dot", "Brackets", "Circle", "Chevron", "Wings", "T-Shape", "Diamond", "Crosshair 2.0", "Reticle", "Arrow", "Target", "Star", "Hexagon", "Crosshair 3.0", "Scope", "Pixel", "Box", "Galaxy", "Ninja", "Laser", "Cyber"}
-	local selectedPresetBtn = nil
+	presetNames = {"Classic", "Dot", "X", "Plus Dot", "Brackets", "Circle", "Chevron", "Wings", "T-Shape", "Diamond", "Crosshair 2.0", "Reticle", "Arrow", "Target", "Star", "Hexagon", "Crosshair 3.0", "Scope", "Pixel", "Box", "Galaxy", "Ninja", "Laser", "Cyber"}
+	selectedPresetBtn = nil
 
 	local function createPresetSelector(parent)
 		local container = Instance.new("Frame")
@@ -5717,7 +5717,7 @@ function LoadLunarCrosshair()
 				return
 			end
 
-			local originalText = btn.Text
+			originalText = btn.Text
 			btn.Text = "✓  Copied!"
 			TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 180, 80)}):Play()
 
@@ -5767,7 +5767,7 @@ function LoadLunarCrosshair()
 
 		-- Trail Streaks
 		if settings.VFXTrail and math.random() < 0.5 * intensity / 5 then
-			local trail = Instance.new("Frame")
+			trail = Instance.new("Frame")
 			trail.Size = UDim2.fromOffset(vfxSize * 3, vfxSize)
 			trail.BackgroundColor3 = color
 			trail.BackgroundTransparency = 0.3
@@ -5778,7 +5778,7 @@ function LoadLunarCrosshair()
 			trail.Parent = center
 			Instance.new("UICorner", trail).CornerRadius = UDim.new(1, 0)
 
-			local angle = math.random() * math.pi * 2
+			angle = math.random() * math.pi * 2
 			trail.Rotation = math.deg(angle)
 
 			TweenService:Create(trail, TweenInfo.new(0.4 + math.random() * 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -5794,7 +5794,7 @@ function LoadLunarCrosshair()
 
 		-- Glow Rings
 		if settings.VFXGlow and math.random() < 0.15 * intensity / 5 then
-			local glow = Instance.new("Frame")
+			glow = Instance.new("Frame")
 			glow.Size = UDim2.fromOffset(10, 10)
 			glow.BackgroundColor3 = color
 			glow.BackgroundTransparency = 0.5
@@ -5817,7 +5817,7 @@ function LoadLunarCrosshair()
 
 		-- Bloom Burst
 		if settings.VFXBloom and math.random() < 0.2 * intensity / 5 then
-			local bloom = Instance.new("Frame")
+			bloom = Instance.new("Frame")
 			bloom.Size = UDim2.fromOffset(vfxSize * 4, vfxSize * 4)
 			bloom.BackgroundColor3 = color
 			bloom.BackgroundTransparency = 0.6
@@ -5840,7 +5840,7 @@ function LoadLunarCrosshair()
 
 		-- Sparkles
 		if settings.VFXSparkle and math.random() < 0.4 * intensity / 5 then
-			local sparkle = Instance.new("TextLabel")
+			sparkle = Instance.new("TextLabel")
 			sparkle.Text = "✦"
 			sparkle.Size = UDim2.fromOffset(20, 20)
 			sparkle.BackgroundTransparency = 1
@@ -5865,7 +5865,7 @@ function LoadLunarCrosshair()
 
 		-- Ripples
 		if settings.VFXRipple and math.random() < 0.1 * intensity / 5 then
-			local ripple = Instance.new("Frame")
+			ripple = Instance.new("Frame")
 			ripple.Size = UDim2.fromOffset(10, 10)
 			ripple.BackgroundTransparency = 1
 			ripple.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -5874,7 +5874,7 @@ function LoadLunarCrosshair()
 			ripple.ZIndex = 2147483643
 			ripple.Parent = center
 
-			local stroke = Instance.new("UIStroke", ripple)
+			stroke = Instance.new("UIStroke", ripple)
 			stroke.Color = color
 			stroke.Thickness = vfxSize * 0.5
 
@@ -5894,7 +5894,7 @@ function LoadLunarCrosshair()
 
 		-- Orbit Dots
 		if settings.VFXOrbit and math.random() < 0.3 * intensity / 5 then
-			local orbit = Instance.new("Frame")
+			orbit = Instance.new("Frame")
 			orbit.Size = UDim2.fromOffset(vfxSize * 2, vfxSize * 2)
 			orbit.BackgroundColor3 = color
 			orbit.BackgroundTransparency = 0
@@ -5905,10 +5905,10 @@ function LoadLunarCrosshair()
 			orbit.Parent = center
 			Instance.new("UICorner", orbit).CornerRadius = UDim.new(1, 0)
 
-			local angle = math.random() * math.pi * 2
-			local radius = 25 + math.random() * 30
-			local speed = 1 + math.random() * 2
-			local startTime = tick()
+			angle = math.random() * math.pi * 2
+			radius = 25 + math.random() * 30
+			speed = 1 + math.random() * 2
+			startTime = tick()
 
 			local conn
 			conn = RunService.RenderStepped:Connect(function()
@@ -5916,8 +5916,8 @@ function LoadLunarCrosshair()
 					conn:Disconnect()
 					return
 				end
-				local elapsed = tick() - startTime
-				local currentAngle = angle + elapsed * speed
+				elapsed = tick() - startTime
+				currentAngle = angle + elapsed * speed
 				orbit.Position = UDim2.fromOffset(math.cos(currentAngle) * radius, math.sin(currentAngle) * radius)
 				orbit.BackgroundTransparency = math.min(1, elapsed / 1.5)
 				if elapsed > 1.5 then
@@ -5929,21 +5929,21 @@ function LoadLunarCrosshair()
 
 		-- Shooting Stars
 		if settings.VFXShootingStar and math.random() < 0.15 * intensity / 5 then
-			local star = Instance.new("Frame")
+			star = Instance.new("Frame")
 			star.Size = UDim2.fromOffset(vfxSize * 3, vfxSize)
 			star.BackgroundColor3 = color
 			star.BackgroundTransparency = 0
 			star.AnchorPoint = Vector2.new(0.5, 0.5)
-			local startX = math.random(-60, 60)
-			local startY = math.random(-60, 60)
+			startX = math.random(-60, 60)
+			startY = math.random(-60, 60)
 			star.Position = UDim2.fromOffset(startX, startY)
 			star.BorderSizePixel = 0
 			star.ZIndex = 2147483645
 			star.Parent = center
 			Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
 
-			local endX = startX + math.random(-80, 80)
-			local endY = startY + math.random(-80, 80)
+			endX = startX + math.random(-80, 80)
+			endY = startY + math.random(-80, 80)
 
 			TweenService:Create(star, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 				Position = UDim2.fromOffset(endX, endY),
@@ -5958,7 +5958,7 @@ function LoadLunarCrosshair()
 
 		-- Hearts
 		if settings.VFXHeart and math.random() < 0.2 * intensity / 5 then
-			local heart = Instance.new("TextLabel")
+			heart = Instance.new("TextLabel")
 			heart.Text = "♥"
 			heart.Size = UDim2.fromOffset(20, 20)
 			heart.BackgroundTransparency = 1
@@ -5983,7 +5983,7 @@ function LoadLunarCrosshair()
 
 		-- Lightning
 		if settings.VFXLightning and math.random() < 0.15 * intensity / 5 then
-			local bolt = Instance.new("Frame")
+			bolt = Instance.new("Frame")
 			bolt.Size = UDim2.fromOffset(vfxSize, vfxSize * 6)
 			bolt.BackgroundColor3 = Color3.new(1, 1, 1)
 			bolt.BackgroundTransparency = 0
@@ -6005,7 +6005,7 @@ function LoadLunarCrosshair()
 
 		-- Ghosts
 		if settings.VFXGhost and math.random() < 0.2 * intensity / 5 then
-			local ghost = Instance.new("TextLabel")
+			ghost = Instance.new("TextLabel")
 			ghost.Text = "👻"
 			ghost.Size = UDim2.fromOffset(24, 24)
 			ghost.BackgroundTransparency = 1
@@ -6028,7 +6028,7 @@ function LoadLunarCrosshair()
 
 		-- Confetti
 		if settings.VFXConfetti and math.random() < 0.3 * intensity / 5 then
-			local confetti = Instance.new("Frame")
+			confetti = Instance.new("Frame")
 			confetti.Size = UDim2.fromOffset(vfxSize * 2, vfxSize * 3)
 			confetti.BackgroundColor3 = color
 			confetti.BackgroundTransparency = 0
@@ -6052,23 +6052,23 @@ function LoadLunarCrosshair()
 	end
 
 	-- ================= BUILD UI =================
-	local presetSection, presetContent = createSection("Presets", content)
+	presetSection, presetContent = createSection("Presets", content)
 	createPresetSelector(presetContent)
 
-	local crosshairSection, crosshairContent = createSection("Crosshair Size", content)
+	crosshairSection, crosshairContent = createSection("Crosshair Size", content)
 	createInputRow("Vertical Length", "VertLength", 1, 10000, false, crosshairContent)
 	createInputRow("Horizontal Length", "HorzLength", 1, 10000, false, crosshairContent)
 	createInputRow("Width", "Width", 1, 10000, false, crosshairContent)
 
-	local colorSection, colorContent = createSection("Color", content)
+	colorSection, colorContent = createSection("Color", content)
 	createColorPicker(colorContent)
 
-	local animSection, animContent = createSection("Animation", content)
+	animSection, animContent = createSection("Animation", content)
 	createToggleRow("Pulse Breathing", "PulseEnabled", animContent)
 	createInputRow("Pulse Speed", "PulseSpeed", 0.1, 20, false, animContent)
 	createInputRow("Pulse Distance", "PulseDistance", 0, 20, false, animContent)
 
-	local vfxSection, vfxContent = createSection("VFX Effects", content)
+	vfxSection, vfxContent = createSection("VFX Effects", content)
 	createToggleRow("✨ Enable VFX", "VFXEnabled", vfxContent)
 	createInputRow("VFX Intensity", "VFXIntensity", 1, 20, false, vfxContent)
 	createInputRow("VFX Size", "VFXSize", 1, 20, false, vfxContent)
@@ -6084,20 +6084,20 @@ function LoadLunarCrosshair()
 	createToggleRow("Ghosts", "VFXGhost", vfxContent)
 	createToggleRow("Confetti", "VFXConfetti", vfxContent)
 
-	local appearanceSection, appearanceContent = createSection("Appearance", content)
+	appearanceSection, appearanceContent = createSection("Appearance", content)
 	createInputRow("Rotation Speed", "RotationSpeed", 0, 10000, false, appearanceContent)
 	createInputRow("Rainbow Speed", "RainbowSpeed", 0, 10000, false, appearanceContent)
 	createInputRow("Y Offset", "YOffset", -50, 50, false, appearanceContent)
 	createInputRow("Text Gap", "TextGap", 0, 10000, false, appearanceContent)
 	createInputRow("Display Text", "Text", nil, nil, true, appearanceContent)
 
-	local symbolSection, symbolContent = createSection("Symbol", content)
+	symbolSection, symbolContent = createSection("Symbol", content)
 	createSymbolSelector(symbolContent)
 
-	local toggleSection, toggleContent = createSection("Options", content)
+	toggleSection, toggleContent = createSection("Options", content)
 	createToggleRow("Spin Animation", "SpinEnabled", toggleContent)
 
-	local discordBtn = createDiscordButton(content)
+	discordBtn = createDiscordButton(content)
 
 	-- Update canvas size
 	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -6113,7 +6113,7 @@ function LoadLunarCrosshair()
 	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updatePanelHeight)
 
 	-- ================= COLLAPSE / EXPAND =================
-	local panelExpanded = true
+	panelExpanded = true
 
 	local function collapsePanel()
 		panelExpanded = false
@@ -6151,9 +6151,9 @@ function LoadLunarCrosshair()
 	end)
 
 	-- ================= MAIN LOOP =================
-	local hue = 0
-	local rotation = 0
-	local pulseTime = 0
+	hue = 0
+	rotation = 0
+	pulseTime = 0
 
 	data.connection = RunService.RenderStepped:Connect(function(dt)
 		if not data.enabled then return end
@@ -6166,8 +6166,8 @@ function LoadLunarCrosshair()
 			mouse.Icon = ""
 		end
 
-		local mousePos = UserInputService:GetMouseLocation()
-		local baseY = mousePos.Y + settings.YOffset
+		mousePos = UserInputService:GetMouseLocation()
+		baseY = mousePos.Y + settings.YOffset
 
 		center.Position = UDim2.fromOffset(mousePos.X, baseY)
 
@@ -6204,19 +6204,19 @@ function LoadLunarCrosshair()
 		-- Pulse animation
 		if settings.PulseEnabled and settings.Symbol == "" then
 			pulseTime = pulseTime + dt * settings.PulseSpeed
-			local pulseOffset = math.sin(pulseTime) * settings.PulseDistance
+			pulseOffset = math.sin(pulseTime) * settings.PulseDistance
 
 			for _, part in pairs(crosshairParts) do
 				if part and part.Parent then
-					local originalPos = part:GetAttribute("OriginalPos")
+					originalPos = part:GetAttribute("OriginalPos")
 					if originalPos then
-						local ox = originalPos.X.Offset
-						local oy = originalPos.Y.Offset
-						local dist = math.sqrt(ox * ox + oy * oy)
+						ox = originalPos.X.Offset
+						oy = originalPos.Y.Offset
+						dist = math.sqrt(ox * ox + oy * oy)
 
 						if dist > 0.001 then
-							local dirX = ox / dist
-							local dirY = oy / dist
+							dirX = ox / dist
+							dirY = oy / dist
 							part.Position = UDim2.new(
 								originalPos.X.Scale,
 								ox + dirX * pulseOffset,
@@ -6306,7 +6306,7 @@ end
 -- =============================================================
 --  sun glare
 -- =============================================================
-local sunGlareData = {
+sunGlareData = {
 	enabled = false,
 	gui = nil,
 	renderConnection = nil,
@@ -6331,15 +6331,15 @@ local function enableSunGlare()
 		sunGlareData.blur:Destroy()
 	end
 	
-	local Lighting = game:GetService("Lighting")
+	Lighting = game:GetService("Lighting")
 
 	-- 🎥 Blur effect (depth simulation)
-	local blur = Instance.new("BlurEffect")
+	blur = Instance.new("BlurEffect")
 	blur.Size = 0
 	blur.Parent = Lighting
 	sunGlareData.blur = blur
 	
-	local screenGui = Instance.new("ScreenGui")
+	screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "SunGlare"
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
@@ -6348,12 +6348,12 @@ local function enableSunGlare()
 	screenGui.Parent = client.PlayerGui
 	sunGlareData.gui = screenGui
 
-	local host = Instance.new("Frame")
+	host = Instance.new("Frame")
 	host.Size = UDim2.new(1,0,1,0)
 	host.BackgroundTransparency = 1
 	host.Parent = screenGui
 
-	local ShineOverlay = Instance.new("Frame")
+	ShineOverlay = Instance.new("Frame")
 	ShineOverlay.Size = UDim2.new(2,0,2,0)
 	ShineOverlay.Position = UDim2.new(-0.5,0,-0.5,0)
 	ShineOverlay.BackgroundColor3 = Color3.new(1,1,1)
@@ -6361,7 +6361,7 @@ local function enableSunGlare()
 	ShineOverlay.ZIndex = 6
 	ShineOverlay.Parent = host
 
-	local Haze = Instance.new("Frame")
+	Haze = Instance.new("Frame")
 	Haze.Size = UDim2.new(2,0,2,0)
 	Haze.Position = UDim2.new(-0.5,0,-0.5,0)
 	Haze.BackgroundColor3 = Color3.new(1,1,1)
@@ -6369,7 +6369,7 @@ local function enableSunGlare()
 	Haze.ZIndex = 5
 	Haze.Parent = host
 
-	local flareData = {
+	flareData = {
 		{id="109801097", size=320},
 		{id="109801061", size=180},
 		{id="109801105", size=160},
@@ -6378,10 +6378,10 @@ local function enableSunGlare()
 		{id="109801105", size=90}
 	}
 
-	local lFlares = {}
+	lFlares = {}
 
 	for i,data in ipairs(flareData) do
-		local img = Instance.new("ImageLabel")
+		img = Instance.new("ImageLabel")
 		img.Image = "http://www.roblox.com/asset/?id="..data.id
 		img.Size = UDim2.new(0,data.size,0,data.size)
 		img.BackgroundTransparency = 1
@@ -6421,27 +6421,27 @@ local function enableSunGlare()
 		return false
 	end
 
-	local exposure = 0
+	exposure = 0
 
 	sunGlareData.renderConnection = game:GetService("RunService").RenderStepped:Connect(function(dt)
 		if not sunGlareData.enabled then return end
 		
-		local cam = workspace.CurrentCamera
-		local Lighting = game:GetService("Lighting")
+		cam = workspace.CurrentCamera
+		Lighting = game:GetService("Lighting")
 		
-		local x,y,z = findFlareCoord(cam.CFrame, cam.CFrame.Position + Lighting:GetSunDirection()*8)
-		local blocked = isSunBlocked(cam.CFrame.Position, Lighting:GetSunDirection())
-		local minutes = Lighting:GetMinutesAfterMidnight()
+		x,y,z = findFlareCoord(cam.CFrame, cam.CFrame.Position + Lighting:GetSunDirection()*8)
+		blocked = isSunBlocked(cam.CFrame.Position, Lighting:GetSunDirection())
+		minutes = Lighting:GetMinutesAfterMidnight()
 
 		if z and not blocked and minutes > 335 and minutes < 1105 then
-			local dot = cam.CFrame.LookVector:Dot(Lighting:GetSunDirection())
-			local target = math.clamp((dot - 0.65) * 2.8, 0, 1)
+			dot = cam.CFrame.LookVector:Dot(Lighting:GetSunDirection())
+			target = math.clamp((dot - 0.65) * 2.8, 0, 1)
 			target = target * target
 
 			exposure = exposure + (target - exposure) * math.clamp(dt * 2, 0, 1)
 
 			for flare,pos in pairs(lFlares) do
-				local spread = pos*(1.4 + exposure*1.2)
+				spread = pos*(1.4 + exposure*1.2)
 
 				flare.Position = UDim2.new(
 					0.5 + x*spread,
@@ -6455,14 +6455,14 @@ local function enableSunGlare()
 				flare.ImageTransparency = 1-(0.6*exposure)
 			end
 
-			local centerDist = math.clamp(math.abs(x)+math.abs(y),0,2)
-			local hazeStrength = (1-centerDist) * exposure
+			centerDist = math.clamp(math.abs(x)+math.abs(y),0,2)
+			hazeStrength = (1-centerDist) * exposure
 
 			Haze.BackgroundTransparency = 1 - (hazeStrength * 0.25)
 			ShineOverlay.BackgroundTransparency = 1 - (exposure * 0.18)
 
 			-- 🎥 DEPTH-BASED BLUR (cinematic)
-			local blurTarget = exposure * 18
+			blurTarget = exposure * 18
 			blur.Size = blur.Size + (blurTarget - blur.Size) * math.clamp(dt * 3, 0, 1)
 
 		else
@@ -6507,7 +6507,7 @@ end
 -- =============================================================
 --  speed system
 -- =============================================================
-local speedPanelData = {
+speedPanelData = {
 	panel = nil,
 	enabled = false,
 	bypassEnabled = false,
@@ -6526,7 +6526,7 @@ local function createSpeedPanel()
 		return
 	end
 
-	local panel = Instance.new("ScreenGui")
+	panel = Instance.new("ScreenGui")
 	panel.Name = "SpeedPanel"
 	panel.ResetOnSpawn = false
 	panel.DisplayOrder = 999999
@@ -6534,7 +6534,7 @@ local function createSpeedPanel()
 	panel.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	panel.Parent = client.PlayerGui
 
-	local main = Instance.new("Frame")
+	main = Instance.new("Frame")
 	main.Name = "Main"
 	main.Size = UDim2.new(0, 350, 0, 290)
 	main.Position = UDim2.new(0.5, -175, 0.5, -145)
@@ -6544,7 +6544,7 @@ local function createSpeedPanel()
 	main.Parent = panel
 	applyGlassEffect(main, globalConfig.uiTransparency, 0.4)
 
-	local title = Instance.new("TextLabel", main)
+	title = Instance.new("TextLabel", main)
 	title.Size = UDim2.new(1, 0, 0, 50)
 	title.BackgroundTransparency = 1
 	title.Text = "SPEED CONTROL"
@@ -6555,7 +6555,7 @@ local function createSpeedPanel()
 	title.TextStrokeTransparency = 0.5
 	title.TextStrokeColor3 = Color3.new(0,0,0)
 
-	local speedDisplay = Instance.new("TextLabel", main)
+	speedDisplay = Instance.new("TextLabel", main)
 	speedDisplay.Size = UDim2.new(1, 0, 0, 40)
 	speedDisplay.Position = UDim2.new(0, 0, 0, 50)
 	speedDisplay.BackgroundTransparency = 1
@@ -6568,7 +6568,7 @@ local function createSpeedPanel()
 	speedDisplay.TextStrokeColor3 = Color3.new(0,0,0)
 
 	-- TextBox (clean input)
-	local speedBox = Instance.new("TextBox", main)
+	speedBox = Instance.new("TextBox", main)
 	speedBox.Size = UDim2.new(0.8, 0, 0, 50)
 	speedBox.Position = UDim2.new(0.1, 0, 0, 100)
 	speedBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
@@ -6581,7 +6581,7 @@ local function createSpeedPanel()
 	applyGlassEffect(speedBox, 0.3, 0.6)
 	Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 8)
 
-	local toggle1Btn = Instance.new("TextButton", main)
+	toggle1Btn = Instance.new("TextButton", main)
 	toggle1Btn.Size = UDim2.new(0.9, 0, 0, 45)
 	toggle1Btn.Position = UDim2.new(0.05, 0, 0, 165)
 	toggle1Btn.BackgroundColor3 = speedPanelData.enabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
@@ -6591,7 +6591,7 @@ local function createSpeedPanel()
 	toggle1Btn.TextColor3 = Color3.new(0,0,0)
 	applyGlassEffect(toggle1Btn, 0.2, 0.5)
 
-	local toggle2Btn = Instance.new("TextButton", main)
+	toggle2Btn = Instance.new("TextButton", main)
 	toggle2Btn.Size = UDim2.new(0.9, 0, 0, 45)
 	toggle2Btn.Position = UDim2.new(0.05, 0, 0, 220)
 	toggle2Btn.BackgroundColor3 = speedPanelData.bypassEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
@@ -6601,7 +6601,7 @@ local function createSpeedPanel()
 	toggle2Btn.TextColor3 = Color3.new(0,0,0)
 	applyGlassEffect(toggle2Btn, 0.2, 0.5)
 
-	local closeBtn = Instance.new("TextButton", main)
+	closeBtn = Instance.new("TextButton", main)
 	closeBtn.Size = UDim2.new(0, 35, 0, 35)
 	closeBtn.Position = UDim2.new(1, -45, 0, 8)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
@@ -6620,7 +6620,7 @@ local function createSpeedPanel()
 
 	-- TextBox logic
 	speedBox.FocusLost:Connect(function()
-		local num = tonumber(speedBox.Text)
+		num = tonumber(speedBox.Text)
 		if num then
 			speedPanelData.speedValue = math.clamp(math.floor(num), 1, 10000)
 			speedDisplay.Text = "Speed: " .. speedPanelData.speedValue
@@ -6657,16 +6657,16 @@ local function createSpeedPanel()
 
 			-- Instant direction change (no sliding when turning)
 			if speedPanelData.directionConnection then speedPanelData.directionConnection:Disconnect() end
-			local lastDir = Vector3.new()
+			lastDir = Vector3.new()
 			speedPanelData.directionConnection = RunService.Heartbeat:Connect(function()
 				if not hum or not speedPanelData.enabled then return end
 
-				local moveDir = hum.MoveDirection
+				moveDir = hum.MoveDirection
 				if moveDir.Magnitude > 0.1 then
 					if lastDir:Dot(moveDir) < 0.65 then -- Sharp direction change
-						local root = hum.RootPart
+						root = hum.RootPart
 						if root then
-							local vel = root.AssemblyLinearVelocity
+							vel = root.AssemblyLinearVelocity
 							root.AssemblyLinearVelocity = Vector3.new(0, vel.Y, 0) -- Clear sideways momentum
 						end
 					end
@@ -6708,7 +6708,7 @@ end
 -- =============================================================
 -- Vehicle fly 
 -- =============================================================
-local VehicleFlySystem = {
+VehicleFlySystem = {
 	enabled = false,
 	uiSpeed = 1,
 	actualSpeed = 50,
@@ -6905,10 +6905,10 @@ function VehicleFlySystem:CreatePanel()
 	end)
 
 	-- Minimize Handler
-	local minimized = false
+	minimized = false
 	MinBtn.MouseButton1Click:Connect(function()
 		minimized = not minimized
-		local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if minimized then
 			TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 320, 0, 45)}):Play()
 			MinBtn.Text = "+"
@@ -6951,7 +6951,7 @@ function VehicleFlySystem:GetVehiclePart()
 	end
 
 	-- Get the primary part or a suitable base part
-	local vehiclePart = vehicleModel.PrimaryPart
+	vehiclePart = vehicleModel.PrimaryPart
 	if not vehiclePart then
 		-- Try to find a main chassis part
 		for _, part in pairs(vehicleModel:GetDescendants()) do
@@ -7007,13 +7007,13 @@ function VehicleFlySystem:StartFly()
 	self.connection = RunService.RenderStepped:Connect(function()
 		if not self.enabled then return end
 
-		local currentVehiclePart = self:GetVehiclePart()
+		currentVehiclePart = self:GetVehiclePart()
 		if not currentVehiclePart then
 			self:StopFly()
 			return
 		end
 
-		local cam = workspace.CurrentCamera
+		cam = workspace.CurrentCamera
 
 		if UserInputService:GetFocusedTextBox() then
 			self.bodyVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -7022,7 +7022,7 @@ function VehicleFlySystem:StartFly()
 
 		self.bodyGyro.CFrame = cam.CFrame
 
-		local moveDir = Vector3.new(0, 0, 0)
+		moveDir = Vector3.new(0, 0, 0)
 		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
@@ -7030,7 +7030,7 @@ function VehicleFlySystem:StartFly()
 		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
 		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
 
-		local targetVel = Vector3.new(0, 0, 0)
+		targetVel = Vector3.new(0, 0, 0)
 		if moveDir.Magnitude > 0 then
 			targetVel = moveDir.Unit * self.actualSpeed
 		end
@@ -7105,13 +7105,13 @@ local function vehiclefly(plr, spd)
 	end
 
 	-- Check if in a seat first
-	local char = client.Character
+	char = client.Character
 	if not char then
 		notify("Character not found!", Color3.fromRGB(255, 100, 100))
 		return
 	end
 
-	local hum = char:FindFirstChildOfClass("Humanoid")
+	hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum or not hum.SeatPart then
 		notify("You must be in a vehicle seat first!", Color3.fromRGB(255, 100, 100))
 		return
@@ -7122,7 +7122,7 @@ local function vehiclefly(plr, spd)
 
 	-- Update speed if provided
 	if spd then
-		local newSpeed = tonumber(spd)
+		newSpeed = tonumber(spd)
 		if newSpeed then
 			VehicleFlySystem.uiSpeed = math.clamp(math.floor(newSpeed), 1, 10000)
 			VehicleFlySystem.actualSpeed = VehicleFlySystem.uiSpeed * VehicleFlySystem.speedMultiplier
@@ -7159,7 +7159,7 @@ end
 -- =============================================================
 -- Fly
 -- =============================================================
-local FlySystem = {
+FlySystem = {
 	enabled = false,
 	uiSpeed = 1,
 	actualSpeed = 50,
@@ -7354,10 +7354,10 @@ function FlySystem:CreatePanel()
 	end)
 
 	-- Minimize Handler
-	local minimized = false
+	minimized = false
 	MinBtn.MouseButton1Click:Connect(function()
 		minimized = not minimized
-		local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if minimized then
 			TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 320, 0, 45)}):Play()
 			MinBtn.Text = "+"
@@ -7422,8 +7422,8 @@ function FlySystem:StartFly()
 			return
 		end
 
-		local currentHrp = client.Character.HumanoidRootPart
-		local cam = workspace.CurrentCamera
+		currentHrp = client.Character.HumanoidRootPart
+		cam = workspace.CurrentCamera
 
 		if UserInputService:GetFocusedTextBox() then
 			self.bodyVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -7432,17 +7432,17 @@ function FlySystem:StartFly()
 
 		self.bodyGyro.CFrame = cam.CFrame
 
-		local moveDir = Vector3.new(0, 0, 0)
+		moveDir = Vector3.new(0, 0, 0)
 
 		if isMobile then
-	local hum = client.Character:FindFirstChildOfClass("Humanoid")
+	hum = client.Character:FindFirstChildOfClass("Humanoid")
 
 	if hum then
-		local stickDir = hum.MoveDirection
+		stickDir = hum.MoveDirection
 
 		if stickDir.Magnitude > 0 then
-			local camLook = cam.CFrame.LookVector
-			local camRight = cam.CFrame.RightVector
+			camLook = cam.CFrame.LookVector
+			camRight = cam.CFrame.RightVector
 
 			moveDir =
 				(camLook * stickDir.Magnitude) +
@@ -7459,7 +7459,7 @@ else
 			if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
 		end
 
-		local targetVel = Vector3.new(0, 0, 0)
+		targetVel = Vector3.new(0, 0, 0)
 		if moveDir.Magnitude > 0 then
 			targetVel = moveDir.Unit * self.actualSpeed
 		end
@@ -7521,7 +7521,7 @@ local function fly(plr, spd)
 
 	-- Update speed if provided
 	if spd then
-		local newSpeed = tonumber(spd)
+		newSpeed = tonumber(spd)
 		if newSpeed then
 			FlySystem.uiSpeed = math.clamp(math.floor(newSpeed), 1, 10000)
 			FlySystem.actualSpeed = FlySystem.uiSpeed * FlySystem.speedMultiplier
@@ -7558,13 +7558,13 @@ end
 -- =============================================================
 -- VIEW SYSTEM
 -- =============================================================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+Players = game:GetService("Players")
+RunService = game:GetService("RunService")
 
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+LocalPlayer = Players.LocalPlayer
+Camera = workspace.CurrentCamera
 
-local viewData = {
+viewData = {
 	enabled = false,
 	target = nil,
 	originalCameraSubject = nil,
@@ -7616,7 +7616,7 @@ local function view(targetPlayer)
 		return
 	end
 
-	local targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+	targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if not targetHum or targetHum.Health <= 0 then
 		notify("❌ Target is dead or has no Humanoid", Color3.fromRGB(255, 100, 100))
 		return
@@ -7635,13 +7635,13 @@ local function view(targetPlayer)
 	Camera.CameraType    = Enum.CameraType.Custom   
 
 	-- Top label
-	local viewGui = Instance.new("ScreenGui")
+	viewGui = Instance.new("ScreenGui")
 	viewGui.Name = "SpectateGui"
 	viewGui.ResetOnSpawn = false
 	viewGui.DisplayOrder = 999999
 	viewGui.Parent = client.PlayerGui 
 
-	local label = Instance.new("TextLabel")
+	label = Instance.new("TextLabel")
 	label.Size           = UDim2.new(0, 360, 0, 40)
 	label.Position       = UDim2.new(0.5, -180, 0, 10)
 	label.BackgroundTransparency = globalConfig.uiTransparency or 0.45
@@ -7707,7 +7707,7 @@ end)
 -- =============================================================
 -- JOIN LOGS PANEL
 -- =============================================================
-local joinLogsData = {
+joinLogsData = {
 	panel = nil,
 	entries = {},
 	connections = {}
@@ -7724,13 +7724,13 @@ local function createJoinLogsPanel()
 		return
 	end
 
-	local panel = Instance.new("ScreenGui")
+	panel = Instance.new("ScreenGui")
 	panel.Name = "JoinLogsPanel"
 	panel.ResetOnSpawn = false
 	panel.DisplayOrder = 999999
 	panel.Parent = client.PlayerGui
 
-	local main = Instance.new("Frame")
+	main = Instance.new("Frame")
 	main.Name = "Main"
 	main.Size = UDim2.new(0, 500, 0, 400)
 	main.Position = UDim2.new(0.5, -250, 0.5, -200)
@@ -7740,7 +7740,7 @@ local function createJoinLogsPanel()
 	main.Parent = panel
 	applyGlassEffect(main, globalConfig.uiTransparency, 0.4)
 
-	local title = Instance.new("TextLabel", main)
+	title = Instance.new("TextLabel", main)
 	title.Size = UDim2.new(1, -50, 0, 45)
 	title.Position = UDim2.new(0, 15, 0, 5)
 	title.BackgroundTransparency = 1
@@ -7753,7 +7753,7 @@ local function createJoinLogsPanel()
 	title.TextStrokeColor3 = Color3.new(0,0,0)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-	local closeBtn = Instance.new("TextButton", main)
+	closeBtn = Instance.new("TextButton", main)
 	closeBtn.Size = UDim2.new(0, 35, 0, 35)
 	closeBtn.Position = UDim2.new(1, -45, 0, 5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
@@ -7764,13 +7764,13 @@ local function createJoinLogsPanel()
 	closeBtn.TextTransparency = 0 -- SOLID
 	applyGlassEffect(closeBtn, 0.2, 0.4)
 
-	local headers = Instance.new("Frame", main)
+	headers = Instance.new("Frame", main)
 	headers.Size = UDim2.new(1, -20, 0, 30)
 	headers.Position = UDim2.new(0, 10, 0, 55)
 	headers.BackgroundColor3 = currentTheme.btn
 	applyGlassEffect(headers, 0.3, 0.6)
 
-	local timeHeader = Instance.new("TextLabel", headers)
+	timeHeader = Instance.new("TextLabel", headers)
 	timeHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	timeHeader.BackgroundTransparency = 1
 	timeHeader.Text = "Time"
@@ -7781,7 +7781,7 @@ local function createJoinLogsPanel()
 	timeHeader.TextStrokeTransparency = 0.5
 	timeHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	local userHeader = Instance.new("TextLabel", headers)
+	userHeader = Instance.new("TextLabel", headers)
 	userHeader.Size = UDim2.new(0.4, 0, 1, 0)
 	userHeader.Position = UDim2.new(0.2, 0, 0, 0)
 	userHeader.BackgroundTransparency = 1
@@ -7793,7 +7793,7 @@ local function createJoinLogsPanel()
 	userHeader.TextStrokeTransparency = 0.5
 	userHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	local distHeader = Instance.new("TextLabel", headers)
+	distHeader = Instance.new("TextLabel", headers)
 	distHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	distHeader.Position = UDim2.new(0.6, 0, 0, 0)
 	distHeader.BackgroundTransparency = 1
@@ -7805,7 +7805,7 @@ local function createJoinLogsPanel()
 	distHeader.TextStrokeTransparency = 0.5
 	distHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	local actionHeader = Instance.new("TextLabel", headers)
+	actionHeader = Instance.new("TextLabel", headers)
 	actionHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	actionHeader.Position = UDim2.new(0.8, 0, 0, 0)
 	actionHeader.BackgroundTransparency = 1
@@ -7817,7 +7817,7 @@ local function createJoinLogsPanel()
 	actionHeader.TextStrokeTransparency = 0.5
 	actionHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	local scroll = Instance.new("ScrollingFrame", main)
+	scroll = Instance.new("ScrollingFrame", main)
 	scroll.Size = UDim2.new(1, -20, 1, -100)
 	scroll.Position = UDim2.new(0, 10, 0, 90)
 	scroll.BackgroundTransparency = 0.4
@@ -7826,7 +7826,7 @@ local function createJoinLogsPanel()
 	scroll.ScrollBarImageColor3 = currentTheme.accent
 	applyGlassEffect(scroll, 0.5, 0.7)
 
-	local layout = Instance.new("UIListLayout", scroll)
+	layout = Instance.new("UIListLayout", scroll)
 	layout.Padding = UDim.new(0, 5)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 
@@ -7865,7 +7865,7 @@ local function createJoinLogsPanel()
 			dist = math.floor((plr.Character.HumanoidRootPart.Position - hrp.Position).Magnitude) .. " studs"
 		end
 
-		local distLabel = Instance.new("TextLabel", entry)
+		distLabel = Instance.new("TextLabel", entry)
 		distLabel.Size = UDim2.new(0.2, 0, 1, 0)
 		distLabel.Position = UDim2.new(0.6, 0, 0, 0)
 		distLabel.BackgroundTransparency = 1
@@ -7877,7 +7877,7 @@ local function createJoinLogsPanel()
 		distLabel.TextStrokeTransparency = 0.5
 		distLabel.TextStrokeColor3 = Color3.new(0,0,0)
 
-		local actionLabel = Instance.new("TextLabel", entry)
+		actionLabel = Instance.new("TextLabel", entry)
 		actionLabel.Size = UDim2.new(0.2, 0, 1, 0)
 		actionLabel.Position = UDim2.new(0.8, 0, 0, 0)
 		actionLabel.BackgroundTransparency = 1
@@ -7901,11 +7901,11 @@ local function createJoinLogsPanel()
 		scroll.CanvasPosition = Vector2.new(0, #joinLogsData.entries * 40)
 	end
 
-	local joinConn = Players.PlayerAdded:Connect(function(plr)
+	joinConn = Players.PlayerAdded:Connect(function(plr)
 		addLogEntry(plr, "JOINED")
 	end)
 
-	local leaveConn = Players.PlayerRemoving:Connect(function(plr)
+	leaveConn = Players.PlayerRemoving:Connect(function(plr)
 		addLogEntry(plr, "LEFT")
 	end)
 
@@ -7928,15 +7928,15 @@ end
 -- =============================================================
 -- ENHANCED ESP 
 -- =============================================================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+Players = game:GetService("Players")
+RunService = game:GetService("RunService")
 
-local client = Players.LocalPlayer
+client = Players.LocalPlayer
 
 -- ============================================
 -- ESP DATA - PERSISTENT TRACKING
 -- ============================================
-local espData = {
+espData = {
 	enabled = false,
 	playerESP = {},
 	globalConnections = {},
@@ -8017,10 +8017,10 @@ local function attachESP(plr, char)
 		return 
 	end
 
-	local teamColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
+	teamColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
 
 	-- HIGHLIGHT (Chams)
-	local highlight = Instance.new("Highlight")
+	highlight = Instance.new("Highlight")
 	highlight.Name = "LunarESP_" .. plr.Name
 	highlight.Adornee = char
 	highlight.FillTransparency = 0.85
@@ -8032,7 +8032,7 @@ local function attachESP(plr, char)
 	table.insert(data.objects, highlight)
 
 	-- BILLBOARD GUI
-	local billboard = Instance.new("BillboardGui")
+	billboard = Instance.new("BillboardGui")
 	billboard.Name = "LunarESP_Billboard_" .. plr.Name
 	billboard.Adornee = head
 	billboard.Size = UDim2.new(0, 200, 0, 50)
@@ -8042,7 +8042,7 @@ local function attachESP(plr, char)
 	billboard.Parent = client.PlayerGui
 
 	-- Name Label
-	local nameLabel = Instance.new("TextLabel")
+	nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Size = UDim2.new(1, 0, 0.55, 0)
@@ -8056,7 +8056,7 @@ local function attachESP(plr, char)
 	nameLabel.Parent = billboard
 
 	-- Distance Label
-	local distLabel = Instance.new("TextLabel")
+	distLabel = Instance.new("TextLabel")
 	distLabel.Name = "Distance"
 	distLabel.BackgroundTransparency = 1
 	distLabel.Position = UDim2.new(0, 0, 0.55, 0)
@@ -8075,8 +8075,8 @@ local function attachESP(plr, char)
 
 	-- Health tracking
 	if humanoid then
-		local healthConn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-			local healthPercent = humanoid.Health / humanoid.MaxHealth
+		healthConn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+			healthPercent = humanoid.Health / humanoid.MaxHealth
 			if healthPercent <= 0 then
 				for _, obj in ipairs(data.objects) do
 					if obj:IsA("Highlight") then
@@ -8102,7 +8102,7 @@ local function attachESP(plr, char)
 		table.insert(data.connections, healthConn)
 
 		-- Death handler - IMMEDIATELY reattach on respawn (NO DELAY)
-		local diedConn = humanoid.Died:Connect(function()
+		diedConn = humanoid.Died:Connect(function()
 			-- Clear current ESP immediately
 			clearPlayerESP(plr)
 
@@ -8113,7 +8113,7 @@ local function attachESP(plr, char)
 					newCharConn:Disconnect()
 				end
 				-- Check if this player should still have ESP (global or individual)
-				local shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
+				shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
 				if shouldTrack then
 					task.wait(0.3)
 					attachESP(plr, newChar)
@@ -8124,8 +8124,8 @@ local function attachESP(plr, char)
 	end
 
 	-- Team change handler
-	local teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function()
-		local newColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
+	teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function()
+		newColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
 		for _, obj in ipairs(data.objects) do
 			if obj:IsA("Highlight") then
 				obj.FillColor = newColor
@@ -8138,7 +8138,7 @@ local function attachESP(plr, char)
 	table.insert(data.connections, teamConn)
 
 	-- Character removing handler (for when they reset without dying)
-	local charRemovingConn = char.AncestryChanged:Connect(function()
+	charRemovingConn = char.AncestryChanged:Connect(function()
 		if not char.Parent then
 			-- Character was destroyed, clear ESP
 			task.delay(0.1, function()
@@ -8165,9 +8165,9 @@ local function createPlayerESP(plr)
 	end
 
 	-- Handle their respawns
-	local charConn = plr.CharacterAdded:Connect(function(char)
+	charConn = plr.CharacterAdded:Connect(function(char)
 		-- Check if this player should still have ESP
-		local shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
+		shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
 		if shouldTrack then
 			task.wait(0.3)
 			clearPlayerESP(plr)
@@ -8273,7 +8273,7 @@ function enableESPAll()
 	end
 
 	-- Auto-apply to NEW players joining
-	local newPlayerConn = Players.PlayerAdded:Connect(function(plr)
+	newPlayerConn = Players.PlayerAdded:Connect(function(plr)
 		if espData.globalEnabled then
 			-- NEW: Automatically track new players
 			espData.trackedUserIds[plr.UserId] = true
@@ -8284,7 +8284,7 @@ function enableESPAll()
 	table.insert(espData.globalConnections, newPlayerConn)
 
 	-- Handle players LEAVING
-	local playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
+	playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
 		clearPlayerESP(plr)
 		-- NEW: Keep them tracked so ESP reapplies if they rejoin
 		-- (don't remove from trackedUserIds - they stay tracked)
@@ -8313,7 +8313,7 @@ function enableESPAll()
 	end)
 
 	-- NEW: Handle rejoins - when a tracked player rejoins, reapply ESP
-	local rejoinConn = Players.PlayerAdded:Connect(function(plr)
+	rejoinConn = Players.PlayerAdded:Connect(function(plr)
 		if espData.trackedUserIds[plr.UserId] then
 			-- This player was previously tracked, reapply ESP
 			task.wait(0.5)
@@ -8370,10 +8370,10 @@ end
 -- =============================================================
 -- SPIN SYSTEM
 -- =============================================================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+Players = game:GetService("Players")
+RunService = game:GetService("RunService")
 
-local spinData = {}
+spinData = {}
 
 function spin(plr, speed)
 
@@ -8395,12 +8395,12 @@ function spin(plr, speed)
 	hum.AutoRotate = false
 
 	-- Attachment (YOU ALREADY HAD THIS)
-	local attachment = Instance.new("Attachment")
+	attachment = Instance.new("Attachment")
 	attachment.Name = "SpinAttachment"
 	attachment.Parent = hrp
 
 	-- REAL SPIN MOTOR (replaces AlignOrientation only)
-	local angular = Instance.new("AngularVelocity")
+	angular = Instance.new("AngularVelocity")
 	angular.Name = "SpinVelocity"
 	angular.Attachment0 = attachment
 	angular.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
@@ -8445,9 +8445,9 @@ function unspin(plr)
 		data.attachment:Destroy()
 	end
 
-	local char = plr.Character
+	char = plr.Character
 	if char then
-		local hum = char:FindFirstChildOfClass("Humanoid")
+		hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then
 			hum.AutoRotate = true
 		end
@@ -8518,7 +8518,7 @@ local function unload()
 	end
 
 	-- Clean up other data tables
-	local dataTables = {speedPanelData, viewData, spinData}
+	dataTables = {speedPanelData, viewData, spinData}
 	for _, data in ipairs(dataTables) do
 		if data then
 			for k, v in pairs(data) do
@@ -8557,7 +8557,7 @@ end
 -- ============================================
 -- INFINITE JUMP 
 -- ============================================
-local infJumpData = {
+infJumpData = {
 	enabled = false,
 	beganConnection = nil,
 	endedConnection = nil,
@@ -8577,7 +8577,7 @@ local function setupInfJump()
 
 	infJumpData.currentChar = char
 
-	local hrp = char:WaitForChild("HumanoidRootPart", 5)
+	hrp = char:WaitForChild("HumanoidRootPart", 5)
 	if hrp then
 		infJumpData.currentHRP = hrp
 	end
@@ -8638,10 +8638,10 @@ local function enableInfJump()
 			return
 		end
 
-		local hrp = infJumpData.currentHRP
+		hrp = infJumpData.currentHRP
 
 		if hrp and hrp.Parent then
-			local vel = hrp.AssemblyLinearVelocity
+			vel = hrp.AssemblyLinearVelocity
 			hrp.AssemblyLinearVelocity = Vector3.new(
 				vel.X,
 				math.max(vel.Y + 15, 60),
@@ -8660,10 +8660,10 @@ local function enableInfJump()
 			return
 		end
 
-		local hrp = infJumpData.currentHRP
+		hrp = infJumpData.currentHRP
 
 		if hrp and hrp.Parent then
-			local vel = hrp.AssemblyLinearVelocity
+			vel = hrp.AssemblyLinearVelocity
 
 			if vel.Y <= 25 then
 				hrp.AssemblyLinearVelocity = Vector3.new(
@@ -8733,7 +8733,7 @@ end
 -- =============================================================
 -- Aimbot
 -- =============================================================
-local aimbotData = {
+aimbotData = {
 	enabled = false,
 	smoothness = 0.5,
 	smoothnessEnabled = true,
@@ -8882,7 +8882,7 @@ local function createAimbotPanel()
 	end)
 
 	-- CONTENT
-	local contentScroll = Instance.new("ScrollingFrame")
+	contentScroll = Instance.new("ScrollingFrame")
 	contentScroll.Name = "Content"
 	contentScroll.Size = UDim2.new(1, -20, 1, -60)
 	contentScroll.Position = UDim2.new(0, 10, 0, 55)
@@ -8894,12 +8894,12 @@ local function createAimbotPanel()
 	contentScroll.ZIndex = 2147483646
 	contentScroll.Parent = main
 
-	local listLayout = Instance.new("UIListLayout")
+	listLayout = Instance.new("UIListLayout")
 	listLayout.Padding = UDim.new(0, 8)
 	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	listLayout.Parent = contentScroll
 
-	local padding = Instance.new("UIPadding")
+	padding = Instance.new("UIPadding")
 	padding.PaddingTop = UDim.new(0, 10)
 	padding.PaddingBottom = UDim.new(0, 20)
 	padding.Parent = contentScroll
@@ -8973,7 +8973,7 @@ local function createAimbotPanel()
 	createToggle("Wall Check", "wallCheck")
 
 	-- Aim Part
-	local aimPartBtn = createButton()
+	aimPartBtn = createButton()
 	aimPartBtn.Text = "Aim Part: " .. (aimbotData.aimPart == "Head" and "HEAD" or "TORSO")
 	aimPartBtn.TextColor3 = currentTheme.accent
 	aimPartBtn.Parent = contentScroll
@@ -9075,7 +9075,7 @@ local function createAimbotPanel()
 			end
 		end)
 
-		local initP = (aimbotData[dataKey] - minVal) / (maxVal - minVal)
+		initP = (aimbotData[dataKey] - minVal) / (maxVal - minVal)
 		fill.Size = UDim2.new(initP, 0, 1, 0)
 		drag.Position = UDim2.new(initP, -8, 0.5, -8)
 	end
@@ -9099,15 +9099,15 @@ local function createAimbotPanel()
 		end
 
 		if aimbotData.wallCheck then
-			local cam = workspace.CurrentCamera
-			local root = char:FindFirstChild(aimbotData.aimPart) or char:FindFirstChild("HumanoidRootPart")
+			cam = workspace.CurrentCamera
+			root = char:FindFirstChild(aimbotData.aimPart) or char:FindFirstChild("HumanoidRootPart")
 			if not root then return false end
-			local origin = cam.CFrame.Position
-			local dir = (root.Position - origin) * 0.95
-			local params = RaycastParams.new()
+			origin = cam.CFrame.Position
+			dir = (root.Position - origin) * 0.95
+			params = RaycastParams.new()
 			params.FilterDescendantsInstances = {client.Character or Instance.new("Folder"), char}
 			params.FilterType = Enum.RaycastFilterType.Blacklist
-			local result = workspace:Raycast(origin, dir, params)
+			result = workspace:Raycast(origin, dir, params)
 			if result then return false end
 		end
 		return true
@@ -9168,10 +9168,10 @@ local function createAimbotPanel()
 		end
 
 		-- Find new target
-		local closest, closestDist = nil, math.huge
+		closest, closestDist = nil, math.huge
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if isValidTarget(plr) then
-				local dist = getDistanceToMouse(plr)
+				dist = getDistanceToMouse(plr)
 				if dist < closestDist then
 					closestDist = dist
 					closest = plr
@@ -9188,9 +9188,9 @@ local function createAimbotPanel()
 	end
 
 	-- FOV Circle update
-	local fovConnection = RunService.RenderStepped:Connect(function()
+	fovConnection = RunService.RenderStepped:Connect(function()
 		if aimbotData.fovEnabled and aimbotData.fovCircle then
-			local mousePos = UserInputService:GetMouseLocation()
+			mousePos = UserInputService:GetMouseLocation()
 			aimbotData.fovCircle.Position = mousePos
 			aimbotData.fovCircle.Radius = aimbotData.fovSize
 			aimbotData.fovCircle.Color = aimbotData.currentTarget and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(100, 200, 255)
@@ -9207,16 +9207,16 @@ local function createAimbotPanel()
 			return
 		end
 
-		local target = updateStickyTarget()
+		target = updateStickyTarget()
 		if not target or not target.Character then return end
 
-		local root = target.Character:FindFirstChild(aimbotData.aimPart) or target.Character:FindFirstChild("HumanoidRootPart")
+		root = target.Character:FindFirstChild(aimbotData.aimPart) or target.Character:FindFirstChild("HumanoidRootPart")
 		if not root then return end
 
-		local predictedPos = getTargetPosition(root)
-		local screenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPos)
-		local mousePos = UserInputService:GetMouseLocation()
-		local targetScreen = Vector2.new(screenPos.X, screenPos.Y)
+		predictedPos = getTargetPosition(root)
+		screenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPos)
+		mousePos = UserInputService:GetMouseLocation()
+		targetScreen = Vector2.new(screenPos.X, screenPos.Y)
 
 		local moveVec
 		if aimbotData.smoothnessEnabled then
@@ -9248,7 +9248,7 @@ end
 -- =============================================================
 -- UNLOCK MOUSE SYSTEM
 -- =============================================================
-local mouseUnlockData = {
+mouseUnlockData = {
 	enabled = false,
 	connection = nil
 }
@@ -9287,7 +9287,7 @@ end
 -- =============================================================
 -- panel management
 -- =============================================================
-local subPanels = {
+subPanels = {
 	logs = nil,
 	stopwatch = nil
 }
@@ -9302,13 +9302,13 @@ local function createSubPanel(name, size, titleText)
 		return nil
 	end
 
-	local panel = Instance.new("ScreenGui")
+	panel = Instance.new("ScreenGui")
 	panel.Name = name .. "Panel"
 	panel.ResetOnSpawn = false
 	panel.DisplayOrder = 999999
 	panel.Parent = client.PlayerGui
 
-	local main = Instance.new("Frame")
+	main = Instance.new("Frame")
 	main.Name = "Main"
 	main.Size = size
 	main.Position = UDim2.new(0, 430, 0.5, -size.Y.Offset/2)
@@ -9318,7 +9318,7 @@ local function createSubPanel(name, size, titleText)
 	main.Parent = panel
 	applyGlassEffect(main, globalConfig.uiTransparency, 0.4)
 
-	local title = Instance.new("TextLabel", main)
+	title = Instance.new("TextLabel", main)
 	title.Size = UDim2.new(1, -50, 0, 45)
 	title.Position = UDim2.new(0, 15, 0, 5)
 	title.BackgroundTransparency = 1
@@ -9331,7 +9331,7 @@ local function createSubPanel(name, size, titleText)
 	title.TextStrokeColor3 = Color3.new(0,0,0)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-	local closeBtn = Instance.new("TextButton", main)
+	closeBtn = Instance.new("TextButton", main)
 	closeBtn.Size = UDim2.new(0, 35, 0, 35)
 	closeBtn.Position = UDim2.new(1, -45, 0, 5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
@@ -9354,7 +9354,7 @@ end
 -- =============================================================
 -- Logs panel
 -- =============================================================
-local logsScroll, logEntries = nil, {}
+logsScroll, logEntries = nil, {}
 
 local function addLog(sender, message)
 	if not logsScroll or not logsScroll.Parent then return end
@@ -9362,7 +9362,7 @@ local function addLog(sender, message)
 		if logEntries[1] then logEntries[1]:Destroy() end
 		table.remove(logEntries, 1)
 	end
-	local entry = Instance.new("TextLabel")
+	entry = Instance.new("TextLabel")
 	entry.Size = UDim2.new(1, -16, 0, 32)
 	entry.BackgroundTransparency = 0.8
 	entry.BackgroundColor3 = currentTheme.btn
@@ -9391,7 +9391,7 @@ local function toggleLogs()
 		return
 	end
 
-	local main = createSubPanel("logs", UDim2.new(0, 420, 0, 380), "CHAT LOGS")
+	main = createSubPanel("logs", UDim2.new(0, 420, 0, 380), "CHAT LOGS")
 	if not main then return end
 
 	logsScroll = Instance.new("ScrollingFrame", main)
@@ -9403,11 +9403,11 @@ local function toggleLogs()
 	logsScroll.ScrollBarImageColor3 = currentTheme.accent
 	applyGlassEffect(logsScroll, 0.5, 0.7)
 
-	local layout = Instance.new("UIListLayout", logsScroll)
+	layout = Instance.new("UIListLayout", logsScroll)
 	layout.Padding = UDim.new(0, 6)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-	local clearBtn = Instance.new("TextButton", main)
+	clearBtn = Instance.new("TextButton", main)
 	clearBtn.Size = UDim2.new(0, 90, 0, 35)
 	clearBtn.Position = UDim2.new(1, -140, 0, 5)
 	clearBtn.BackgroundColor3 = currentTheme.btn
@@ -9438,7 +9438,7 @@ end)
 -- =============================================================
 -- Stopwatch panel
 -- =============================================================
-local stopwatchData = {
+stopwatchData = {
 	running = false,
 	startTime = 0,
 	conn = nil,
@@ -9457,10 +9457,10 @@ local function toggleStopwatch()
 		return
 	end
 
-	local main = createSubPanel("stopwatch", UDim2.new(0, 380, 0, 220), "STOPWATCH")
+	main = createSubPanel("stopwatch", UDim2.new(0, 380, 0, 220), "STOPWATCH")
 	if not main then return end
 
-	local timeLabel = Instance.new("TextLabel", main)
+	timeLabel = Instance.new("TextLabel", main)
 	timeLabel.Size = UDim2.new(1, -20, 0, 90)
 	timeLabel.Position = UDim2.new(0, 10, 0, 55)
 	timeLabel.BackgroundTransparency = 0.3
@@ -9474,12 +9474,12 @@ local function toggleStopwatch()
 	timeLabel.TextStrokeColor3 = Color3.new(0,0,0)
 	applyGlassEffect(timeLabel, 0.4, 0.6)
 
-	local btnFrame = Instance.new("Frame", main)
+	btnFrame = Instance.new("Frame", main)
 	btnFrame.Size = UDim2.new(1, -20, 0, 55)
 	btnFrame.Position = UDim2.new(0, 10, 0, 155)
 	btnFrame.BackgroundTransparency = 1
 
-	local startBtn = Instance.new("TextButton", btnFrame)
+	startBtn = Instance.new("TextButton", btnFrame)
 	startBtn.Size = UDim2.new(0.48, 0, 1, 0)
 	startBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 	startBtn.Text = "START"
@@ -9489,7 +9489,7 @@ local function toggleStopwatch()
 	startBtn.TextTransparency = 0 -- SOLID
 	applyGlassEffect(startBtn, 0.15, 0.4)
 
-	local resetBtn = Instance.new("TextButton", btnFrame)
+	resetBtn = Instance.new("TextButton", btnFrame)
 	resetBtn.Size = UDim2.new(0.48, 0, 1, 0)
 	resetBtn.Position = UDim2.new(0.52, 0, 0, 0)
 	resetBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
@@ -9518,11 +9518,11 @@ local function toggleStopwatch()
 			startBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 		else
 			stopwatchData.running = true
-			local current = tick()
+			current = tick()
 			stopwatchData.startTime = current - (stopwatchData.startTime or 0)
 			stopwatchData.conn = RunService.Heartbeat:Connect(function()
 				if stopwatchData.running then
-					local elapsed = tick() - stopwatchData.startTime
+					elapsed = tick() - stopwatchData.startTime
 					timeLabel.Text = formatTime(elapsed)
 				end
 			end)
@@ -9556,7 +9556,7 @@ local function removeWaypoint()
 		return
 	end
 
-	local last = waypoints[#waypoints]
+	last = waypoints[#waypoints]
 	if last then
 		if last.conn then last.conn:Disconnect() end
 		if last.part then last.part:Destroy() end
@@ -9605,11 +9605,11 @@ end
 -- ALL COMMANDS
 -- =============================================================
 local noclipConn
-local frozen = {}
-local gods = {}
-local invis = {}
-local rainbowData = {}
-local ragdolls = {}
+frozen = {}
+gods = {}
+invis = {}
+rainbowData = {}
+ragdolls = {}
 ------------------------------------------------
 --  speed
 ------------------------------------------------
@@ -9618,7 +9618,7 @@ local function setspeed(plr, num)
 		notify("❌ Speed only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if hum then
 		hum.WalkSpeed = tonumber(num) or 16
 		notify("WalkSpeed set to " .. hum.WalkSpeed, currentTheme.accent)
@@ -9678,7 +9678,7 @@ local function kill(plr)
 		return 
 	end
 	pcall(function()
-		local hum = getHum(plr)
+		hum = getHum(plr)
 		if hum then hum.Health = 0 end
 		char:BreakJoints()
 	end)
@@ -9696,7 +9696,7 @@ local function tp(p1, p2)
 		notify("❌ No target player specified", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local h1, h2 = getHRP(p1), getHRP(p2)
+	h1, h2 = getHRP(p1), getHRP(p2)
 	if h1 and h2 then
 		h1.CFrame = h2.CFrame * CFrame.new(0, 3, 0)
 		notify("Teleported to " .. p2.Name, currentTheme.accent)
@@ -9722,7 +9722,7 @@ local function jump(plr, pow)
 		notify("❌ Jump only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if hum then
 		hum.JumpPower = tonumber(pow) or 50
 		notify("Jump power set to " .. hum.JumpPower, Color3.fromRGB(200, 200, 100))
@@ -9736,7 +9736,7 @@ local function sit(plr)
 		notify("❌ Sit only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if hum then 
 		hum.Sit = true 
 		notify("Sitting", Color3.fromRGB(200, 150, 255))
@@ -9750,11 +9750,11 @@ local function lay(plr)
 		notify("❌ Lay only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if hum then
 		hum.Sit = true
 		task.wait(0.1)
-		local hrp = getHRP(plr)
+		hrp = getHRP(plr)
 		if hrp then hrp.CFrame = hrp.CFrame * CFrame.Angles(math.rad(90), 0, 0) end
 		notify("Laying down", Color3.fromRGB(200, 150, 255))
 	end
@@ -9767,7 +9767,7 @@ local function freeze(plr)
 		notify("❌ Freeze only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if not hum or frozen[plr] then 
 		notify("⚠️ Already frozen", Color3.fromRGB(255, 200, 100))
 		return 
@@ -9785,8 +9785,8 @@ local function unfreeze(plr)
 		notify("❌ Unfreeze only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local data = frozen[plr]
-	local hum = getHum(plr)
+	data = frozen[plr]
+	hum = getHum(plr)
 	if data and hum then
 		hum.WalkSpeed = data.ws
 		hum.JumpPower = data.jp
@@ -9986,9 +9986,9 @@ function TouchFling:StartFlingLoop()
 			RunService.Heartbeat:Wait()
 		end
 		-- When stopped, make sure velocity is normal
-		local char = client.Character
+		char = client.Character
 		if char then
-			local root = char:FindFirstChild("HumanoidRootPart")
+			root = char:FindFirstChild("HumanoidRootPart")
 			if root then
 				root.Velocity = Vector3.new(0, 0, 0)
 			end
@@ -10002,9 +10002,9 @@ function TouchFling:StopFlingLoop()
 		self.flingThread = nil
 	end
 	-- Reset velocity immediately
-	local char = client.Character
+	char = client.Character
 	if char then
-		local root = char:FindFirstChild("HumanoidRootPart")
+		root = char:FindFirstChild("HumanoidRootPart")
 		if root then
 			root.Velocity = Vector3.new(0, 0, 0)
 		end
@@ -10051,7 +10051,7 @@ function TouchFling:CreateGUI()
 	TouchFling._s.ResetOnSpawn = false
 	TouchFling._s.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	local success = pcall(function()
+	success = pcall(function()
 		TouchFling._s.Parent = game:GetService("CoreGui")
 	end)
 	if not success then
@@ -10360,7 +10360,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if not TouchFling.clickTP then return end
 
-	local shouldTP = false
+	shouldTP = false
 
 	if TouchFling.clickTPKey == "MouseButton1" and input.UserInputType == Enum.UserInputType.MouseButton1 then
 		shouldTP = true
@@ -10382,12 +10382,12 @@ end)
 RunService.Heartbeat:Connect(function(deltaTime)
 	-- FIXED: Fling All - teleport into person, stick until flung, then move to next
 	if TouchFling.flingAll then
-		local targets = TouchFling:GetValidTargets()
+		targets = TouchFling:GetValidTargets()
 		if #targets == 0 then return end
 
 		-- If no current target or current target is flung/dead, pick next
 		if not TouchFling.flingAllCurrentTarget or TouchFling:IsPlayerFlung(TouchFling.flingAllCurrentTarget) then
-			local targetIndex = TouchFling.flingAllIndex
+			targetIndex = TouchFling.flingAllIndex
 			if targetIndex > #targets then
 				targetIndex = 1
 				TouchFling.flingAllIndex = 1
@@ -10403,8 +10403,8 @@ RunService.Heartbeat:Connect(function(deltaTime)
 
 		-- Stick to current target and fling them using the SAME spin method
 		if TouchFling.flingAllCurrentTarget and TouchFling.flingAllCurrentTarget.Character then
-			local targetRoot = TouchFling.flingAllCurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-			local myRoot = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
+			targetRoot = TouchFling.flingAllCurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+			myRoot = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
 
 			if targetRoot and myRoot then
 				-- Teleport directly into them
@@ -10479,15 +10479,15 @@ local function ragdoll(plr)
 		notify("❌ Ragdoll only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local char = plr.Character
+	char = plr.Character
 	if not char then 
 		notify("❌ No character to ragdoll", Color3.fromRGB(255, 100, 100))
 		return 
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	hum:ChangeState(Enum.HumanoidStateType.Physics)
 	hum.PlatformStand = true
-	local joints = {}
+	joints = {}
 	for _, v in char:GetDescendants() do
 		if v:IsA("Motor6D") then
 			v.Enabled = false
@@ -10505,13 +10505,13 @@ local function unragdoll(plr)
 		notify("❌ Unragdoll only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local joints = ragdolls[plr]
+	joints = ragdolls[plr]
 	if not joints then 
 		notify("⚠️ Not ragdolled", Color3.fromRGB(255, 200, 100))
 		return 
 	end
 	for _, v in ipairs(joints) do v.Enabled = true end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if hum then
 		hum:ChangeState(Enum.HumanoidStateType.GettingUp)
 		hum.PlatformStand = false
@@ -10549,7 +10549,7 @@ local function enableCore(name)
 		notify("❌ Unknown core GUI: " .. tostring(name), Color3.fromRGB(255, 100, 100))
 		return 
 	end
-	local current = StarterGui:GetCoreGuiEnabled(enum)
+	current = StarterGui:GetCoreGuiEnabled(enum)
 	StarterGui:SetCoreGuiEnabled(enum, not current)
 	notify("✅ " .. name:gsub("^%l", string.upper) .. (not current and " enabled" or " disabled"), Color3.fromRGB(180, 180, 255))
 end
@@ -10561,7 +10561,7 @@ local function trip(plr)
 		notify("❌ Trip only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	local hum = getHum(plr)
+	hum = getHum(plr)
 	if hum then
 		hum.Sit = true
 		hum.Jump = true
@@ -10580,8 +10580,8 @@ local function explode(plr)
 		return
 	end
 
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	local root = char:FindFirstChild("HumanoidRootPart")
+	humanoid = char:FindFirstChildOfClass("Humanoid")
+	root = char:FindFirstChild("HumanoidRootPart")
 
 	if not humanoid or not root or humanoid.Health <= 0 then
 		notify("❌ Cannot explode - invalid or already dead", Color3.fromRGB(255, 100, 100))
@@ -10589,7 +10589,7 @@ local function explode(plr)
 	end
 
 	-- Step 1: Create a big visible explosion for everyone
-	local explosion = Instance.new("Explosion")
+	explosion = Instance.new("Explosion")
 	explosion.Position = root.Position
 	explosion.BlastRadius = 12           -- decent size
 	explosion.BlastPressure = 500000     -- strong visual push
@@ -10609,7 +10609,7 @@ local function explode(plr)
 			motor.Enabled = false
 
 			-- Option B: Replace with BallSocket + NoCollision for flying parts (more dramatic)
-			local socket = Instance.new("BallSocketConstraint")
+			socket = Instance.new("BallSocketConstraint")
 			socket.Attachment0 = Instance.new("Attachment", motor.Part0)
 			socket.Attachment1 = Instance.new("Attachment", motor.Part1)
 			socket.LimitsEnabled = false
@@ -10642,7 +10642,7 @@ local function explode(plr)
 	end
 
 	-- Optional: Hide head or make dramatic (some games detect head removal)
-	local head = char:FindFirstChild("Head")
+	head = char:FindFirstChild("Head")
 	if head then
 		head.Transparency = 0.3  -- slight fade or leave visible
 		head.Velocity = Vector3.new(math.random(-50,50), 100, math.random(-50,50))
@@ -10682,10 +10682,10 @@ end
 ------------------------------------------------
 -- first person/thrid person
 ------------------------------------------------
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+Players = game:GetService("Players")
+RunService = game:GetService("RunService")
 
-local client = Players.LocalPlayer  -- assuming 'client' is LocalPlayer in your script
+client = Players.LocalPlayer  -- assuming 'client' is LocalPlayer in your script
 
 local function thirdp()
 	-- Step 1: Switch to Classic mode (allows zooming)
@@ -10714,14 +10714,14 @@ local function thirdp()
 		end
 
 		-- Optional: If head/face is still hidden, force it visible too
-		local head = character:FindFirstChild("Head")
+		head = character:FindFirstChild("Head")
 		if head then
 			head.LocalTransparencyModifier = 0
 		end
 	end
 
 	-- Optional: Re-focus camera on your humanoid to snap back cleanly
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		workspace.CurrentCamera.CameraSubject = humanoid
 	end
@@ -10782,14 +10782,14 @@ end
 -- advanced tracers
 ------------------------------------------------
 
-local tracerSystem = {
+tracerSystem = {
 	enabled = false,
 	players = {},
 	beams = {} -- Track all beams for cleanup
 }
 
 -- Thinner, better looking tracers
-local TRACER_SETTINGS = {
+TRACER_SETTINGS = {
 	width0 = 0.05,        -- Much thinner (was 0.2)
 	width1 = 0.02,        -- Taper to point
 	transparency = 0.15,   -- More visible (was 0.3)
@@ -10927,7 +10927,7 @@ local function attachTracer(plr, char)
 	)
 
 	-- Handle THEIR death (remove beam until respawn)
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	humanoid = char:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		table.insert(data.connections,
 			humanoid.Died:Connect(function()
@@ -10985,7 +10985,7 @@ function tracerSystem:Enable()
 	self.updateLoop = RunService.Heartbeat:Connect(function()
 		if not self.enabled then return end
 
-		local myHRP = getMyHRP()
+		myHRP = getMyHRP()
 		if not myHRP then return end
 
 		for plr, data in pairs(self.players) do
@@ -11113,17 +11113,17 @@ end
 -- COMMAND PROCESSOR
 -- =============================================================
 function processCmd(msg)
-	if not msg or msg:sub(1,1) ~= prefix then return end
+	if not msg or msg:sub(1,1) ~= _G.LunarPrefix then return end
 	
 	local args = {}
 	for word in msg:sub(2):gmatch("%S+") do
 		table.insert(args, word)
 	end
 	
-	local cmd = table.remove(args, 1):lower()
-	local target = getPlr(args[1] or "me")
+	cmd = table.remove(args, 1):lower()
+	target = getPlr(args[1] or "me")
 
-	notify(prefix .. cmd, Color3.fromRGB(180, 180, 255))
+	notify(_G.LunarPrefix .. cmd, Color3.fromRGB(180, 180, 255))
 
 	if cmd == "aimbot" then
 		createAimbotPanel()
@@ -11246,7 +11246,7 @@ function processCmd(msg)
 		disableFallDamage()
 
 	elseif cmd == "enable" then
-		local what = args[1] or ""
+		what = args[1] or ""
 		if what == "inventory" or what == "playerlist" then
 			enableCore(what)
 		end
@@ -11256,7 +11256,7 @@ function processCmd(msg)
 			enableESPAll()
 		else
 			-- ESP specific player
-			local target = getPlr(args[1] or "me")
+			target = getPlr(args[1] or "me")
 			if target and target ~= client then
 				enableESPPlayer(target)
 			else
@@ -11269,7 +11269,7 @@ function processCmd(msg)
 			disableESPAll()
 		else
 			-- Remove ESP from specific player
-			local target = getPlr(args[1] or "me")
+			target = getPlr(args[1] or "me")
 			if target and target ~= client then
 				disableESPPlayer(target)
 			else
@@ -11508,9 +11508,9 @@ end
 -- Main Gui :3
 -- =============================================================
 -- Mobile detection at top
-local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-local smallestSide = math.min(viewport.X, viewport.Y)
+isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+smallestSide = math.min(viewport.X, viewport.Y)
 
 local scale, fontScale
 if isMobile then
@@ -11588,8 +11588,8 @@ minBtn.ZIndex = 2147483647
 Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
 -- Minimize functionality
-local minimized = false
-local origSize = mainFrame.Size
+minimized = false
+origSize = mainFrame.Size
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
 	if minimized then
@@ -11618,7 +11618,7 @@ resizeHandle.ZIndex = 2147483647
 Instance.new("UICorner", resizeHandle).CornerRadius = UDim.new(0, 4)
 
 -- Resize logic
-local resizing = false
+resizing = false
 local startSize, startPos
 
 resizeHandle.InputBegan:Connect(function(input)
@@ -11637,10 +11637,11 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local d = input.Position - startPos
+		d = input.Position - startPos
 		mainFrame.Size = UDim2.new(0, math.clamp(startSize.X.Offset + d.X, math.floor(320 * scale), math.floor(800 * scale)), 0, math.clamp(startSize.Y.Offset + d.Y, math.floor(300 * scale), math.floor(700 * scale)))
 	end
 end)
+
 
 -- Tabs
 tabBar = Instance.new("Frame", mainFrame)
@@ -11700,7 +11701,7 @@ cmdBarFrame.ZIndex = 2147483647
 Instance.new("UICorner", cmdBarFrame).CornerRadius = UDim.new(0, 6)
 
 -- Icon
-local a = Instance.new("TextLabel", cmdBarFrame)
+a = Instance.new("TextLabel", cmdBarFrame)
 a.Name = "CmdIcon"
 a.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(28 * scale))
 a.Position = UDim2.new(0, math.floor(6 * scale), 0.5, math.floor(-14 * scale))
@@ -11967,8 +11968,8 @@ function updateDropdown(text)
 	-- Hide the big command list so dropdown is clickable on top
 	cmdScroll.Visible = false
 
-	local matches = {}
-	local lowerText = text:lower()
+	matches = {}
+	lowerText = text:lower()
 
 	-- Priority 1: Starts with text
 	for _, cmd in ipairs(allCommands) do
@@ -11979,7 +11980,7 @@ function updateDropdown(text)
 
 	-- Priority 2: Contains text anywhere
 	for _, cmd in ipairs(allCommands) do
-		local alreadyAdded = false
+		alreadyAdded = false
 		for _, m in ipairs(matches) do
 			if m == cmd then alreadyAdded = true break end
 		end
@@ -11991,8 +11992,8 @@ function updateDropdown(text)
 	-- Priority 3: Fuzzy match (each char appears in order)
 	if #matches == 0 then
 		for _, cmd in ipairs(allCommands) do
-			local cmdLower = cmd:lower()
-			local textIdx = 1
+			cmdLower = cmd:lower()
+			textIdx = 1
 			for i = 1, #cmdLower do
 				if cmdLower:sub(i, i) == lowerText:sub(textIdx, textIdx) then
 					textIdx = textIdx + 1
@@ -12008,7 +12009,7 @@ function updateDropdown(text)
 	if #matches > 0 then
 		dropdown.Visible = true
 		for _, match in ipairs(matches) do
-			local btn = Instance.new("TextButton")
+			btn = Instance.new("TextButton")
 			btn.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
 			btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
 			btn.BackgroundTransparency = 0.4
@@ -12055,25 +12056,25 @@ end)
 UserInputService.InputBegan:Connect(function(inp)
 	if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
 		if not cmdBarFrame then return end
-		local mousePos = UserInputService:GetMouseLocation()
-		local barPos = cmdBarFrame.AbsolutePosition
-		local barSize = cmdBarFrame.AbsoluteSize
+		mousePos = UserInputService:GetMouseLocation()
+		barPos = cmdBarFrame.AbsolutePosition
+		barSize = cmdBarFrame.AbsoluteSize
 
 		-- Check if click is inside dropdown
-		local inDropdown = false
+		inDropdown = false
 		if dropdown.Visible then
-			local ddPos = dropdown.AbsolutePosition
-			local ddSize = dropdown.AbsoluteSize
+			ddPos = dropdown.AbsolutePosition
+			ddSize = dropdown.AbsoluteSize
 			inDropdown = mousePos.X >= ddPos.X and mousePos.X <= ddPos.X + ddSize.X and
 						mousePos.Y >= ddPos.Y and mousePos.Y <= ddPos.Y + ddSize.Y
 		end
 
-		local inBar = mousePos.X >= barPos.X and mousePos.X <= barPos.X + barSize.X and
+		inBar = mousePos.X >= barPos.X and mousePos.X <= barPos.X + barSize.X and
 					  mousePos.Y >= barPos.Y and mousePos.Y <= barPos.Y + barSize.Y
 
-		local panelPos = cmdListPanel.AbsolutePosition
-		local panelSize = cmdListPanel.AbsoluteSize
-		local inPanel = cmdListPanel.Visible and
+		panelPos = cmdListPanel.AbsolutePosition
+		panelSize = cmdListPanel.AbsoluteSize
+		inPanel = cmdListPanel.Visible and
 			mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
 			mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y
 
@@ -12100,7 +12101,7 @@ cmdList = Instance.new("UIListLayout", cmdScroll)
 cmdList.Padding = UDim.new(0, math.floor(6 * scale))
 cmdList.SortOrder = Enum.SortOrder.LayoutOrder
 
-local cmdDesc = {
+cmdDesc = {
 	["!aimbot"] = "Opens aimbot control panel",
 	["!antilag"] = "antilag",
 	["!bang [user] [speed]"] = "Rape someone lol",
@@ -12238,8 +12239,8 @@ if not isMobile then
 	a.TextYAlignment = Enum.TextYAlignment.Top
 	a.ZIndex = 2147483647
 
-	local RunService = game:GetService("RunService")
-	local mouseConn = nil
+	RunService = game:GetService("RunService")
+	mouseConn = nil
 	function followMouse()
 		if not tooltip or not tooltip.Visible then return end
 		local mousePos = UserInputService:GetMouseLocation()
@@ -12271,7 +12272,7 @@ for i, cmdStr in ipairs(cmds) do
 	a.ZIndex = 2147483647
 	Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
 
-	local desc = cmdDesc[cmdStr]
+	desc = cmdDesc[cmdStr]
 	if desc then
 		a.MouseEnter:Connect(function()
 			a.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
@@ -12279,8 +12280,8 @@ for i, cmdStr in ipairs(cmds) do
 			if tooltip and not isMobile then
 				tooltip.Visible = true
 				tooltip:FindFirstChild("TipText").Text = desc
-				local textService = game:GetService("TextService")
-				local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
+				textService = game:GetService("TextService")
+				textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
 				tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
 			end
 		end)
@@ -12347,6 +12348,73 @@ function makeSection(parent, titleText, h)
 	t.ZIndex = 2147483647
 
 	return s
+end
+
+-- ========== PREFIX CHANGE SECTION ==========
+do
+a = makeSection(setScroll, "PREFIX CHANGE", 110)
+
+a = Instance.new("TextLabel", a)
+a.Size = UDim2.new(0.9, 0, 0, math.floor(22 * scale))
+a.Position = UDim2.new(0.05, 0, 0, math.floor(36 * scale))
+a.BackgroundTransparency = 1
+a.Text = "Current Prefix: " .. _G.LunarPrefix
+a.Font = Enum.Font.Code
+a.TextSize = math.floor(14 * fontScale)
+a.TextColor3 = globalConfig.textColor
+a.TextXAlignment = Enum.TextXAlignment.Left
+a.ZIndex = 2147483647
+_G.prefixLabel = a
+
+a = Instance.new("TextBox", _G.prefixLabel.Parent)
+a.Size = UDim2.new(0.5, 0, 0, math.floor(32 * scale))
+a.Position = UDim2.new(0.05, 0, 0, math.floor(62 * scale))
+a.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+a.BorderSizePixel = 0
+a.Text = _G.LunarPrefix
+a.PlaceholderText = "Enter symbol..."
+a.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+a.Font = Enum.Font.Code
+a.TextSize = math.floor(14 * fontScale)
+a.TextColor3 = globalConfig.textColor
+a.ClearTextOnFocus = false
+a.ZIndex = 2147483647
+Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
+_G.prefixInput = a
+
+a = Instance.new("TextButton", _G.prefixLabel.Parent)
+a.Size = UDim2.new(0.35, 0, 0, math.floor(32 * scale))
+a.Position = UDim2.new(0.6, 0, 0, math.floor(62 * scale))
+a.BackgroundColor3 = currentTheme.accent
+a.Text = "Set Prefix"
+a.Font = Enum.Font.Code
+a.TextSize = math.floor(12 * fontScale)
+a.TextColor3 = Color3.new(0, 0, 0)
+a.BorderSizePixel = 0
+a.ZIndex = 2147483647
+Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
+
+a.MouseButton1Click:Connect(function()
+	local newPrefix = _G.prefixInput.Text:gsub("%s+", "")
+	if #newPrefix == 0 then notify("Prefix cannot be empty!", Color3.fromRGB(255, 100, 100)); return end
+	if #newPrefix > 3 then notify("Prefix too long! Max 3 chars.", Color3.fromRGB(255, 100, 100)); return end
+	_G.LunarPrefix = newPrefix
+	_G.prefixLabel.Text = "Current Prefix: " .. newPrefix
+	_G.prefixInput.Text = newPrefix
+	notify("Prefix changed to: " .. newPrefix, Color3.fromRGB(100, 255, 100))
+end)
+
+_G.prefixInput.FocusLost:Connect(function(enterPressed)
+	if enterPressed then
+		local newPrefix = _G.prefixInput.Text:gsub("%s+", "")
+		if #newPrefix == 0 then notify("Prefix cannot be empty!", Color3.fromRGB(255, 100, 100)); return end
+		if #newPrefix > 3 then notify("Prefix too long! Max 3 chars.", Color3.fromRGB(255, 100, 100)); return end
+		_G.LunarPrefix = newPrefix
+		_G.prefixLabel.Text = "Current Prefix: " .. newPrefix
+		_G.prefixInput.Text = newPrefix
+		notify("Prefix changed to: " .. newPrefix, Color3.fromRGB(100, 255, 100))
+	end
+end)
 end
 
 -- Text Color Section
@@ -12458,10 +12526,10 @@ UserInputService.InputChanged:Connect(function(input)
 	if not activeSliderComp then return end
 	if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
 
-	local s = sliders[activeSliderComp]
+	s = sliders[activeSliderComp]
 	if not s then return end
 
-	local pos = math.clamp((input.Position.X - s.track.AbsolutePosition.X) / s.track.AbsoluteSize.X, 0, 1)
+	pos = math.clamp((input.Position.X - s.track.AbsolutePosition.X) / s.track.AbsoluteSize.X, 0, 1)
 	s.fill.Size = UDim2.new(pos, 0, 1, 0)
 	s.knob.Position = UDim2.new(pos, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
 	updateAllColors()
@@ -12503,7 +12571,7 @@ tKnob.BorderSizePixel = 0
 tKnob.ZIndex = 2147483647
 Instance.new("UICorner", tKnob).CornerRadius = UDim.new(1, 0)
 
-local tDragging = false
+tDragging = false
 
 function updateTrans(x)
 	local pos = math.clamp((x - tTrack.AbsolutePosition.X) / tTrack.AbsoluteSize.X, 0, 1)
@@ -12537,13 +12605,13 @@ end)
 
 -- ========== SOUND SETTINGS SECTION ==========
 do
-	local mSection = makeSection(setScroll, "SOUND SETTINGS", 320)
+	mSection = makeSection(setScroll, "SOUND SETTINGS", 320)
 
 	_G.uiSoundVol = 1
 	_G.notifSoundVol = 0.55
 	_G.customNotifId = "rbxassetid://97643101798871"
 
-	local activeSlider = nil
+	activeSlider = nil
 
 	local function mkSlider(parent, y, lbl, def, key)
 		local c = Instance.new("Frame", parent)
@@ -12609,8 +12677,8 @@ do
 		return setVol
 	end
 
-	local uiSetVol = mkSlider(mSection, 38, "UI Vol", 1, "uiSoundVol")
-	local nfSetVol = mkSlider(mSection, 96, "Notif Vol", 0.55, "notifSoundVol")
+	uiSetVol = mkSlider(mSection, 38, "UI Vol", 1, "uiSoundVol")
+	nfSetVol = mkSlider(mSection, 96, "Notif Vol", 0.55, "notifSoundVol")
 
 	UserInputService.InputChanged:Connect(function(inp)
 		if not activeSlider then return end
@@ -12628,13 +12696,13 @@ do
 		end
 	end)
 
-	local c = Instance.new("Frame", mSection)
+	c = Instance.new("Frame", mSection)
 	c.Size = UDim2.new(0.9, 0, 0, math.floor(70*scale))
 	c.Position = UDim2.new(0.05, 0, 0, math.floor(154*scale))
 	c.BackgroundTransparency = 1
 	c.ZIndex = 2147483647
 
-	local l = Instance.new("TextLabel", c)
+	l = Instance.new("TextLabel", c)
 	l.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
 	l.BackgroundTransparency = 1
 	l.Text = "Custom Notif Sound ID"
@@ -12644,7 +12712,7 @@ do
 	l.TextXAlignment = Enum.TextXAlignment.Left
 	l.ZIndex = 2147483647
 
-	local b = Instance.new("TextBox", c)
+	b = Instance.new("TextBox", c)
 	b.Size = UDim2.new(1, math.floor(-70*scale), 0, math.floor(36*scale))
 	b.Position = UDim2.new(0, 0, 0, math.floor(24*scale))
 	b.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
@@ -12662,7 +12730,7 @@ do
 	b.TextEditable = true
 	b.ClearTextOnFocus = false
 
-	local btn = Instance.new("TextButton", c)
+	btn = Instance.new("TextButton", c)
 	btn.Size = UDim2.new(0, math.floor(60*scale), 0, math.floor(28*scale))
 	btn.Position = UDim2.new(1, math.floor(-65*scale), 0, math.floor(28*scale))
 	btn.BackgroundColor3 = currentTheme.accent
@@ -12675,7 +12743,7 @@ do
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
 	btn.MouseButton1Click:Connect(function()
-		local t = b.Text:gsub("%s+", "")
+		t = b.Text:gsub("%s+", "")
 		if t ~= "" then
 			if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
 			_G.customNotifId = t
@@ -12685,7 +12753,7 @@ do
 
 	b.FocusLost:Connect(function(enterPressed)
 		if enterPressed then
-			local t = b.Text:gsub("%s+", "")
+			t = b.Text:gsub("%s+", "")
 			if t ~= "" then
 				if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
 				_G.customNotifId = t
@@ -12694,7 +12762,7 @@ do
 		end
 	end)
 
-	local test = Instance.new("TextButton", mSection)
+	test = Instance.new("TextButton", mSection)
 	test.Size = UDim2.new(0.9, 0, 0, math.floor(32*scale))
 	test.Position = UDim2.new(0.05, 0, 0, math.floor(232*scale))
 	test.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
@@ -12708,11 +12776,11 @@ do
 
 	test.MouseButton1Click:Connect(function()
 		if notifSoundMuted then notify("Notif sounds muted!", Color3.fromRGB(255, 100, 100)); return end
-		local s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
+		s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
 		s.Parent = SoundService; s:Play(); Debris:AddItem(s, 4)
 	end)
 
-	local mc = Instance.new("Frame", mSection)
+	mc = Instance.new("Frame", mSection)
 	mc.Size = UDim2.new(0.9, 0, 0, math.floor(36*scale))
 	mc.Position = UDim2.new(0.05, 0, 0, math.floor(272*scale))
 	mc.BackgroundTransparency = 1
@@ -12764,17 +12832,17 @@ thCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale)
 thCont.BackgroundTransparency = 1
 thCont.ZIndex = 2147483647
 
-local sortedThemes = {}
+sortedThemes = {}
 for name in pairs(themes) do
 	table.insert(sortedThemes, name)
 end
 table.sort(sortedThemes)
 
-local thCount = #sortedThemes
-local cols = 2
-local rows = math.ceil(thCount / cols)
+thCount = #sortedThemes
+cols = 2
+rows = math.ceil(thCount / cols)
 
-local sectionHeight = math.floor(36 * scale) + math.floor(rows * 55 * scale) + math.floor(10 * scale)
+sectionHeight = math.floor(36 * scale) + math.floor(rows * 55 * scale) + math.floor(10 * scale)
 thSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, sectionHeight)
 
 thGrid = Instance.new("UIGridLayout", thCont)
@@ -12786,8 +12854,8 @@ thGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 thGrid.VerticalAlignment = Enum.VerticalAlignment.Top
 
 for i, name in ipairs(sortedThemes) do
-	local th = themes[name]
-	local themeBtn = Instance.new("TextButton", thCont)
+	th = themes[name]
+	themeBtn = Instance.new("TextButton", thCont)
 	themeBtn.Name = name .. "ThemeBtn"
 	themeBtn.BackgroundColor3 = th.accent
 	themeBtn.Text = name
@@ -12802,13 +12870,13 @@ for i, name in ipairs(sortedThemes) do
 	themeBtn.ZIndex = 2147483647
 	Instance.new("UICorner", themeBtn).CornerRadius = UDim.new(0, 6)
 
-	local btnStroke = Instance.new("UIStroke", themeBtn)
+	btnStroke = Instance.new("UIStroke", themeBtn)
 	btnStroke.Color = Color3.fromRGB(255, 255, 255)
 	btnStroke.Transparency = 0.85
 	btnStroke.Thickness = 1
 
 	themeBtn.MouseButton1Click:Connect(function()
-		local oldTheme = currentTheme
+		oldTheme = currentTheme
 		currentTheme = th
 
 		mainFrame.BackgroundColor3 = th.glass
@@ -12939,7 +13007,7 @@ el.TextSize = math.floor(12 * fontScale)
 el.TextColor3 = globalConfig.textColor
 el.ZIndex = 2147483647
 Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
-local tpwalkInput = el
+tpwalkInput = el
 
 el = Instance.new("TextButton", tpwalkInput.Parent)
 el.Size = UDim2.new(0.35, 0, 0, math.floor(28 * scale))
@@ -12953,7 +13021,7 @@ el.BorderSizePixel = 0
 el.ZIndex = 2147483647
 Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
 el.MouseButton1Click:Connect(function()
-	local spd = tonumber(tpwalkInput.Text) or 5
+	spd = tonumber(tpwalkInput.Text) or 5
 	_G.EnableTPWalk({tostring(spd)})
 end)
 
@@ -12976,7 +13044,7 @@ end)
 el = makeSection(uniScroll, "QUICK ACTIONS", 0)
 
 -- Modern muted colors
-local btnColors = {
+btnColors = {
 	fly = Color3.fromRGB(55, 75, 110),
 	fling = Color3.fromRGB(110, 55, 55),
 	aimbot = Color3.fromRGB(110, 70, 40),
@@ -12989,7 +13057,7 @@ local btnColors = {
 	thirdp = Color3.fromRGB(60, 60, 70)
 }
 
-local btnTextColors = {
+btnTextColors = {
 	fly = Color3.fromRGB(180, 200, 255),
 	fling = Color3.fromRGB(255, 180, 180),
 	aimbot = Color3.fromRGB(255, 200, 160),
@@ -13002,11 +13070,11 @@ local btnTextColors = {
 	thirdp = Color3.fromRGB(200, 200, 210)
 }
 
-local bH = math.floor(38 * scale)
-local bP = math.floor(6 * scale)
+bH = math.floor(38 * scale)
+bP = math.floor(6 * scale)
 el.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(32 * scale) + (5 * bH) + (6 * bP))
 
-local grid = Instance.new("UIGridLayout", el)
+grid = Instance.new("UIGridLayout", el)
 grid.CellSize = UDim2.new(0.48, 0, 0, bH)
 grid.CellPadding = UDim2.new(0, bP, 0, bP)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
@@ -13053,8 +13121,8 @@ qBtn(el, "SitBtn", "Sit", "sit", function()
 end)
 
 -- Noclip toggle (needs state tracking)
-local ncBtn = qBtn(el, "NoclipBtn", "Noclip: OFF", "noclip", function() end)
-local ncOn = false
+ncBtn = qBtn(el, "NoclipBtn", "Noclip: OFF", "noclip", function() end)
+ncOn = false
 ncBtn.MouseButton1Click:Connect(function()
 	ncOn = not ncOn
 	if ncOn then
@@ -13146,11 +13214,11 @@ setupButtonSounds()
 
 task.spawn(function()
 	task.wait(0.8)
-	local wm = Instance.new("ScreenGui")
+	wm = Instance.new("ScreenGui")
 	wm.ResetOnSpawn = false
 	wm.DisplayOrder = 999999
 	wm.Parent = client.PlayerGui
-	local label = Instance.new("TextLabel", wm)
+	label = Instance.new("TextLabel", wm)
 	label.Size = UDim2.new(0, 320, 0, 40)
 	label.Position = UDim2.new(0.5, -160, 0.94, 0)
 	label.BackgroundTransparency = 1
