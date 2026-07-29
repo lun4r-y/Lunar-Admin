@@ -11371,7 +11371,7 @@ function processCmd(msg)
 	elseif cmd == "serverhop" then
 		serverhop(target, args)
 
-	elseif cmd == "!rejoin" then
+	elseif cmd == "rejoin" then
     	rejoin(client, args)
 
 	elseif cmd == "spin" then
@@ -11844,19 +11844,112 @@ a = Instance.new("UIListLayout", listScroll)
 a.Padding = UDim.new(0, math.floor(2 * scale))
 
 -- All commands for dropdown and panel
-allCommands = {
-"!aimbot", "!antilag", "!bang", "!unbang", "!boombox", "!camlock", "!uncamlock", "!clicktp", "!cmdbar", "!console", "!copychat", "!uncopychat", "!crosshair", "!unload",
-	"!disablefalldamage", "!enable inventory", "!enable playerlist",
-	"!esp all", "!explode", "!fire", "!firstp", "!fling", "!flashlight", "!fly",
-	"!flyspeed", "!freecam", "!freeze", "!gravity", "!resetgravity", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump",
-	"!kill", "!lay", "!leave", "!logs", "!loopgoto", "!tpwalk", "!untpwalk", "!unloopgoto", "!noclip", "!mm2", "!orbit", "!unorbit", "!ping", "!ragdoll",
-	"!rejoin", "!removewaypoint", "!resetspeed", "!resettime", "!sit", "!speed", "!serverhop",
-	"!spin", "!stopwatch", "!sunglare", "!superjump", "!unsuperjump", "!thirdp", "!timeset", "!to", "!trip", "!tracers",
-	"!unantilag", "!uncrosshair", "!unesp", "!unfire", "!unfling", "!unflashlight", "!unfly",
-	"!unfreecam", "!unfreeze", "!unnoclip", "!unragdoll",
-	"!unsunglare", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", "!view", "!vehiclefly", "!volume", "!waypoint",
-	"!walkonwater", "!xray", "!zoom", "!fov", "!kick", "!unlockmouse"
+baseAllCommands = {
+	"aimbot",
+	"antilag",
+	"bang",
+	"unbang",
+	"boombox",
+	"camlock",
+	"uncamlock",
+	"clicktp",
+	"cmdbar",
+	"console",
+	"copychat",
+	"uncopychat",
+	"crosshair",
+	"unload",
+	"disablefalldamage",
+	"enable inventory",
+	"enable playerlist",
+	"esp all",
+	"explode",
+	"fire",
+	"firstp",
+	"fling",
+	"flashlight",
+	"fly",
+	"flyspeed",
+	"freecam",
+	"freeze",
+	"gravity",
+	"resetgravity",
+	"infjump",
+	"joinlogs",
+	"jerk",
+	"unjerk",
+	"jump",
+	"kill",
+	"lay",
+	"leave",
+	"logs",
+	"loopgoto",
+	"tpwalk",
+	"untpwalk",
+	"unloopgoto",
+	"noclip",
+	"mm2",
+	"orbit",
+	"unorbit",
+	"ping",
+	"ragdoll",
+	"rejoin",
+	"removewaypoint",
+	"resetspeed",
+	"resettime",
+	"sit",
+	"speed",
+	"serverhop",
+	"spin",
+	"stopwatch",
+	"sunglare",
+	"superjump",
+	"unsuperjump",
+	"thirdp",
+	"timeset",
+	"to",
+	"trip",
+	"tracers",
+	"unantilag",
+	"uncrosshair",
+	"unesp",
+	"unfire",
+	"unfling",
+	"unflashlight",
+	"unfly",
+	"unfreecam",
+	"unfreeze",
+	"unnoclip",
+	"unragdoll",
+	"unsunglare",
+	"unspin",
+	"untracers",
+	"unview",
+	"unvehiclefly",
+	"unwalkonwater",
+	"unxray",
+	"unzoom",
+	"view",
+	"vehiclefly",
+	"volume",
+	"waypoint",
+	"walkonwater",
+	"xray",
+	"zoom",
+	"fov",
+	"kick",
+	"unlockmouse"
 }
+
+function BuildAllCommands()
+	local t = {}
+	for _, cmd in ipairs(baseAllCommands) do
+		table.insert(t, _G.LunarPrefix .. cmd)
+	end
+	return t
+end
+
+allCommands = BuildAllCommands()
 
 -- Populate command list panel (FIXED: Proper hover detection for ScrollingFrame)
 local function createCmdListButton(cmd)
@@ -11913,11 +12006,11 @@ local function createCmdListButton(cmd)
 	return btn
 end
 
-for _, cmd in ipairs(allCommands) do
+for _, cmd in ipairs(BuildAllCommands()) do
 	createCmdListButton(cmd)
 end
 
-listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
+listScroll.CanvasSize = UDim2.new(0, 0, 0, #BuildAllCommands() * math.floor(26 * scale))
 
 -- Panel close
 panelClose.MouseButton1Click:Connect(function()
@@ -12101,117 +12194,220 @@ cmdList = Instance.new("UIListLayout", cmdScroll)
 cmdList.Padding = UDim.new(0, math.floor(6 * scale))
 cmdList.SortOrder = Enum.SortOrder.LayoutOrder
 
-cmdDesc = {
-	["!aimbot"] = "Opens aimbot control panel",
-	["!antilag"] = "antilag",
-	["!bang [user] [speed]"] = "Rape someone lol",
-	["!boombox"] = "Enables client sided boombox",
-	["!camlock [player]"] = "Lock camera on a player",
-	["!clicktp"] = "Click to teleport",
-	["!cmdbar"] = "Toggle command bar",
-	["!console"] = "Opens dev console",
-	["!copychat [player]"] = "Copy everything a player says",
-	["!crosshair"] = "Loads custom crosshair",
-	["!disablefalldamage"] = "WIP",
-	["!enable inventory"] = "Toggle backpack",
-	["!enable playerlist"] = "Toggle player list",
-	["!esp all"] = "Enable esp on player or all",
-	["!explode [plr]"] = "Explodes player(visual)",
-	["!fire [plr]"] = "Sets player on fire(visual)",
-	["!firstp"] = "First person mode",
-	["!fling"] = "Opens fling GUI",
-	["!flashlight"] = "Turns on flashlight",
-	["!fly"] = "Opens fly panel",
-	["!flyspeed [num]"] = "Set fly speed",
-	["!fov [1-120]"] = "Set camera FOV",
-	["!freecam"] = "Free camera mode",
-	["!freeze"] = "Freezes player",
-	["!gravity [num]"] = "Set gravity",
-	["!infjump"] = "Infinite jump toggle",
-	["!jerk"] = "Gives jerk off tool",
-	["!joinlogs"] = "Show join/leave logs",
-	["!jump [power]"] = "Set jump power",
-	["!kick"] = "Kick yourself",
-	["!kill"] = "Kill self",
-	["!lay"] = "Makes character lay down",
-	["!leave"] = "Leave game",
-	["!logs"] = "Open chat logs",
-	["!loopgoto [player] [delay]"] = "Repeatedly teleport to a player",
-	["!mm2"] = "Enables mm2 esp by lunar",
-	["!noclip"] = "Walk through walls",
-	["!orbit [player] [speed]"] = "Orbit around a player like a moon",
-	["!ping"] = "Show ping",
-	["!ragdoll"] = "Ragdoll character(Broken?)",
-	["!rejoin"] = "Rejoin server",
-	["!removewaypoint"] = "Remove last waypoint",
-	["!resetgravity"] = "Reset gravity to normal",
-	["!resetspeed"] = "Reset walkspeed",
-	["!resettime"] = "Reset time of day",
-	["!serverhop"] = "(Broken)",
-	["!sit"] = "Makes character sit",
-	["!speed [plr] [num]"] = "Set walkspeed",
-	["!spin [speed]"] = "Spin character",
-	["!stopwatch"] = "Open stopwatch",
-	["!sunglare"] = "Enable sun glare effect",
-	["!superjump [power]"] = "Mega jump",
-	["!thirdp"] = "Third person mode",
-	["!timeset [0-24]"] = "Change time of day",
-	["!to [plr]"] = "Teleport to player",
-	["!tpwalk [speed]"] = "Teleport walk — move by teleporting",
-	["!trip [plr]"] = "Makes player trip",
-	["!tracers"] = "Show player tracers",
-	["!unantilag"] = "unantilag",
-	["!unbang"] = "unRape someone lol",
-	["!uncamlock"] = "Unlock camera",
-	["!uncopychat"] = "Stop copying chat",
-	["!uncrosshair"] = "Remove crosshair",
-	["!unesp [plr/all]"] = "Disable esp on player or all",
-	["!unfire"] = "Extinguish player(visual)",
-	["!unfling"] = "Close fling GUI",
-	["!unflashlight"] = "Turns off flashlight",
-	["!unfly"] = "Stop flying",
-	["!unfreecam"] = "Disable freecam",
-	["!unfreeze"] = "Unfreeze player",
-	["!uninfjump"] = "Disable infinite jump",
-	["!unjerk"] = "Removes jerk off tool",
-	["!unloopgoto"] = "Stop loop teleport",
-	["!unnoclip"] = "Disable noclip",
-	["!unorbit"] = "Stop orbiting",
-	["!unragdoll"] = "Stop ragdoll",
-	["!unsunglare"] = "Disable sun glare effect",
-	["!unsuperjump"] = "Disable super jump",
-	["!unspin"] = "Stop spinning",
-	["!untpwalk"] = "Disable teleport walk",
-	["!untracers"] = "Hide tracers",
-	["!unvehiclefly"] = "unFly in cars!",
-	["!unview"] = "Stop spectating",
-	["!unwalkonwater"] = "Disable walk on water",
-	["!unxray"] = "Disable xray",
-	["!unzoom"] = "Reset zoom",
-	["!vehiclefly"] = "Fly in cars!",
-	["!view [plr]"] = "Spectate player",
-	["!volume"] = "Set game volume (0-10)",
-	["!walkonwater"] = "Walk on any water surface",
-	["!waypoint"] = "Create waypoint",
-	["!xray"] = "See through walls",
-	["!zoom [distance] [key]"] = "Custom zoom distance (PC only)",
-	["!unlockmouse"] = "Toggle mouse lock"
+baseCmdDesc = {
+	["aimbot"] = "Opens aimbot control panel",
+	["antilag"] = "antilag",
+	["bang [user] [speed]"] = "Rape someone lol",
+	["boombox"] = "Enables client sided boombox",
+	["camlock [player]"] = "Lock camera on a player",
+	["clicktp"] = "Click to teleport",
+	["cmdbar"] = "Toggle command bar",
+	["console"] = "Opens dev console",
+	["copychat [player]"] = "Copy everything a player says",
+	["crosshair"] = "Loads custom crosshair",
+	["disablefalldamage"] = "WIP",
+	["enable inventory"] = "Toggle backpack",
+	["enable playerlist"] = "Toggle player list",
+	["esp all"] = "Enable esp on player or all",
+	["explode [plr]"] = "Explodes player(visual)",
+	["fire [plr]"] = "Sets player on fire(visual)",
+	["firstp"] = "First person mode",
+	["fling"] = "Opens fling GUI",
+	["flashlight"] = "Turns on flashlight",
+	["fly"] = "Opens fly panel",
+	["flyspeed [num]"] = "Set fly speed",
+	["fov [1-120]"] = "Set camera FOV",
+	["freecam"] = "Free camera mode",
+	["freeze"] = "Freezes player",
+	["gravity [num]"] = "Set gravity",
+	["infjump"] = "Infinite jump toggle",
+	["jerk"] = "Gives jerk off tool",
+	["joinlogs"] = "Show join/leave logs",
+	["jump [power]"] = "Set jump power",
+	["kick"] = "Kick yourself",
+	["kill"] = "Kill self",
+	["lay"] = "Makes character lay down",
+	["leave"] = "Leave game",
+	["logs"] = "Open chat logs",
+	["loopgoto [player] [delay]"] = "Repeatedly teleport to a player",
+	["mm2"] = "Enables mm2 esp by lunar",
+	["noclip"] = "Walk through walls",
+	["orbit [player] [speed]"] = "Orbit around a player like a moon",
+	["ping"] = "Show ping",
+	["ragdoll"] = "Ragdoll character(Broken?)",
+	["rejoin"] = "Rejoin server",
+	["removewaypoint"] = "Remove last waypoint",
+	["resetgravity"] = "Reset gravity to normal",
+	["resetspeed"] = "Reset walkspeed",
+	["resettime"] = "Reset time of day",
+	["serverhop"] = "(Broken)",
+	["sit"] = "Makes character sit",
+	["speed [plr] [num]"] = "Set walkspeed",
+	["spin [speed]"] = "Spin character",
+	["stopwatch"] = "Open stopwatch",
+	["sunglare"] = "Enable sun glare effect",
+	["superjump [power]"] = "Mega jump",
+	["thirdp"] = "Third person mode",
+	["timeset [0-24]"] = "Change time of day",
+	["to [plr]"] = "Teleport to player",
+	["tpwalk [speed]"] = "Teleport walk — move by teleporting",
+	["trip [plr]"] = "Makes player trip",
+	["tracers"] = "Show player tracers",
+	["unantilag"] = "unantilag",
+	["unbang"] = "unRape someone lol",
+	["uncamlock"] = "Unlock camera",
+	["uncopychat"] = "Stop copying chat",
+	["uncrosshair"] = "Remove crosshair",
+	["unesp [plr/all]"] = "Disable esp on player or all",
+	["unfire"] = "Extinguish player(visual)",
+	["unfling"] = "Close fling GUI",
+	["unflashlight"] = "Turns off flashlight",
+	["unfly"] = "Stop flying",
+	["unfreecam"] = "Disable freecam",
+	["unfreeze"] = "Unfreeze player",
+	["uninfjump"] = "Disable infinite jump",
+	["unjerk"] = "Removes jerk off tool",
+	["unloopgoto"] = "Stop loop teleport",
+	["unnoclip"] = "Disable noclip",
+	["unorbit"] = "Stop orbiting",
+	["unragdoll"] = "Stop ragdoll",
+	["unsunglare"] = "Disable sun glare effect",
+	["unsuperjump"] = "Disable super jump",
+	["unspin"] = "Stop spinning",
+	["untpwalk"] = "Disable teleport walk",
+	["untracers"] = "Hide tracers",
+	["unvehiclefly"] = "unFly in cars!",
+	["unview"] = "Stop spectating",
+	["unwalkonwater"] = "Disable walk on water",
+	["unxray"] = "Disable xray",
+	["unzoom"] = "Reset zoom",
+	["vehiclefly"] = "Fly in cars!",
+	["view [plr]"] = "Spectate player",
+	["volume"] = "Set game volume (0-10)",
+	["walkonwater"] = "Walk on any water surface",
+	["waypoint"] = "Create waypoint",
+	["xray"] = "See through walls",
+	["zoom [distance] [key]"] = "Custom zoom distance (PC only)",
+	["unlockmouse"] = "Toggle mouse lock"
 }
 
-cmds = {
-"!aimbot", "!antilag", "!bang [user] [speed]", "!boombox", "!camlock [player]", "!clicktp", "!cmdbar", "!console", "!copychat [player]", "!crosshair",
-	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
-	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
-	"!flyspeed [num]", "!freecam", "!freeze", "!gravity [num]", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump [power]",
-	"!kill", "!lay", "!leave", "!logs", "!loopgoto [player] [delay]", "!noclip", "!mm2", "!orbit [player] [speed]", "!ping", "!ragdoll",
-	"!rejoin", "!removewaypoint", "!resetgravity", "!resetspeed", "!tpwalk [speed]", "!untpwalk", "!resettime", "!sit", "!speed [plr] [num]", "!serverhop",
-	"!spin [speed]", "!stopwatch", "!sunglare", "!superjump [power]", "!thirdp", "!timeset [0-24]", "!to [plr]", "!trip", "!tracers",
-	"!unantilag", "!unbang", "!uncamlock", "!uncopychat", "!uncrosshair", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
-	"!unfreecam", "!unfreeze", "!uninfjump", "!unnoclip", "!unloopgoto", "!unorbit", "!unragdoll",
-	"!unsunglare", "!unsuperjump", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", 
-	"!view [plr]", "!vehiclefly", "!volume", "!waypoint",
-	"!walkonwater", "!xray", "!zoom [distance] [key]", "!fov [1-120]", "!kick", "!unlockmouse"
+function BuildCmdDesc()
+	local t = {}
+	for k, v in pairs(baseCmdDesc) do
+		t[_G.LunarPrefix .. k] = v
+	end
+	return t
+end
+
+cmdDesc = BuildCmdDesc()
+
+baseCmds = {
+	"aimbot",
+	"antilag",
+	"bang [user] [speed]",
+	"boombox",
+	"camlock [player]",
+	"clicktp",
+	"cmdbar",
+	"console",
+	"copychat [player]",
+	"crosshair",
+	"unload",
+	"disablefalldamage",
+	"enable inventory",
+	"enable playerlist",
+	"esp all",
+	"explode [plr]",
+	"fire [plr]",
+	"firstp",
+	"fling",
+	"flashlight",
+	"fly",
+	"flyspeed [num]",
+	"freecam",
+	"freeze",
+	"gravity [num]",
+	"infjump",
+	"joinlogs",
+	"jerk",
+	"unjerk",
+	"jump [power]",
+	"kill",
+	"lay",
+	"leave",
+	"logs",
+	"loopgoto [player] [delay]",
+	"noclip",
+	"mm2",
+	"orbit [player] [speed]",
+	"ping",
+	"ragdoll",
+	"rejoin",
+	"removewaypoint",
+	"resetgravity",
+	"resetspeed",
+	"tpwalk [speed]",
+	"untpwalk",
+	"resettime",
+	"sit",
+	"speed [plr] [num]",
+	"serverhop",
+	"spin [speed]",
+	"stopwatch",
+	"sunglare",
+	"superjump [power]",
+	"thirdp",
+	"timeset [0-24]",
+	"to [plr]",
+	"trip",
+	"tracers",
+	"unantilag",
+	"unbang",
+	"uncamlock",
+	"uncopychat",
+	"uncrosshair",
+	"unesp all",
+	"unfire [plr]",
+	"unfling",
+	"unflashlight",
+	"unfly",
+	"unfreecam",
+	"unfreeze",
+	"uninfjump",
+	"unnoclip",
+	"unloopgoto",
+	"unorbit",
+	"unragdoll",
+	"unsunglare",
+	"unsuperjump",
+	"unspin",
+	"untracers",
+	"unview",
+	"unvehiclefly",
+	"unwalkonwater",
+	"unxray",
+	"unzoom",
+	"view [plr]",
+	"vehiclefly",
+	"volume",
+	"waypoint",
+	"walkonwater",
+	"xray",
+	"zoom [distance] [key]",
+	"fov [1-120]",
+	"kick",
+	"unlockmouse"
 }
+
+function BuildCmds()
+	local t = {}
+	for _, cmd in ipairs(baseCmds) do
+		table.insert(t, _G.LunarPrefix .. cmd)
+	end
+	return t
+end
+
+cmds = BuildCmds()
 
 -- PC-only tooltip (follows mouse) — sharp corners, no border, like the screenshot
 tooltip = nil
@@ -12401,6 +12597,73 @@ a.MouseButton1Click:Connect(function()
 	_G.LunarPrefix = newPrefix
 	_G.prefixLabel.Text = "Current Prefix: " .. newPrefix
 	_G.prefixInput.Text = newPrefix
+
+	-- Rebuild all command displays with new prefix
+	allCommands = BuildAllCommands()
+	cmds = BuildCmds()
+	cmdDesc = BuildCmdDesc()
+
+	-- Rebuild command list panel
+	for _, child in ipairs(listScroll:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+	for _, cmd in ipairs(allCommands) do
+		createCmdListButton(cmd)
+	end
+	listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
+
+	-- Rebuild main command buttons
+	for _, child in ipairs(cmdScroll:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+	local rebuiltCmds = BuildCmds()
+	local rebuiltDesc = BuildCmdDesc()
+	for i, cmdStr in ipairs(rebuiltCmds) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(42 * scale))
+		btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+		btn.Text = "  " .. cmdStr
+		btn.Font = Enum.Font.Code
+		btn.TextSize = math.floor(14 * fontScale)
+		btn.TextColor3 = globalConfig.textColor
+		btn.TextXAlignment = Enum.TextXAlignment.Left
+		btn.TextStrokeTransparency = 0.5
+		btn.TextStrokeColor3 = Color3.new(0,0,0)
+		btn.BorderSizePixel = 0
+		btn.Parent = cmdScroll
+		btn.LayoutOrder = i
+		btn.ZIndex = 2147483647
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+		local desc = rebuiltDesc[cmdStr]
+		if desc then
+			btn.MouseEnter:Connect(function()
+				btn.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
+				btn.TextColor3 = currentTheme.accent
+				if tooltip and not isMobile then
+					tooltip.Visible = true
+					tooltip:FindFirstChild("TipText").Text = desc
+					local textService = game:GetService("TextService")
+					local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
+					tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
+				end
+			end)
+			btn.MouseLeave:Connect(function()
+				btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+				btn.TextColor3 = globalConfig.textColor
+				if tooltip and not isMobile then
+					tooltip.Visible = false
+				end
+			end)
+		end
+		btn.MouseButton1Click:Connect(function()
+			if setclipboard then
+				setclipboard(cmdStr)
+				notify("Copied: " .. cmdStr, Color3.fromRGB(100, 255, 100))
+			end
+		end)
+	end
+
 	notify("Prefix changed to: " .. newPrefix, Color3.fromRGB(100, 255, 100))
 end)
 
@@ -12412,6 +12675,73 @@ _G.prefixInput.FocusLost:Connect(function(enterPressed)
 		_G.LunarPrefix = newPrefix
 		_G.prefixLabel.Text = "Current Prefix: " .. newPrefix
 		_G.prefixInput.Text = newPrefix
+
+		-- Rebuild all command displays with new prefix
+		allCommands = BuildAllCommands()
+		cmds = BuildCmds()
+		cmdDesc = BuildCmdDesc()
+
+		-- Rebuild command list panel
+		for _, child in ipairs(listScroll:GetChildren()) do
+			if child:IsA("TextButton") then child:Destroy() end
+		end
+		for _, cmd in ipairs(allCommands) do
+			createCmdListButton(cmd)
+		end
+		listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
+
+		-- Rebuild main command buttons
+		for _, child in ipairs(cmdScroll:GetChildren()) do
+			if child:IsA("TextButton") then child:Destroy() end
+		end
+		local rebuiltCmds = BuildCmds()
+		local rebuiltDesc = BuildCmdDesc()
+		for i, cmdStr in ipairs(rebuiltCmds) do
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(42 * scale))
+			btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+			btn.Text = "  " .. cmdStr
+			btn.Font = Enum.Font.Code
+			btn.TextSize = math.floor(14 * fontScale)
+			btn.TextColor3 = globalConfig.textColor
+			btn.TextXAlignment = Enum.TextXAlignment.Left
+			btn.TextStrokeTransparency = 0.5
+			btn.TextStrokeColor3 = Color3.new(0,0,0)
+			btn.BorderSizePixel = 0
+			btn.Parent = cmdScroll
+			btn.LayoutOrder = i
+			btn.ZIndex = 2147483647
+			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+			local desc = rebuiltDesc[cmdStr]
+			if desc then
+				btn.MouseEnter:Connect(function()
+					btn.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
+					btn.TextColor3 = currentTheme.accent
+					if tooltip and not isMobile then
+						tooltip.Visible = true
+						tooltip:FindFirstChild("TipText").Text = desc
+						local textService = game:GetService("TextService")
+						local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
+						tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
+					end
+				end)
+				btn.MouseLeave:Connect(function()
+					btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+					btn.TextColor3 = globalConfig.textColor
+					if tooltip and not isMobile then
+						tooltip.Visible = false
+					end
+				end)
+			end
+			btn.MouseButton1Click:Connect(function()
+				if setclipboard then
+					setclipboard(cmdStr)
+					notify("Copied: " .. cmdStr, Color3.fromRGB(100, 255, 100))
+				end
+			end)
+		end
+
 		notify("Prefix changed to: " .. newPrefix, Color3.fromRGB(100, 255, 100))
 	end
 end)
