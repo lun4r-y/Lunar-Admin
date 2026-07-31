@@ -13,16 +13,16 @@ local SoundService = game:GetService("SoundService")
 local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 
-client = Players.LocalPlayer
-Mouse = client:GetMouse()
-_G.LunarPrefix = _G.LunarPrefix or "!"
-waypoints = {}
-tracerLines = {}
+local client = Players.LocalPlayer
+local Mouse = client:GetMouse()
+local prefix = "!"
+local waypoints = {}
+local tracerLines = {}
 
 -- Wait for character to load
-char = client.Character or client.CharacterAdded:Wait()
-hrp = char:WaitForChild("HumanoidRootPart", 10)
-hum = char:WaitForChild("Humanoid", 10)
+local char = client.Character or client.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart", 10)
+local hum = char:WaitForChild("Humanoid", 10)
 
 if not hrp or not hum then
 	StarterGui:SetCore("SendNotification", {Title = "Lunar Error", Text = "Character not loaded. Re-execute after spawn.", Duration = 10})
@@ -31,18 +31,18 @@ end
 
 client.Chatted:Connect(processCmd)
 -- =============================================================
--- MOBILE UI AUTO-RESIZE - STRICT VERSION
+-- Mobile autoresize 
 -- =============================================================
 
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
-client = Players.LocalPlayer
+local client = Players.LocalPlayer
 
--- CONFIG: Adjust this if mobile UI is still too big/small
-MOBILE_SCALE = 0.55
+-- Adjust this if mobile UI is still too big/small
+local MOBILE_SCALE = 0.55
 
 -- EXACT list of your admin UI names - add more if you create new ones
-LUNAR_UI_NAMES = {
+local LUNAR_UI_NAMES = {
     ["LunarGui"] = true,
     ["LunarNotifs"] = true,
     ["LunarWatermark"] = true,
@@ -62,7 +62,6 @@ LUNAR_UI_NAMES = {
     ["SpectateGui"] = true,
 }
 
--- Detect mobile device
 local function isMobile()
     local touchEnabled = UserInputService.TouchEnabled
     local keyboardEnabled = UserInputService.KeyboardEnabled
@@ -72,7 +71,7 @@ local function isMobile()
         return true
     end
     
-    screenSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+    local screenSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
     if screenSize then
         if math.min(screenSize.X, screenSize.Y) < 600 then
             return true
@@ -82,7 +81,6 @@ local function isMobile()
     return false
 end
 
--- Apply UIScale only to whitelisted Lunar UIs
 local function applyMobileScale(screenGui)
     if not screenGui or not screenGui:IsA("ScreenGui") then return end
     if not LUNAR_UI_NAMES[screenGui.Name] then return end
@@ -94,20 +92,18 @@ local function applyMobileScale(screenGui)
     scale.Parent = screenGui
 end
 
--- Main setup
+
 local function setupMobileResize()
-    if not isMobile() then return end -- PC stays untouched completely
+    if not isMobile() then return end
     
     local playerGui = client:WaitForChild("PlayerGui")
     
-    -- Scale existing Lunar UIs only
     for _, gui in ipairs(playerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
             applyMobileScale(gui)
         end
     end
     
-    -- Auto-scale new Lunar UIs as they're created
     playerGui.ChildAdded:Connect(function(child)
         if child:IsA("ScreenGui") then
             task.wait()
@@ -116,20 +112,18 @@ local function setupMobileResize()
     end)
 end
 
--- Run immediately
 setupMobileResize()
 
--- Re-run on respawn (some executors reload)
 client.CharacterAdded:Connect(function()
     task.wait(1)
     setupMobileResize()
 end)
 
--- Export for manual use if needed
 _G.ApplyMobileUIScale = applyMobileScale
 --------------------------------------------------------------
----------- loading screen ------------------------------------
+-- loading screen - discontinued
 --------------------------------------------------------------
+--[[
 local function createInstantSplash(imageId)
 	imageId = imageId or "rbxassetid://115041688502921"
 
@@ -145,19 +139,19 @@ local function createInstantSplash(imageId)
 	end
 
 	-- PRELOAD IMAGE
-	preload = Instance.new("ImageLabel")
+	local preload = Instance.new("ImageLabel")
 	preload.Image = imageId
 	ContentProvider:PreloadAsync({ preload })
 	preload:Destroy()
 
 	-- REMOVE OLD
-	old = player.PlayerGui:FindFirstChild("LunarSplash")
+	local old = player.PlayerGui:FindFirstChild("LunarSplash")
 	if old then
 		old:Destroy()
 	end
 
 	-- GUI
-	gui = Instance.new("ScreenGui")
+	local gui = Instance.new("ScreenGui")
 	gui.Name = "LunarSplash"
 	gui.IgnoreGuiInset = true
 	gui.ResetOnSpawn = false
@@ -165,7 +159,7 @@ local function createInstantSplash(imageId)
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	bg = Instance.new("Frame")
+	local bg = Instance.new("Frame")
 	bg.Size = UDim2.fromScale(1, 1)
 	bg.BackgroundColor3 = Color3.fromRGB(3, 3, 3)
 	bg.BackgroundTransparency = 1
@@ -173,7 +167,7 @@ local function createInstantSplash(imageId)
 	bg.Parent = gui
 
 	-- animated gradient
-	gradient = Instance.new("UIGradient")
+	local gradient = Instance.new("UIGradient")
 	gradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(5, 5, 5)),
 		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 20, 20)),
@@ -182,11 +176,11 @@ local function createInstantSplash(imageId)
 	gradient.Rotation = 25
 	gradient.Parent = bg
 
-	blur = Instance.new("BlurEffect")
+	local blur = Instance.new("BlurEffect")
 	blur.Size = 0
 	blur.Parent = Lighting
 
-	vignette = Instance.new("ImageLabel")
+	local vignette = Instance.new("ImageLabel")
 	vignette.Size = UDim2.fromScale(1.2, 1.2)
 	vignette.Position = UDim2.fromScale(-0.1, -0.1)
 	vignette.BackgroundTransparency = 1
@@ -196,7 +190,7 @@ local function createInstantSplash(imageId)
 	vignette.ZIndex = 2
 	vignette.Parent = gui
 
-	frame = Instance.new("Frame")
+	local frame = Instance.new("Frame")
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
 	frame.Size = UDim2.fromOffset(420, 420)
@@ -205,19 +199,19 @@ local function createInstantSplash(imageId)
 	frame.BorderSizePixel = 0
 	frame.Parent = gui
 
-	corner = Instance.new("UICorner")
+	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 28)
 	corner.Parent = frame
 
 	-- glass stroke
-	stroke = Instance.new("UIStroke")
+	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 1.5
 	stroke.Transparency = 0.4
 	stroke.Color = Color3.fromRGB(255, 255, 255)
 	stroke.Parent = frame
 
 	-- glow
-	glow = Instance.new("ImageLabel")
+	local glow = Instance.new("ImageLabel")
 	glow.AnchorPoint = Vector2.new(0.5, 0.5)
 	glow.Position = UDim2.fromScale(0.5, 0.5)
 	glow.Size = UDim2.fromScale(1.8, 1.8)
@@ -228,7 +222,7 @@ local function createInstantSplash(imageId)
 	glow.ZIndex = 0
 	glow.Parent = frame
 
-	image = Instance.new("ImageLabel")
+	local image = Instance.new("ImageLabel")
 	image.AnchorPoint = Vector2.new(0.5, 0.5)
 	image.Position = UDim2.fromScale(0.5, 0.5)
 	image.Size = UDim2.fromScale(0.78, 0.78)
@@ -239,14 +233,14 @@ local function createInstantSplash(imageId)
 	image.ZIndex = 3
 	image.Parent = frame
 
-shineHolder = Instance.new("Frame")
+local shineHolder = Instance.new("Frame")
 shineHolder.Size = UDim2.fromScale(1, 1)
 shineHolder.BackgroundTransparency = 1
 shineHolder.ClipsDescendants = true
 shineHolder.ZIndex = 4
 shineHolder.Parent = frame
 
-shine = Instance.new("ImageLabel")
+local shine = Instance.new("ImageLabel")
 shine.AnchorPoint = Vector2.new(0.5, 0.5)
 shine.Position = UDim2.fromScale(-0.6, 0.5)
 shine.Size = UDim2.fromScale(0.45, 1.8)
@@ -259,11 +253,11 @@ shine.ScaleType = Enum.ScaleType.Stretch
 shine.ZIndex = 4
 shine.Parent = shineHolder
 
-	scale = Instance.new("UIScale")
+	local scale = Instance.new("UIScale")
 	scale.Scale = 0.45
 	scale.Parent = frame
 
-	text = Instance.new("TextLabel")
+	local text = Instance.new("TextLabel")
 	text.AnchorPoint = Vector2.new(0.5, 0)
 	text.Position = UDim2.fromScale(0.5, 0.87)
 	text.Size = UDim2.fromOffset(300, 40)
@@ -276,10 +270,10 @@ shine.Parent = shineHolder
 	text.ZIndex = 5
 	text.Parent = frame
 
-	attachment = Instance.new("Attachment")
+	local attachment = Instance.new("Attachment")
 	attachment.Parent = frame
 
-	particles = Instance.new("ParticleEmitter")
+	local particles = Instance.new("ParticleEmitter")
 	particles.Texture = "rbxassetid://243660364"
 	particles.Rate = 0
 	particles.Lifetime = NumberRange.new(1, 1.5)
@@ -337,7 +331,7 @@ task.spawn(function()
 	while gui.Parent do
 		shine.Position = UDim2.fromScale(-0.6, 0.5)
 
-		tween = TweenService:Create(
+		local tween = TweenService:Create(
 			shine,
 			TweenInfo.new(
 				1.8,
@@ -356,7 +350,7 @@ task.spawn(function()
 end)
 
 	local connection
-	start = tick()
+	local start = tick()
 
 	connection = RunService.RenderStepped:Connect(function()
 		if not frame.Parent then
@@ -364,7 +358,7 @@ end)
 			return
 		end
 
-		t = tick() - start
+		local t = tick() - start
 
 		frame.Position = UDim2.fromScale(
 			0.5,
@@ -376,7 +370,7 @@ end)
 
 	task.wait(3)
 
-	outro = TweenInfo.new(
+	local outro = TweenInfo.new(
 		0.45,
 		Enum.EasingStyle.Quint,
 		Enum.EasingDirection.In
@@ -428,19 +422,19 @@ end)
 	blur:Destroy()
 end
 
-createInstantSplash("rbxassetid://115041688502921")
+createInstantSplash("rbxassetid://115041688502921") --]]
 -- =============================================================
 -- GLOBAL CONFIGURATION
 -- =============================================================
-globalConfig = {
+local globalConfig = {
 	textColor = Color3.new(1, 1, 1),
 	uiTransparency = 0.1,
 	strokeTransparency = 0.5
 }
 
 -- Store main UI references for transparency control
-lunarGui = nil
-mainFrame = nil
+local lunarGui = nil
+local mainFrame = nil
 
 -- =============================================================
 -- GLASS EFFECT UTILITY
@@ -474,9 +468,9 @@ local function applyGlassEffect(frame, transparency, strokeTransparency)
 end
 
 -- =============================================================
--- THEMES
+-- Themes
 -- =============================================================
-themes = {
+local themes = {
 	Default = {
 		main = Color3.fromRGB(25, 25, 35),
 		grad1 = Color3.fromRGB(40, 40, 55),
@@ -484,8 +478,27 @@ themes = {
 		accent = Color3.fromRGB(0, 180, 255),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(55, 55, 75),
+		btnHover = Color3.fromRGB(70, 70, 95),
 		list = Color3.fromRGB(45, 45, 60),
-		glass = Color3.fromRGB(35, 35, 50)
+		glass = Color3.fromRGB(35, 35, 50),
+		tabActive = Color3.fromRGB(0, 180, 255),
+		tabInactive = Color3.fromRGB(55, 55, 75),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(0, 180, 255),
+		sliderTrack = Color3.fromRGB(45, 45, 60),
+		sliderFill = Color3.fromRGB(0, 180, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(45, 45, 60),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(0, 180, 255),
+		toggleOff = Color3.fromRGB(55, 55, 75),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(0, 0, 0),
+		success = Color3.fromRGB(60, 160, 90),
+		danger = Color3.fromRGB(200, 60, 60),
+		warning = Color3.fromRGB(200, 160, 50),
+		info = Color3.fromRGB(80, 140, 220),
 	},
 	Pink = {
 		main = Color3.fromRGB(255, 192, 203),
@@ -494,8 +507,27 @@ themes = {
 		accent = Color3.fromRGB(255, 20, 147),
 		text = Color3.new(0.1,0.1,0.1),
 		btn = Color3.fromRGB(255, 105, 180),
+		btnHover = Color3.fromRGB(255, 130, 200),
 		list = Color3.fromRGB(255, 160, 180),
-		glass = Color3.fromRGB(255, 200, 210)
+		glass = Color3.fromRGB(255, 200, 210),
+		tabActive = Color3.fromRGB(255, 20, 147),
+		tabInactive = Color3.fromRGB(255, 160, 180),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(0.1,0.1,0.1),
+		sectionHeader = Color3.fromRGB(255, 20, 147),
+		sliderTrack = Color3.fromRGB(255, 160, 180),
+		sliderFill = Color3.fromRGB(255, 20, 147),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(255, 180, 200),
+		inputText = Color3.new(0.1,0.1,0.1),
+		toggleOn = Color3.fromRGB(255, 20, 147),
+		toggleOff = Color3.fromRGB(255, 160, 180),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(200, 150, 170),
+		success = Color3.fromRGB(100, 200, 120),
+		danger = Color3.fromRGB(220, 80, 100),
+		warning = Color3.fromRGB(230, 180, 80),
+		info = Color3.fromRGB(180, 120, 220),
 	},
 	Blue = {
 		main = Color3.fromRGB(30, 40, 70),
@@ -504,8 +536,27 @@ themes = {
 		accent = Color3.fromRGB(100, 230, 255),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(60, 100, 170),
+		btnHover = Color3.fromRGB(80, 130, 200),
 		list = Color3.fromRGB(45, 65, 110),
-		glass = Color3.fromRGB(40, 55, 100)
+		glass = Color3.fromRGB(40, 55, 100),
+		tabActive = Color3.fromRGB(100, 230, 255),
+		tabInactive = Color3.fromRGB(45, 65, 110),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(100, 230, 255),
+		sliderTrack = Color3.fromRGB(45, 65, 110),
+		sliderFill = Color3.fromRGB(100, 230, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(50, 75, 130),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(100, 230, 255),
+		toggleOff = Color3.fromRGB(45, 65, 110),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(10, 20, 40),
+		success = Color3.fromRGB(80, 200, 120),
+		danger = Color3.fromRGB(220, 80, 80),
+		warning = Color3.fromRGB(230, 190, 80),
+		info = Color3.fromRGB(120, 180, 255),
 	},
 	Red = {
 		main = Color3.fromRGB(50, 20, 20),
@@ -514,8 +565,27 @@ themes = {
 		accent = Color3.fromRGB(255, 100, 100),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(190, 50, 50),
+		btnHover = Color3.fromRGB(210, 70, 70),
 		list = Color3.fromRGB(80, 25, 25),
-		glass = Color3.fromRGB(70, 25, 25)
+		glass = Color3.fromRGB(70, 25, 25),
+		tabActive = Color3.fromRGB(255, 100, 100),
+		tabInactive = Color3.fromRGB(80, 25, 25),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(255, 100, 100),
+		sliderTrack = Color3.fromRGB(80, 25, 25),
+		sliderFill = Color3.fromRGB(255, 100, 100),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(100, 30, 30),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(255, 100, 100),
+		toggleOff = Color3.fromRGB(80, 25, 25),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(30, 10, 10),
+		success = Color3.fromRGB(80, 180, 100),
+		danger = Color3.fromRGB(240, 60, 60),
+		warning = Color3.fromRGB(230, 180, 60),
+		info = Color3.fromRGB(120, 160, 220),
 	},
 	Dark = {
 		main = Color3.fromRGB(15, 15, 20),
@@ -524,11 +594,28 @@ themes = {
 		accent = Color3.fromRGB(0, 200, 255),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(40, 40, 55),
+		btnHover = Color3.fromRGB(55, 55, 75),
 		list = Color3.fromRGB(35, 35, 45),
-		glass = Color3.fromRGB(25, 25, 35)
+		glass = Color3.fromRGB(25, 25, 35),
+		tabActive = Color3.fromRGB(0, 200, 255),
+		tabInactive = Color3.fromRGB(40, 40, 55),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(0, 200, 255),
+		sliderTrack = Color3.fromRGB(35, 35, 45),
+		sliderFill = Color3.fromRGB(0, 200, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(35, 35, 50),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(0, 200, 255),
+		toggleOff = Color3.fromRGB(40, 40, 55),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(0, 0, 0),
+		success = Color3.fromRGB(50, 150, 80),
+		danger = Color3.fromRGB(180, 50, 50),
+		warning = Color3.fromRGB(180, 140, 40),
+		info = Color3.fromRGB(70, 120, 200),
 	},
-	
-	-- === PURPLE / VIOLET ===
 	Purple = {
 		main = Color3.fromRGB(35, 20, 50),
 		grad1 = Color3.fromRGB(75, 40, 110),
@@ -536,11 +623,28 @@ themes = {
 		accent = Color3.fromRGB(180, 100, 255),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(90, 50, 130),
+		btnHover = Color3.fromRGB(110, 65, 155),
 		list = Color3.fromRGB(60, 30, 85),
-		glass = Color3.fromRGB(50, 25, 75)
+		glass = Color3.fromRGB(50, 25, 75),
+		tabActive = Color3.fromRGB(180, 100, 255),
+		tabInactive = Color3.fromRGB(90, 50, 130),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(180, 100, 255),
+		sliderTrack = Color3.fromRGB(60, 30, 85),
+		sliderFill = Color3.fromRGB(180, 100, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(70, 35, 100),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(180, 100, 255),
+		toggleOff = Color3.fromRGB(90, 50, 130),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(20, 10, 30),
+		success = Color3.fromRGB(100, 200, 120),
+		danger = Color3.fromRGB(220, 70, 100),
+		warning = Color3.fromRGB(220, 170, 70),
+		info = Color3.fromRGB(160, 120, 240),
 	},
-	
-	-- === GREEN ===
 	Green = {
 		main = Color3.fromRGB(20, 40, 25),
 		grad1 = Color3.fromRGB(40, 90, 50),
@@ -548,11 +652,28 @@ themes = {
 		accent = Color3.fromRGB(80, 255, 120),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(50, 120, 65),
+		btnHover = Color3.fromRGB(65, 150, 85),
 		list = Color3.fromRGB(35, 80, 45),
-		glass = Color3.fromRGB(30, 70, 40)
+		glass = Color3.fromRGB(30, 70, 40),
+		tabActive = Color3.fromRGB(80, 255, 120),
+		tabInactive = Color3.fromRGB(50, 120, 65),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(80, 255, 120),
+		sliderTrack = Color3.fromRGB(35, 80, 45),
+		sliderFill = Color3.fromRGB(80, 255, 120),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(40, 90, 55),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(80, 255, 120),
+		toggleOff = Color3.fromRGB(50, 120, 65),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(10, 25, 15),
+		success = Color3.fromRGB(70, 200, 100),
+		danger = Color3.fromRGB(210, 60, 60),
+		warning = Color3.fromRGB(210, 170, 50),
+		info = Color3.fromRGB(90, 170, 220),
 	},
-	
-	-- === ORANGE ===
 	Orange = {
 		main = Color3.fromRGB(50, 30, 15),
 		grad1 = Color3.fromRGB(140, 80, 30),
@@ -560,11 +681,28 @@ themes = {
 		accent = Color3.fromRGB(255, 160, 50),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(170, 100, 35),
+		btnHover = Color3.fromRGB(195, 120, 50),
 		list = Color3.fromRGB(120, 70, 25),
-		glass = Color3.fromRGB(100, 60, 20)
+		glass = Color3.fromRGB(100, 60, 20),
+		tabActive = Color3.fromRGB(255, 160, 50),
+		tabInactive = Color3.fromRGB(170, 100, 35),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(255, 160, 50),
+		sliderTrack = Color3.fromRGB(120, 70, 25),
+		sliderFill = Color3.fromRGB(255, 160, 50),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(130, 80, 30),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(255, 160, 50),
+		toggleOff = Color3.fromRGB(170, 100, 35),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(30, 15, 5),
+		success = Color3.fromRGB(80, 190, 100),
+		danger = Color3.fromRGB(210, 60, 50),
+		warning = Color3.fromRGB(230, 190, 60),
+		info = Color3.fromRGB(130, 170, 230),
 	},
-	
-	-- === YELLOW / GOLD ===
 	Gold = {
 		main = Color3.fromRGB(40, 35, 15),
 		grad1 = Color3.fromRGB(120, 100, 30),
@@ -572,11 +710,28 @@ themes = {
 		accent = Color3.fromRGB(255, 220, 80),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(150, 125, 40),
+		btnHover = Color3.fromRGB(175, 150, 55),
 		list = Color3.fromRGB(100, 85, 30),
-		glass = Color3.fromRGB(90, 75, 25)
+		glass = Color3.fromRGB(90, 75, 25),
+		tabActive = Color3.fromRGB(255, 220, 80),
+		tabInactive = Color3.fromRGB(150, 125, 40),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(255, 220, 80),
+		sliderTrack = Color3.fromRGB(100, 85, 30),
+		sliderFill = Color3.fromRGB(255, 220, 80),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(110, 95, 35),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(255, 220, 80),
+		toggleOff = Color3.fromRGB(150, 125, 40),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(25, 20, 5),
+		success = Color3.fromRGB(90, 200, 100),
+		danger = Color3.fromRGB(210, 70, 60),
+		warning = Color3.fromRGB(230, 200, 70),
+		info = Color3.fromRGB(140, 180, 230),
 	},
-	
-	-- === CYAN / TEAL ===
 	Cyan = {
 		main = Color3.fromRGB(20, 40, 45),
 		grad1 = Color3.fromRGB(40, 100, 110),
@@ -584,11 +739,28 @@ themes = {
 		accent = Color3.fromRGB(0, 255, 220),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(45, 130, 145),
+		btnHover = Color3.fromRGB(60, 160, 175),
 		list = Color3.fromRGB(35, 90, 100),
-		glass = Color3.fromRGB(30, 80, 90)
+		glass = Color3.fromRGB(30, 80, 90),
+		tabActive = Color3.fromRGB(0, 255, 220),
+		tabInactive = Color3.fromRGB(45, 130, 145),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(0, 255, 220),
+		sliderTrack = Color3.fromRGB(35, 90, 100),
+		sliderFill = Color3.fromRGB(0, 255, 220),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(40, 100, 115),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(0, 255, 220),
+		toggleOff = Color3.fromRGB(45, 130, 145),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(10, 25, 30),
+		success = Color3.fromRGB(70, 200, 120),
+		danger = Color3.fromRGB(210, 60, 70),
+		warning = Color3.fromRGB(220, 190, 60),
+		info = Color3.fromRGB(80, 190, 220),
 	},
-	
-	-- === WHITE / LIGHT ===
 	Light = {
 		main = Color3.fromRGB(240, 240, 245),
 		grad1 = Color3.fromRGB(220, 220, 230),
@@ -596,11 +768,28 @@ themes = {
 		accent = Color3.fromRGB(0, 140, 255),
 		text = Color3.new(0.15,0.15,0.15),
 		btn = Color3.fromRGB(210, 210, 220),
+		btnHover = Color3.fromRGB(195, 195, 210),
 		list = Color3.fromRGB(225, 225, 235),
-		glass = Color3.fromRGB(230, 230, 240)
+		glass = Color3.fromRGB(230, 230, 240),
+		tabActive = Color3.fromRGB(0, 140, 255),
+		tabInactive = Color3.fromRGB(210, 210, 220),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(0.15,0.15,0.15),
+		sectionHeader = Color3.fromRGB(0, 140, 255),
+		sliderTrack = Color3.fromRGB(225, 225, 235),
+		sliderFill = Color3.fromRGB(0, 140, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(220, 220, 230),
+		inputText = Color3.new(0.15,0.15,0.15),
+		toggleOn = Color3.fromRGB(0, 140, 255),
+		toggleOff = Color3.fromRGB(210, 210, 220),
+		border = Color3.fromRGB(180, 180, 190),
+		shadow = Color3.fromRGB(200, 200, 210),
+		success = Color3.fromRGB(70, 180, 100),
+		danger = Color3.fromRGB(200, 70, 70),
+		warning = Color3.fromRGB(210, 170, 60),
+		info = Color3.fromRGB(100, 160, 230),
 	},
-	
-	-- === MIDNIGHT (Deep Blue-Black) ===
 	Midnight = {
 		main = Color3.fromRGB(10, 12, 25),
 		grad1 = Color3.fromRGB(20, 25, 50),
@@ -608,11 +797,28 @@ themes = {
 		accent = Color3.fromRGB(100, 120, 255),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(25, 30, 60),
+		btnHover = Color3.fromRGB(40, 48, 90),
 		list = Color3.fromRGB(18, 22, 45),
-		glass = Color3.fromRGB(15, 18, 40)
+		glass = Color3.fromRGB(15, 18, 40),
+		tabActive = Color3.fromRGB(100, 120, 255),
+		tabInactive = Color3.fromRGB(25, 30, 60),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(100, 120, 255),
+		sliderTrack = Color3.fromRGB(18, 22, 45),
+		sliderFill = Color3.fromRGB(100, 120, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(22, 28, 55),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(100, 120, 255),
+		toggleOff = Color3.fromRGB(25, 30, 60),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(5, 5, 10),
+		success = Color3.fromRGB(60, 170, 100),
+		danger = Color3.fromRGB(190, 60, 70),
+		warning = Color3.fromRGB(190, 150, 50),
+		info = Color3.fromRGB(110, 140, 230),
 	},
-	
-	-- === LAVENDER (Soft Purple) ===
 	Lavender = {
 		main = Color3.fromRGB(200, 190, 220),
 		grad1 = Color3.fromRGB(180, 170, 210),
@@ -620,11 +826,28 @@ themes = {
 		accent = Color3.fromRGB(140, 80, 200),
 		text = Color3.new(0.15,0.15,0.15),
 		btn = Color3.fromRGB(170, 160, 200),
+		btnHover = Color3.fromRGB(185, 175, 215),
 		list = Color3.fromRGB(190, 180, 215),
-		glass = Color3.fromRGB(210, 200, 230)
+		glass = Color3.fromRGB(210, 200, 230),
+		tabActive = Color3.fromRGB(140, 80, 200),
+		tabInactive = Color3.fromRGB(170, 160, 200),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(0.15,0.15,0.15),
+		sectionHeader = Color3.fromRGB(140, 80, 200),
+		sliderTrack = Color3.fromRGB(190, 180, 215),
+		sliderFill = Color3.fromRGB(140, 80, 200),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(185, 175, 210),
+		inputText = Color3.new(0.15,0.15,0.15),
+		toggleOn = Color3.fromRGB(140, 80, 200),
+		toggleOff = Color3.fromRGB(170, 160, 200),
+		border = Color3.fromRGB(180, 170, 200),
+		shadow = Color3.fromRGB(170, 160, 190),
+		success = Color3.fromRGB(90, 180, 110),
+		danger = Color3.fromRGB(190, 80, 90),
+		warning = Color3.fromRGB(200, 160, 70),
+		info = Color3.fromRGB(150, 120, 210),
 	},
-	
-	-- === MINT (Soft Green) ===
 	Mint = {
 		main = Color3.fromRGB(200, 240, 220),
 		grad1 = Color3.fromRGB(180, 230, 210),
@@ -632,11 +855,28 @@ themes = {
 		accent = Color3.fromRGB(50, 200, 120),
 		text = Color3.new(0.15,0.15,0.15),
 		btn = Color3.fromRGB(170, 225, 200),
+		btnHover = Color3.fromRGB(155, 215, 185),
 		list = Color3.fromRGB(190, 235, 215),
-		glass = Color3.fromRGB(200, 245, 225)
+		glass = Color3.fromRGB(200, 245, 225),
+		tabActive = Color3.fromRGB(50, 200, 120),
+		tabInactive = Color3.fromRGB(170, 225, 200),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(0.15,0.15,0.15),
+		sectionHeader = Color3.fromRGB(50, 200, 120),
+		sliderTrack = Color3.fromRGB(190, 235, 215),
+		sliderFill = Color3.fromRGB(50, 200, 120),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(180, 230, 205),
+		inputText = Color3.new(0.15,0.15,0.15),
+		toggleOn = Color3.fromRGB(50, 200, 120),
+		toggleOff = Color3.fromRGB(170, 225, 200),
+		border = Color3.fromRGB(170, 210, 190),
+		shadow = Color3.fromRGB(170, 210, 190),
+		success = Color3.fromRGB(60, 180, 100),
+		danger = Color3.fromRGB(180, 80, 80),
+		warning = Color3.fromRGB(190, 160, 60),
+		info = Color3.fromRGB(90, 170, 200),
 	},
-	
-	-- === CORAL (Peachy Red) ===
 	Coral = {
 		main = Color3.fromRGB(60, 35, 35),
 		grad1 = Color3.fromRGB(180, 100, 90),
@@ -644,11 +884,28 @@ themes = {
 		accent = Color3.fromRGB(255, 140, 120),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(200, 110, 100),
+		btnHover = Color3.fromRGB(220, 130, 120),
 		list = Color3.fromRGB(150, 80, 75),
-		glass = Color3.fromRGB(130, 70, 65)
+		glass = Color3.fromRGB(130, 70, 65),
+		tabActive = Color3.fromRGB(255, 140, 120),
+		tabInactive = Color3.fromRGB(200, 110, 100),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(255, 140, 120),
+		sliderTrack = Color3.fromRGB(150, 80, 75),
+		sliderFill = Color3.fromRGB(255, 140, 120),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(160, 90, 85),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(255, 140, 120),
+		toggleOff = Color3.fromRGB(200, 110, 100),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(40, 20, 20),
+		success = Color3.fromRGB(80, 190, 110),
+		danger = Color3.fromRGB(230, 80, 70),
+		warning = Color3.fromRGB(230, 180, 70),
+		info = Color3.fromRGB(130, 170, 220),
 	},
-	
-	-- === NEON (High Contrast) ===
 	Neon = {
 		main = Color3.fromRGB(5, 5, 5),
 		grad1 = Color3.fromRGB(20, 20, 20),
@@ -656,11 +913,28 @@ themes = {
 		accent = Color3.fromRGB(0, 255, 65),
 		text = Color3.fromRGB(0, 255, 65),
 		btn = Color3.fromRGB(15, 15, 15),
+		btnHover = Color3.fromRGB(25, 25, 25),
 		list = Color3.fromRGB(10, 10, 10),
-		glass = Color3.fromRGB(8, 8, 8)
+		glass = Color3.fromRGB(8, 8, 8),
+		tabActive = Color3.fromRGB(0, 255, 65),
+		tabInactive = Color3.fromRGB(15, 15, 15),
+		tabTextActive = Color3.fromRGB(0, 255, 65),
+		tabTextInactive = Color3.fromRGB(0, 200, 50),
+		sectionHeader = Color3.fromRGB(0, 255, 65),
+		sliderTrack = Color3.fromRGB(10, 10, 10),
+		sliderFill = Color3.fromRGB(0, 255, 65),
+		sliderKnob = Color3.fromRGB(0, 255, 65),
+		inputBg = Color3.fromRGB(12, 12, 12),
+		inputText = Color3.fromRGB(0, 255, 65),
+		toggleOn = Color3.fromRGB(0, 255, 65),
+		toggleOff = Color3.fromRGB(15, 15, 15),
+		border = Color3.fromRGB(0, 255, 65),
+		shadow = Color3.fromRGB(0, 0, 0),
+		success = Color3.fromRGB(0, 255, 65),
+		danger = Color3.fromRGB(255, 30, 30),
+		warning = Color3.fromRGB(255, 200, 0),
+		info = Color3.fromRGB(0, 200, 255),
 	},
-	
-	-- === SUNSET (Pink-Orange Gradient Feel) ===
 	Sunset = {
 		main = Color3.fromRGB(45, 25, 35),
 		grad1 = Color3.fromRGB(160, 70, 90),
@@ -668,11 +942,28 @@ themes = {
 		accent = Color3.fromRGB(255, 120, 140),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(180, 80, 100),
+		btnHover = Color3.fromRGB(200, 100, 120),
 		list = Color3.fromRGB(130, 55, 75),
-		glass = Color3.fromRGB(110, 45, 65)
+		glass = Color3.fromRGB(110, 45, 65),
+		tabActive = Color3.fromRGB(255, 120, 140),
+		tabInactive = Color3.fromRGB(180, 80, 100),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(255, 120, 140),
+		sliderTrack = Color3.fromRGB(130, 55, 75),
+		sliderFill = Color3.fromRGB(255, 120, 140),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(140, 65, 85),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(255, 120, 140),
+		toggleOff = Color3.fromRGB(180, 80, 100),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(30, 15, 20),
+		success = Color3.fromRGB(90, 200, 120),
+		danger = Color3.fromRGB(220, 70, 90),
+		warning = Color3.fromRGB(230, 180, 80),
+		info = Color3.fromRGB(140, 160, 230),
 	},
-	
-	-- === OCEAN (Deep Sea Blue-Green) ===
 	Ocean = {
 		main = Color3.fromRGB(15, 30, 40),
 		grad1 = Color3.fromRGB(30, 70, 90),
@@ -680,11 +971,28 @@ themes = {
 		accent = Color3.fromRGB(0, 220, 200),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(35, 85, 110),
+		btnHover = Color3.fromRGB(50, 110, 140),
 		list = Color3.fromRGB(25, 60, 80),
-		glass = Color3.fromRGB(22, 55, 75)
+		glass = Color3.fromRGB(22, 55, 75),
+		tabActive = Color3.fromRGB(0, 220, 200),
+		tabInactive = Color3.fromRGB(35, 85, 110),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(0, 220, 200),
+		sliderTrack = Color3.fromRGB(25, 60, 80),
+		sliderFill = Color3.fromRGB(0, 220, 200),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(30, 70, 95),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(0, 220, 200),
+		toggleOff = Color3.fromRGB(35, 85, 110),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(10, 20, 30),
+		success = Color3.fromRGB(70, 200, 130),
+		danger = Color3.fromRGB(210, 70, 80),
+		warning = Color3.fromRGB(220, 180, 60),
+		info = Color3.fromRGB(80, 180, 220),
 	},
-	
-	-- === CHERRY (Deep Red-Pink) ===
 	Cherry = {
 		main = Color3.fromRGB(40, 15, 25),
 		grad1 = Color3.fromRGB(130, 30, 60),
@@ -692,11 +1000,28 @@ themes = {
 		accent = Color3.fromRGB(255, 60, 120),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(160, 40, 80),
+		btnHover = Color3.fromRGB(185, 55, 100),
 		list = Color3.fromRGB(110, 28, 55),
-		glass = Color3.fromRGB(95, 22, 48)
+		glass = Color3.fromRGB(95, 22, 48),
+		tabActive = Color3.fromRGB(255, 60, 120),
+		tabInactive = Color3.fromRGB(160, 40, 80),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(255, 60, 120),
+		sliderTrack = Color3.fromRGB(110, 28, 55),
+		sliderFill = Color3.fromRGB(255, 60, 120),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(120, 35, 65),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(255, 60, 120),
+		toggleOff = Color3.fromRGB(160, 40, 80),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(25, 8, 15),
+		success = Color3.fromRGB(80, 200, 110),
+		danger = Color3.fromRGB(240, 50, 80),
+		warning = Color3.fromRGB(230, 170, 60),
+		info = Color3.fromRGB(150, 120, 220),
 	},
-	
-	-- === FOREST (Earthy Green-Brown) ===
 	Forest = {
 		main = Color3.fromRGB(25, 35, 25),
 		grad1 = Color3.fromRGB(50, 80, 50),
@@ -704,11 +1029,28 @@ themes = {
 		accent = Color3.fromRGB(140, 210, 100),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(60, 100, 60),
+		btnHover = Color3.fromRGB(80, 130, 80),
 		list = Color3.fromRGB(45, 75, 45),
-		glass = Color3.fromRGB(38, 65, 38)
+		glass = Color3.fromRGB(38, 65, 38),
+		tabActive = Color3.fromRGB(140, 210, 100),
+		tabInactive = Color3.fromRGB(60, 100, 60),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(140, 210, 100),
+		sliderTrack = Color3.fromRGB(45, 75, 45),
+		sliderFill = Color3.fromRGB(140, 210, 100),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(55, 90, 55),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(140, 210, 100),
+		toggleOff = Color3.fromRGB(60, 100, 60),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(15, 25, 15),
+		success = Color3.fromRGB(100, 210, 120),
+		danger = Color3.fromRGB(210, 70, 70),
+		warning = Color3.fromRGB(210, 170, 60),
+		info = Color3.fromRGB(110, 180, 210),
 	},
-	
-	-- === COTTON CANDY (Pastel Pink-Blue) ===
 	CottonCandy = {
 		main = Color3.fromRGB(230, 210, 230),
 		grad1 = Color3.fromRGB(210, 190, 230),
@@ -716,11 +1058,28 @@ themes = {
 		accent = Color3.fromRGB(255, 130, 180),
 		text = Color3.new(0.15,0.15,0.15),
 		btn = Color3.fromRGB(220, 200, 230),
+		btnHover = Color3.fromRGB(210, 190, 225),
 		list = Color3.fromRGB(215, 205, 235),
-		glass = Color3.fromRGB(225, 215, 240)
+		glass = Color3.fromRGB(225, 215, 240),
+		tabActive = Color3.fromRGB(255, 130, 180),
+		tabInactive = Color3.fromRGB(220, 200, 230),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(0.15,0.15,0.15),
+		sectionHeader = Color3.fromRGB(255, 130, 180),
+		sliderTrack = Color3.fromRGB(215, 205, 235),
+		sliderFill = Color3.fromRGB(255, 130, 180),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(210, 200, 225),
+		inputText = Color3.new(0.15,0.15,0.15),
+		toggleOn = Color3.fromRGB(255, 130, 180),
+		toggleOff = Color3.fromRGB(220, 200, 230),
+		border = Color3.fromRGB(190, 180, 205),
+		shadow = Color3.fromRGB(200, 190, 215),
+		success = Color3.fromRGB(100, 200, 120),
+		danger = Color3.fromRGB(210, 90, 110),
+		warning = Color3.fromRGB(220, 180, 80),
+		info = Color3.fromRGB(160, 140, 220),
 	},
-	
-	-- === AMETHYST (Rich Dark Purple) ===
 	Amethyst = {
 		main = Color3.fromRGB(30, 15, 40),
 		grad1 = Color3.fromRGB(70, 35, 90),
@@ -728,11 +1087,28 @@ themes = {
 		accent = Color3.fromRGB(200, 120, 255),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(85, 45, 110),
+		btnHover = Color3.fromRGB(105, 60, 135),
 		list = Color3.fromRGB(60, 30, 80),
-		glass = Color3.fromRGB(50, 25, 70)
+		glass = Color3.fromRGB(50, 25, 70),
+		tabActive = Color3.fromRGB(200, 120, 255),
+		tabInactive = Color3.fromRGB(85, 45, 110),
+		tabTextActive = Color3.new(1,1,1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(200, 120, 255),
+		sliderTrack = Color3.fromRGB(60, 30, 80),
+		sliderFill = Color3.fromRGB(200, 120, 255),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(70, 35, 95),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(200, 120, 255),
+		toggleOff = Color3.fromRGB(85, 45, 110),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(15, 8, 20),
+		success = Color3.fromRGB(110, 210, 130),
+		danger = Color3.fromRGB(220, 70, 100),
+		warning = Color3.fromRGB(220, 170, 70),
+		info = Color3.fromRGB(170, 130, 240),
 	},
-	
-	-- === SLATE (Gray-Blue Professional) ===
 	Slate = {
 		main = Color3.fromRGB(35, 40, 50),
 		grad1 = Color3.fromRGB(60, 70, 85),
@@ -740,16 +1116,265 @@ themes = {
 		accent = Color3.fromRGB(130, 170, 220),
 		text = Color3.new(1,1,1),
 		btn = Color3.fromRGB(70, 80, 100),
+		btnHover = Color3.fromRGB(90, 100, 125),
 		list = Color3.fromRGB(55, 65, 80),
-		glass = Color3.fromRGB(48, 55, 70)
-	}
+		glass = Color3.fromRGB(48, 55, 70),
+		tabActive = Color3.fromRGB(130, 170, 220),
+		tabInactive = Color3.fromRGB(70, 80, 100),
+		tabTextActive = Color3.new(0.1,0.1,0.1),
+		tabTextInactive = Color3.new(1,1,1),
+		sectionHeader = Color3.fromRGB(130, 170, 220),
+		sliderTrack = Color3.fromRGB(55, 65, 80),
+		sliderFill = Color3.fromRGB(130, 170, 220),
+		sliderKnob = Color3.new(1,1,1),
+		inputBg = Color3.fromRGB(60, 70, 90),
+		inputText = Color3.new(1,1,1),
+		toggleOn = Color3.fromRGB(130, 170, 220),
+		toggleOff = Color3.fromRGB(70, 80, 100),
+		border = Color3.fromRGB(255, 255, 255),
+		shadow = Color3.fromRGB(20, 25, 35),
+		success = Color3.fromRGB(80, 190, 110),
+		danger = Color3.fromRGB(200, 70, 70),
+		warning = Color3.fromRGB(200, 160, 50),
+		info = Color3.fromRGB(120, 160, 210),
+	},
 }
 
-currentTheme = themes.Default
+local currentTheme = themes.Default
+
+-- ========== LAYOUT PRESETS ==========
+local layoutPresets = {
+	Classic = {
+		name = "Classic",
+		cmdCols = 1,
+		quickCols = 2,
+		btnHeight = 45,
+		sectionPad = 16,
+		innerPad = 10,
+		cornerRadius = 6,
+		fontScale = 1,
+		sectionSpacing = 8,
+	},
+	Compact = {
+		name = "Compact",
+		cmdCols = 1,
+		quickCols = 2,
+		btnHeight = 32,
+		sectionPad = 10,
+		innerPad = 6,
+		cornerRadius = 4,
+		fontScale = 0.9,
+		sectionSpacing = 4,
+	},
+	Grid = {
+		name = "Grid",
+		cmdCols = 2,
+		quickCols = 3,
+		btnHeight = 40,
+		sectionPad = 12,
+		innerPad = 8,
+		cornerRadius = 6,
+		fontScale = 0.95,
+		sectionSpacing = 6,
+	},
+	Minimal = {
+		name = "Minimal",
+		cmdCols = 1,
+		quickCols = 2,
+		btnHeight = 28,
+		sectionPad = 8,
+		innerPad = 4,
+		cornerRadius = 2,
+		fontScale = 0.85,
+		sectionSpacing = 2,
+	},
+}
+local currentLayout = layoutPresets.Classic
+
+-- ========== THEME APPLICATION ENGINE ==========
+
+local function colorMatch(c1, c2, tol)
+	if not c1 or not c2 then return false end
+	tol = tol or 0.002
+	return math.abs(c1.R - c2.R) <= tol and math.abs(c1.G - c2.G) <= tol and math.abs(c1.B - c2.B) <= tol
+end
+
+local function findRole(color, theme)
+	if not color then return nil end
+	for role, themeColor in pairs(theme) do
+		if colorMatch(color, themeColor) then
+			return role
+		end
+	end
+	return nil
+end
+
+-- Hardcoded fallback map for elements that never matched a theme
+local hardcodedBg = {
+	[Color3.fromRGB(40, 40, 48)] = "list",
+	[Color3.fromRGB(50, 50, 60)] = "btn",
+	[Color3.fromRGB(60, 60, 72)] = "btnHover",
+	[Color3.fromRGB(35, 35, 45)] = "glass",
+	[Color3.fromRGB(30, 30, 40)] = "main",
+}
+local hardcodedTxt = {
+	[Color3.fromRGB(255, 255, 255)] = "text",
+	[Color3.new(1,1,1)] = "text",
+}
+
+-- Apply theme to a single object
+function applyThemeToObject(obj, theme, oldTheme)
+	theme = theme or currentTheme
+	if not obj or obj:IsDescendantOf(thCont) then return end
+
+	-- Background
+	if obj:IsA("TextButton") or obj:IsA("Frame") or obj:IsA("ImageButton") or obj:IsA("ImageLabel") then
+		local role = obj:GetAttribute("LunarBgRole")
+		if not role and oldTheme then
+			role = findRole(obj.BackgroundColor3, oldTheme) or hardcodedBg[obj.BackgroundColor3]
+			if role then obj:SetAttribute("LunarBgRole", role) end
+		end
+		if role and theme[role] then
+			obj.BackgroundColor3 = theme[role]
+		end
+	end
+
+	-- Text
+	if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("TextBox") then
+		local role = obj:GetAttribute("LunarTxtRole")
+		if not role and oldTheme then
+			role = findRole(obj.TextColor3, oldTheme) or hardcodedTxt[obj.TextColor3]
+			if role then obj:SetAttribute("LunarTxtRole", role) end
+		end
+		if role and theme[role] then
+			obj.TextColor3 = theme[role]
+		end
+	end
+
+	-- Border / Stroke
+	for _, child in ipairs(obj:GetChildren()) do
+		if child:IsA("UIStroke") then
+			local role = child:GetAttribute("LunarStrokeRole")
+			if not role and oldTheme then
+				role = findRole(child.Color, oldTheme)
+				if role then child:SetAttribute("LunarStrokeRole", role) end
+			end
+			if role and theme[role] then
+				child.Color = theme[role]
+			end
+		end
+	end
+end
+
+-- Full GUI theme sweep
+function applyTheme(themeName)
+	local th = themes[themeName] or themes.Default
+	local oldTheme = currentTheme
+	currentTheme = th
+
+	-- Core frames
+	mainFrame.BackgroundColor3 = th.glass
+	if topBar then topBar.BackgroundColor3 = th.glass end
+	titleLabel.TextColor3 = th.accent
+
+	-- Tabs
+	cmdTab.BackgroundColor3 = th.tabActive
+	cmdTab.TextColor3 = th.tabTextActive
+	setTab.BackgroundColor3 = th.tabInactive
+	setTab.TextColor3 = th.tabTextInactive
+
+	-- Scroll frames & bars
+	cmdBarFrame.BackgroundColor3 = th.list
+	if cmdScroll then cmdScroll.BackgroundColor3 = th.glass end
+	if setScroll then setScroll.BackgroundColor3 = th.glass end
+
+	-- Descendants sweep
+	for _, obj in ipairs(lunarGui:GetDescendants()) do
+		applyThemeToObject(obj, th, oldTheme)
+	end
+
+	-- Sliders
+	for _, s in pairs(sliders) do
+		if s then
+			if s.track then
+				s.track:SetAttribute("LunarBgRole", "sliderTrack")
+				s.track.BackgroundColor3 = th.sliderTrack
+			end
+			if s.fill then
+				s.fill:SetAttribute("LunarBgRole", "sliderFill")
+				s.fill.BackgroundColor3 = th.sliderFill
+			end
+			if s.knob then
+				s.knob:SetAttribute("LunarBgRole", "sliderKnob")
+				s.knob.BackgroundColor3 = th.sliderKnob
+			end
+		end
+	end
+	if tFill then
+		tFill:SetAttribute("LunarBgRole", "sliderFill")
+		tFill.BackgroundColor3 = th.sliderFill
+	end
+
+	-- Color display
+	if cDisplay then cDisplay.BackgroundColor3 = globalConfig.textColor end
+
+	notify("Theme changed to " .. (themeName or "Default"), th.accent)
+end
+
+-- One-time tag init (call once after GUI is fully built)
+function initThemeTags()
+	for _, obj in ipairs(lunarGui:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("Frame") or obj:IsA("ImageButton") or obj:IsA("ImageLabel") then
+			for role, color in pairs(themes.Default) do
+				if colorMatch(obj.BackgroundColor3, color, 0) then
+					obj:SetAttribute("LunarBgRole", role)
+					break
+				end
+			end
+		end
+		if obj:IsA("TextButton") or obj:IsA("TextLabel") or obj:IsA("TextBox") then
+			for role, color in pairs(themes.Default) do
+				if colorMatch(obj.TextColor3, color, 0) then
+					obj:SetAttribute("LunarTxtRole", role)
+					break
+				end
+			end
+		end
+		for _, child in ipairs(obj:GetChildren()) do
+			if child:IsA("UIStroke") then
+				for role, color in pairs(themes.Default) do
+					if colorMatch(child.Color, color, 0) then
+						child:SetAttribute("LunarStrokeRole", role)
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Helper: create a themed element with proper role tagging
+function makeThemed(class, parent, role, textRole)
+	local obj = Instance.new(class, parent)
+	if role and currentTheme[role] then
+		if class:find("Text") or class:find("Frame") or class:find("Image") then
+			obj:SetAttribute("LunarBgRole", role)
+			obj.BackgroundColor3 = currentTheme[role]
+		end
+	end
+	if textRole and currentTheme[textRole] then
+		if class:find("Text") then
+			obj:SetAttribute("LunarTxtRole", textRole)
+			obj.TextColor3 = currentTheme[textRole]
+		end
+	end
+	return obj
+end
+
 -- =============================================================
--- SOUND EFFECTS
+-- sounds effects
 -- =============================================================
-currentHoverSound = nil
+local currentHoverSound = nil
 
 local function playOpen()
 	if soundMuted then return end
@@ -777,7 +1402,7 @@ local function playHover()
 		currentHoverSound:Stop()
 	end
 
-	s = Instance.new("Sound")
+	local s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://107677435338382"
 	s.Volume = 1 * (_G.uiSoundVol or 1)
 	s.Parent = SoundService
@@ -793,7 +1418,7 @@ local function playClick()
 		currentHoverSound:Stop()
 	end
 
-	s = Instance.new("Sound")
+	local s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://109439703653606"
 	s.Volume = 5 * (_G.uiSoundVol or 1)
 	s.Parent = SoundService
@@ -801,7 +1426,7 @@ local function playClick()
 	Debris:AddItem(s, 2)
 end
 -- =============================================================
--- apply sounds to all buttons NOW
+-- apply sounds to all buttons
 -- =============================================================
 local function applySoundsToAllButtons(parent)
 	for _, obj in ipairs(parent:GetDescendants()) do
@@ -838,7 +1463,7 @@ end
 -- =============================================================
 -- better notis
 -- =============================================================
-notifGui = Instance.new("ScreenGui")
+local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "LunarNotifs"
 notifGui.ResetOnSpawn = false
 notifGui.DisplayOrder = 2147483647
@@ -847,20 +1472,20 @@ notifGui.ScreenInsets = Enum.ScreenInsets.None
 notifGui.IgnoreGuiInset = true
 notifGui.Parent = game:GetService("CoreGui")
 
-UserInputService = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 
-isMobile = UserInputService.TouchEnabled
+local isMobile = UserInputService.TouchEnabled
 
-notifWidth = 340
-notifHeight = 76
-notifSpacing = 12
-startY = 20
-notifOffscreen = 120
-notifTargetX = -360
+local notifWidth = 340
+local notifHeight = 76
+local notifSpacing = 12
+local startY = 20
+local notifOffscreen = 120
+local notifTargetX = -360
 
 if isMobile then
-	viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
-	smallestSide = math.min(viewport.X, viewport.Y)
+	local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
+	local smallestSide = math.min(viewport.X, viewport.Y)
 
 	-- Phone
 	if smallestSide < 700 then
@@ -882,13 +1507,13 @@ if isMobile then
 	end
 end
 
-activeNotifications = {}
-notifHeight = 76
-notifSpacing = 12
-startY = 20 -- top padding
-notifDuration = 5
+local activeNotifications = {}
+local notifHeight = 76
+local notifSpacing = 12
+local startY = 20 -- top padding
+local notifDuration = 5
 
-currentNotifSound = nil
+local currentNotifSound = nil
 
 local function playNotifSound()
 	if notifSoundMuted then return end  -- Only checks notif mute, not UI mute
@@ -896,7 +1521,7 @@ local function playNotifSound()
 		currentNotifSound:Stop()
 	end
 
-	s = Instance.new("Sound")
+	local s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://97643101798871"
 	s.Volume = 0.55
 	s.Parent = SoundService
@@ -1085,7 +1710,7 @@ local function notify(text, col)
 
 	-- Limit to 6 notifications (remove oldest from top)
 	if #activeNotifications > 6 then
-		old = table.remove(activeNotifications, 1) -- remove first (oldest)
+		local old = table.remove(activeNotifications, 1) -- remove first (oldest)
 		if old and old.Parent then
 			TweenService:Create(old, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
 				Position = UDim2.new(1, notifOffscreen, 0, old.Position.Y.Offset),
@@ -1103,26 +1728,26 @@ end
 -- Project Lunar watermakr yea
 -- =============================================================
 task.spawn(function()
-	Players = game:GetService("Players")
-	RunService = game:GetService("RunService")
-	UserInputService = game:GetService("UserInputService")
-	Stats = game:GetService("Stats")
-	CoreGui = game:GetService("CoreGui")
-	ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local Stats = game:GetService("Stats")
+	local CoreGui = game:GetService("CoreGui")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-	client = Players.LocalPlayer
+	local client = Players.LocalPlayer
 
-	isMobile = UserInputService.TouchEnabled
+	local isMobile = UserInputService.TouchEnabled
 
-	frameWidth = 380
-	frameHeight = 34
-	frameX = -390
-	textSize = 16
-	moonSize = 22
+	local frameWidth = 380
+	local frameHeight = 34
+	local frameX = -390
+	local textSize = 16
+	local moonSize = 22
 
 	if isMobile then
-		viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800,600)
-		smallestSide = math.min(viewport.X, viewport.Y)
+		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800,600)
+		local smallestSide = math.min(viewport.X, viewport.Y)
 
 		if smallestSide < 700 then
 			frameWidth = 300
@@ -1143,7 +1768,7 @@ task.spawn(function()
 		CoreGui.LunarWatermark:Destroy()
 	end
 
-	serverRunTime = workspace:FindFirstChild("ServerRunTime")
+	local serverRunTime = workspace:FindFirstChild("ServerRunTime")
 	if not serverRunTime then
 		serverRunTime = Instance.new("NumberValue")
 		serverRunTime.Name = "ServerRunTime"
@@ -1151,14 +1776,14 @@ task.spawn(function()
 		serverRunTime.Parent = workspace
 	end
 
-	pingEvent = ReplicatedStorage:FindFirstChild("PingEvent")
+	local pingEvent = ReplicatedStorage:FindFirstChild("PingEvent")
 	if not pingEvent then
 		pingEvent = Instance.new("RemoteEvent")
 		pingEvent.Name = "PingEvent"
 		pingEvent.Parent = ReplicatedStorage
 	end
 
-	sg = Instance.new("ScreenGui")
+	local sg = Instance.new("ScreenGui")
 	sg.Name = "LunarWatermark"
 	sg.ResetOnSpawn = false
 	sg.IgnoreGuiInset = true
@@ -1167,7 +1792,7 @@ task.spawn(function()
 	sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	sg.Parent = CoreGui
 
-	frame = Instance.new("Frame")
+	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
 	frame.Position = UDim2.new(1, frameX, 0, 15)
 	frame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
@@ -1177,7 +1802,7 @@ task.spawn(function()
 
 	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
 
-	dragTab = Instance.new("Frame")
+	local dragTab = Instance.new("Frame")
 	dragTab.Size = UDim2.new(0, 30, 1, 0)
 	dragTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	dragTab.BackgroundTransparency = 0.2
@@ -1186,7 +1811,7 @@ task.spawn(function()
 
 	Instance.new("UICorner", dragTab).CornerRadius = UDim.new(0, 16)
 
-	tabLabel = Instance.new("TextLabel")
+	local tabLabel = Instance.new("TextLabel")
 	tabLabel.Size = UDim2.fromScale(1, 1)
 	tabLabel.BackgroundTransparency = 1
 	tabLabel.Text = "≡"
@@ -1196,7 +1821,7 @@ task.spawn(function()
 	tabLabel.ZIndex = 2147483647
 	tabLabel.Parent = dragTab
 
-	moon = Instance.new("TextLabel", frame)
+	local moon = Instance.new("TextLabel", frame)
 	moon.Size = UDim2.new(0, 32, 1, 0)
 	moon.Position = UDim2.new(0, 42, 0, 0)
 	moon.BackgroundTransparency = 1
@@ -1206,7 +1831,7 @@ task.spawn(function()
 	moon.Font = Enum.Font.Code
 	moon.ZIndex = 2147483647
 
-	label = Instance.new("TextLabel", frame)
+	local label = Instance.new("TextLabel", frame)
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.new(1, -90, 1, 0)
 	label.Position = UDim2.new(0, 80, 0, 0)
@@ -1218,7 +1843,7 @@ task.spawn(function()
 	label.RichText = true
 	label.ZIndex = 2147483647
 
-	visible = true
+	local visible = true
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if gp then return end
 		if input.KeyCode == Enum.KeyCode.P then
@@ -1227,10 +1852,10 @@ task.spawn(function()
 		end
 	end)
 
-	dragging = false
+	local dragging = false
 	local dragStart
 	local startPos
-	targetPos = frame.Position
+	local targetPos = frame.Position
 
 	dragTab.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -1252,7 +1877,7 @@ task.spawn(function()
 		if not dragging then return end
 		if input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch then
-			delta = input.Position - dragStart
+			local delta = input.Position - dragStart
 			targetPos = UDim2.new(
 				startPos.X.Scale,
 				startPos.X.Offset + delta.X,
@@ -1266,36 +1891,36 @@ task.spawn(function()
 		frame.Position = frame.Position:Lerp(targetPos, 0.25)
 	end)
 
-	fps = 60
-	frameCount = 0
-	fpsTimer = 0
-	fpsUpdateInterval = 0.5
+	local fps = 60
+	local frameCount = 0
+	local fpsTimer = 0
+	local fpsUpdateInterval = 0.5
 
 	RunService.RenderStepped:Connect(function(dt)
 		frameCount += 1
 		fpsTimer += dt
 		if fpsTimer >= fpsUpdateInterval then
-			measuredFPS = frameCount / fpsTimer
+			local measuredFPS = frameCount / fpsTimer
 			fps = fps + (measuredFPS - fps) * 0.3
 			frameCount = 0
 			fpsTimer = 0
 		end
 	end)
 
-	ping = 0
-	latestPing = 0
-	lastPingRequest = 0
-	pingRequestSent = false
-	serverTimeOffset = 0
-	serverTimeValid = false
+	local ping = 0
+	local latestPing = 0
+	local lastPingRequest = 0
+	local pingRequestSent = false
+	local serverTimeOffset = 0
+	local serverTimeValid = false
 
 	pingEvent.OnClientEvent:Connect(function(data)
 		if type(data) == "number" then
 			latestPing = data
 			pingRequestSent = false
 		elseif type(data) == "table" and data.serverTime then
-			clientTime = tick()
-			roundTrip = (clientTime - lastPingRequest) * 1000
+			local clientTime = tick()
+			local roundTrip = (clientTime - lastPingRequest) * 1000
 			latestPing = roundTrip / 2
 			serverTimeOffset = data.serverTime - clientTime
 			serverTimeValid = true
@@ -1324,7 +1949,7 @@ task.spawn(function()
 
 	pingEvent.OnClientEvent:Connect(function(data)
 		if type(data) == "table" and data.action == "pong" and data.clientTime then
-			roundTrip = (tick() - data.clientTime) * 1000
+			local roundTrip = (tick() - data.clientTime) * 1000
 			latestPing = roundTrip
 			pingRequestSent = false
 		end
@@ -1339,7 +1964,7 @@ task.spawn(function()
 				measureSelfPing()
 			end
 
-			targetPing = latestPing
+			local targetPing = latestPing
 			if targetPing <= 0 then
 				pcall(function()
 					targetPing = client:GetNetworkPing() * 1000
@@ -1349,27 +1974,27 @@ task.spawn(function()
 				targetPing = 0
 			end
 
-			diff = targetPing - ping
+			local diff = targetPing - ping
 			if diff > 0 then
 				ping = ping + diff * 0.9
 			else
 				ping = ping + diff * 0.15
 			end
 
-			fpsDisplay = math.floor(fps + 0.5)
-			pingDisplay = math.floor(ping + 0.5)
+			local fpsDisplay = math.floor(fps + 0.5)
+			local pingDisplay = math.floor(ping + 0.5)
 
 			local pingColor
 			if pingDisplay < 50 then
 				pingColor = Color3.fromRGB(0, 255, 100)
 			elseif pingDisplay < 150 then
-				t = (pingDisplay - 50) / 100
+				local t = (pingDisplay - 50) / 100
 				pingColor = Color3.fromRGB(0, 255, 100):Lerp(Color3.fromRGB(255, 255, 0), t)
 			elseif pingDisplay < 300 then
-				t = (pingDisplay - 150) / 150
+				local t = (pingDisplay - 150) / 150
 				pingColor = Color3.fromRGB(255, 255, 0):Lerp(Color3.fromRGB(255, 150, 0), t)
 			else
-				t = math.clamp((pingDisplay - 300) / 700, 0, 1)
+				local t = math.clamp((pingDisplay - 300) / 700, 0, 1)
 				pingColor = Color3.fromRGB(255, 150, 0):Lerp(Color3.fromRGB(255, 50, 50), t)
 			end
 
@@ -1384,9 +2009,9 @@ task.spawn(function()
 				pingText = tostring(pingDisplay)
 			end
 
-			r = math.floor(pingColor.R * 255)
-			g = math.floor(pingColor.G * 255)
-			b = math.floor(pingColor.B * 255)
+			local r = math.floor(pingColor.R * 255)
+			local g = math.floor(pingColor.G * 255)
+			local b = math.floor(pingColor.B * 255)
 
 			if isMobile then
 				label.Text = string.format([[Lunar | %d FPS | <font color="rgb(%d,%d,%d)">%s ms</font>]], fpsDisplay, r, g, b, pingText)
@@ -1397,7 +2022,7 @@ task.spawn(function()
 			task.wait(0.1)
 		end
 	end)
- end) 
+end)
 -- ═══════════════════════════════════════════════════════════
 -- Flashlight
 -- ═══════════════════════════════════════════════════════════
@@ -1533,7 +2158,7 @@ function _G.StartOrbit(args)
 	end
 
 	targetName = targetName:lower()
-	targetPlr = nil
+	local targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -1552,15 +2177,15 @@ function _G.StartOrbit(args)
 
 	_G._orbitData.conn = RunService.Heartbeat:Connect(function(dt)
 		pcall(function()
-			myChar = client.Character
-			theirChar = targetPlr.Character
+			local myChar = client.Character
+			local theirChar = targetPlr.Character
 			if not myChar or not theirChar then return end
-			myRoot = myChar:FindFirstChild("HumanoidRootPart")
-			theirRoot = theirChar:FindFirstChild("HumanoidRootPart")
+			local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart")
 			if not myRoot or not theirRoot then return end
 
 			_G._orbitData.angle = _G._orbitData.angle + (_G._orbitData.speed * dt)
-			offset = Vector3.new(
+			local offset = Vector3.new(
 				math.cos(_G._orbitData.angle) * _G._orbitData.radius,
 				0,
 				math.sin(_G._orbitData.angle) * _G._orbitData.radius
@@ -1599,7 +2224,7 @@ function _G.StartLoopGoto(args)
 	end
 
 	targetName = targetName:lower()
-	targetPlr = nil
+	local targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -1665,7 +2290,7 @@ function _G.EnableTPWalk(args)
 		return
 	end
 
-	hum = char:FindFirstChildWhichIsA("Humanoid")
+	local hum = char:FindFirstChildWhichIsA("Humanoid")
 	if not hum then
 		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
 		return
@@ -1675,9 +2300,9 @@ function _G.EnableTPWalk(args)
 
 	_G._tpwalkData.conn = RunService.Heartbeat:Connect(function(delta)
 		pcall(function()
-			char = client.Character
+			local char = client.Character
 			if not char then return end
-			hum = char:FindFirstChildWhichIsA("Humanoid")
+			local hum = char:FindFirstChildWhichIsA("Humanoid")
 			if not hum or not hum.Parent then
 				_G.DisableTPWalk()
 				return
@@ -1765,20 +2390,20 @@ function _G.EnableSuperJump(args)
 		return
 	end
 
-	hum = char:FindFirstChildOfClass("Humanoid")
+	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then
 		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
 		return
 	end
 
 	_G._superJumpData.originalPower = hum.JumpPower
-	power = tonumber(args[1]) or 100
+	local power = tonumber(args[1]) or 100
 	hum.JumpPower = power
 
 	-- Keep reapplying on respawn
 	_G._superJumpData.conn = client.CharacterAdded:Connect(function(newChar)
 		task.wait(0.3)
-		newHum = newChar:FindFirstChildOfClass("Humanoid")
+		local newHum = newChar:FindFirstChildOfClass("Humanoid")
 		if newHum then newHum.JumpPower = power end
 	end)
 
@@ -1789,9 +2414,9 @@ function _G.DisableSuperJump()
 	if _G._superJumpData.conn then
 		pcall(function() _G._superJumpData.conn:Disconnect() end)
 	end
-	char = client.Character
+	local char = client.Character
 	if char then
-		hum = char:FindFirstChildOfClass("Humanoid")
+		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then hum.JumpPower = _G._superJumpData.originalPower end
 	end
 	_G._superJumpData = {originalPower = 50, conn = nil}
@@ -1837,7 +2462,7 @@ function _G.StartCamlock(args)
 	end
 
 	targetName = targetName:lower()
-	targetPlr = nil
+	local targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -1856,14 +2481,14 @@ function _G.StartCamlock(args)
 
 	_G._camlockData.conn = RunService.RenderStepped:Connect(function()
 		pcall(function()
-			theirChar = targetPlr.Character
+			local theirChar = targetPlr.Character
 			if not theirChar then return end
-			theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Head")
+			local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Head")
 			if not theirRoot then return end
 
-			cam = workspace.CurrentCamera
-			myChar = client.Character
-			myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+			local cam = workspace.CurrentCamera
+			local myChar = client.Character
+			local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
 			if myRoot then
 				cam.CFrame = CFrame.new(myRoot.Position + Vector3.new(0, 5, 10), theirRoot.Position)
 			else
@@ -1905,7 +2530,7 @@ function _G.SetZoom(args)
 
 	_G.ClearZoom()
 
-	distance = tonumber(args[1])
+	local distance = tonumber(args[1])
 	if not distance then
 		if notify then notify("❌ Usage: !zoom [distance] [key]", Color3.fromRGB(255,100,100)) end
 		return
@@ -1914,14 +2539,14 @@ function _G.SetZoom(args)
 	_G._zoomData.zoomDistance = distance
 	_G._zoomData.zoomKey = args[2] and Enum.KeyCode[args[2]:upper()] or Enum.KeyCode.Z
 
-	zoomed = false
-	originalMaxZoom = nil
+	local zoomed = false
+	local originalMaxZoom = nil
 
 	_G._zoomData.conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.KeyCode == _G._zoomData.zoomKey then
 			zoomed = not zoomed
-			cam = workspace.CurrentCamera
+			local cam = workspace.CurrentCamera
 			if zoomed then
 				originalMaxZoom = cam.MaxZoomDistance
 				cam.MaxZoomDistance = _G._zoomData.zoomDistance
@@ -1942,7 +2567,7 @@ function _G.ClearZoom()
 	if _G._zoomData.conn then
 		pcall(function() _G._zoomData.conn:Disconnect() end)
 	end
-	cam = workspace.CurrentCamera
+	local cam = workspace.CurrentCamera
 	cam.MaxZoomDistance = 400
 	cam.MinZoomDistance = 0.5
 	_G._zoomData = {conn = nil, zoomKey = nil, zoomDistance = 50}
@@ -2028,7 +2653,7 @@ function _G.StartCopyChat(args)
 	end
 
 	targetName = targetName:lower()
-	targetPlr = nil
+	local targetPlr = nil
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 			targetPlr = plr
@@ -2046,13 +2671,13 @@ function _G.StartCopyChat(args)
 	_G._copyChatData.conn = targetPlr.Chatted:Connect(function(msg)
 		pcall(function()
 			if TextChatService then
-				channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+				local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
 				if channel then
 					channel:SendAsync("[" .. targetPlr.Name .. "]: " .. msg)
 				end
 			elseif game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents") then
 				-- Legacy chat
-				chatRemote = game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
+				local chatRemote = game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest
 				chatRemote:FireServer("[" .. targetPlr.Name .. "]: " .. msg, "All")
 			end
 		end)
@@ -2091,14 +2716,14 @@ function _G.GiveJerkTool()
 		return
 	end
 
-	humanoid = char:FindFirstChildWhichIsA("Humanoid")
-	backpack = client:FindFirstChildWhichIsA("Backpack")
+	local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+	local backpack = client:FindFirstChildWhichIsA("Backpack")
 	if not humanoid or not backpack then
 		if notify then notify("❌ Humanoid or Backpack not found", Color3.fromRGB(255,100,100)) end
 		return
 	end
 
-	tool = Instance.new("Tool")
+	local tool = Instance.new("Tool")
 	tool.Name = "Jerk Off"
 	tool.ToolTip = "in the stripped club. straight up \"jorking it\" . and by \"it\" , haha, well. let's justr say. My peanits."
 	tool.RequiresHandle = false
@@ -2126,9 +2751,9 @@ function _G.GiveJerkTool()
 			if not _G._jerkData.tool or not _G._jerkData.tool.Parent then break end
 			if not _G._jerkData.jorkin then continue end
 
-			isR15 = char:FindFirstChild("UpperTorso") ~= nil
+			local isR15 = char:FindFirstChild("UpperTorso") ~= nil
 			if not _G._jerkData.track then
-				anim = Instance.new("Animation")
+				local anim = Instance.new("Animation")
 				anim.AnimationId = not isR15 and "rbxassetid://72042024" or "rbxassetid://698251653"
 				_G._jerkData.track = humanoid:LoadAnimation(anim)
 			end
@@ -2199,17 +2824,17 @@ function _G.StartBang(args)
 		return
 	end
 
-	hum = char:FindFirstChildOfClass("Humanoid")
+	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then
 		if notify then notify("❌ Humanoid not found", Color3.fromRGB(255,100,100)) end
 		return
 	end
 
 	-- Detect R15
-	isR15 = char:FindFirstChild("UpperTorso") ~= nil
-	animId = isR15 and "rbxassetid://5918726674" or "rbxassetid://148840371"
+	local isR15 = char:FindFirstChild("UpperTorso") ~= nil
+	local animId = isR15 and "rbxassetid://5918726674" or "rbxassetid://148840371"
 
-	speed = tonumber(args[2]) or 3
+	local speed = tonumber(args[2]) or 3
 
 	_G._bangData.anim = Instance.new("Animation")
 	_G._bangData.anim.AnimationId = animId
@@ -2223,9 +2848,9 @@ function _G.StartBang(args)
 	end)
 
 	-- Target lock
-	targetPlr = nil
+	local targetPlr = nil
 	if args[1] then
-		targetName = args[1]:lower()
+		local targetName = args[1]:lower()
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if plr.Name:lower():sub(1, #targetName) == targetName or plr.DisplayName:lower():sub(1, #targetName) == targetName then
 				targetPlr = plr
@@ -2237,14 +2862,14 @@ function _G.StartBang(args)
 	_G._bangData.target = targetPlr
 
 	if targetPlr and targetPlr.Character then
-		offset = CFrame.new(0, 0, 1.1)
+		local offset = CFrame.new(0, 0, 1.1)
 		_G._bangData.steppedConn = RunService.Stepped:Connect(function()
 			pcall(function()
-				myChar = client.Character
-				theirChar = targetPlr.Character
+				local myChar = client.Character
+				local theirChar = targetPlr.Character
 				if not myChar or not theirChar then return end
-				myRoot = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
-				theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Torso")
+				local myRoot = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
+				local theirRoot = theirChar:FindFirstChild("HumanoidRootPart") or theirChar:FindFirstChild("Torso")
 				if myRoot and theirRoot then
 					myRoot.CFrame = theirRoot.CFrame * offset
 				end
@@ -2355,7 +2980,7 @@ function MM2ESP:CreateESP(player)
 		self.ESPs[player] = nil
 	end
 	if not self.ESP_Enabled then return end
-	hl = Instance.new("Highlight")
+	local hl = Instance.new("Highlight")
 	hl.Name = "MM2ESP"
 	hl.FillColor = self:GetRoleColor(self:GetRole(player))
 	hl.OutlineColor = hl.FillColor
@@ -2399,9 +3024,9 @@ function MM2ESP:SetupSpeedBoostLoop()
 
 	self.speedConn = RunService.Heartbeat:Connect(function()
 		if not self.SpeedBoost_Enabled then return end
-		char = LocalPlayer.Character
+		local char = LocalPlayer.Character
 		if not char then return end
-		hum = char:FindFirstChildOfClass("Humanoid")
+		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum and hum.WalkSpeed < 30 then
 			hum.WalkSpeed = 30
 		end
@@ -2428,7 +3053,7 @@ function MM2ESP:ToggleSpeedBoost(state)
 		if self.charAddedConn then self.charAddedConn:Disconnect() end
 		self.charAddedConn = LocalPlayer.CharacterAdded:Connect(function(char)
 			task.wait(0.3)
-			hum = char:FindFirstChildOfClass("Humanoid")
+			local hum = char:FindFirstChildOfClass("Humanoid")
 			if hum and self.SpeedBoost_Enabled then
 				hum.WalkSpeed = 30
 			end
@@ -2460,7 +3085,7 @@ function MM2ESP:FindGunDrop()
 		end
 		-- Sometimes it's nested
 		if child:IsA("Folder") or child:IsA("Model") then
-			nested = child:FindFirstChild("GunDrop")
+			local nested = child:FindFirstChild("GunDrop")
 			if nested then return nested end
 		end
 	end
@@ -2475,13 +3100,13 @@ function MM2ESP:TeleportToGunDrop()
 		return
 	end
 
-	myChar = LocalPlayer.Character
+	local myChar = LocalPlayer.Character
 	if not myChar then 
 		if notify then notify("Character not loaded!", Color3.fromRGB(255, 100, 100)) end
 		return 
 	end
 
-	myHrp = myChar:FindFirstChild("HumanoidRootPart")
+	local myHrp = myChar:FindFirstChild("HumanoidRootPart")
 	if not myHrp then
 		if notify then notify("HumanoidRootPart not found!", Color3.fromRGB(255, 100, 100)) end
 		return
@@ -2502,7 +3127,7 @@ function MM2ESP:SetupGunDropAutoTP()
 	if not self.GunDrop_AutoTP then return end
 
 	-- Check if gun drop already exists
-	existingGun = self:FindGunDrop()
+	local existingGun = self:FindGunDrop()
 	if existingGun then
 		task.spawn(function()
 			task.wait(0.5)
@@ -2601,7 +3226,7 @@ function MM2ESP:CreateMainFrame()
 	end
 	self.panel = mGui
 
-	shadow = Instance.new("Frame")
+	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
 	shadow.Size = UDim2.new(0, self.W + 8, 0, 200)
 	shadow.Position = UDim2.new(0, 50, 0, 50)
@@ -2612,7 +3237,7 @@ function MM2ESP:CreateMainFrame()
 	self.shadow = shadow
 	Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 16)
 
-	main = Instance.new("Frame")
+	local main = Instance.new("Frame")
 	main.Name = "MainPanel"
 	main.Size = UDim2.new(0, self.W, 0, 200)
 	main.Position = UDim2.new(0, 4, 0, 4)
@@ -2940,7 +3565,7 @@ function MM2ESP:SetupDragging()
 	end)
 	UserInputService.InputChanged:Connect(function(input)
 		if self.Dragging and dragStart and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			delta = input.Position - dragStart
+			local delta = input.Position - dragStart
 			self.shadow.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
 		end
 	end)
@@ -2998,199 +3623,7 @@ function MM2ESP:SetupLoop()
 		if self.ESP_Enabled then self:UpdateAllESP() end
 	end)
 end
--- ═══════════════════════════════════════════════════════════
--- Anti-lag
--- ═══════════════════════════════════════════════════════════
 
-_G.AntiLagActive = false
-_G.AntiLagOriginals = {
-	Lighting = {},
-	Parts = {},
-	Textures = {},
-	Graphics = {},
-}
-
--- Helper: recursively collect all descendants
-local function getAllDescendants(parent)
-	local list = {}
-	for _, v in ipairs(parent:GetDescendants()) do
-		table.insert(list, v)
-	end
-	return list
-end
-
-_G.StartAntiLag = function()
-	if _G.AntiLagActive then return end
-	_G.AntiLagActive = true
-
-	Lighting = game:GetService("Lighting")
-	Workspace = game:GetService("Workspace")
-	Settings = UserSettings():GetService("UserGameSettings")
-
-	-- 1) Save & strip Lighting
-	lightSave = {}
-	for _, prop in ipairs({"FogStart","FogEnd","FogColor","Brightness","GlobalShadows","ShadowSoftness","EnvironmentDiffuseScale","EnvironmentSpecularScale","OutdoorAmbient","Ambient","ClockTime","GeographicLatitude"}) do
-		ok, val = pcall(function() return Lighting[prop] end)
-		if ok then
-			lightSave[prop] = val
-			pcall(function() Lighting[prop] = (prop == "FogStart" and 0 or prop == "FogEnd" and 9e9 or prop == "FogColor" and Color3.new(0,0,0) or prop == "Brightness" and 1 or prop == "GlobalShadows" and false or prop == "ShadowSoftness" and 0 or prop == "EnvironmentDiffuseScale" and 0 or prop == "EnvironmentSpecularScale" and 0 or prop == "OutdoorAmbient" and Color3.new(1,1,1) or prop == "Ambient" and Color3.new(1,1,1) or prop == "ClockTime" and 12 or prop == "GeographicLatitude" and 0) end)
-		end
-	end
-	_G.AntiLagOriginals.Lighting = lightSave
-
-	-- Remove atmosphere / blur / color correction / bloom effects
-	for _, effect in ipairs(Lighting:GetChildren()) do
-		if effect:IsA("Atmosphere") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") then
-			effect.Enabled = false
-		end
-	end
-
-	-- 2) Save & lower graphics
-	okGfx, savedGfx = pcall(function()
-		return {
-			SavedQualityLevel = Settings.SavedQualityLevel,
-			MasterVolume = Settings.MasterVolume,
-		}
-	end)
-	if okGfx then
-		_G.AntiLagOriginals.Graphics = savedGfx
-		pcall(function() Settings.SavedQualityLevel = 1 end) -- lowest quality
-	end
-
-	-- 3) Save & strip Workspace parts
-	partSave = {}
-	texSave = {}
-	for _, obj in ipairs(getAllDescendants(Workspace)) do
-		-- Materials
-		if obj:IsA("BasePart") and not obj:IsA("Terrain") then
-			partSave[obj] = obj.Material
-			pcall(function() obj.Material = Enum.Material.SmoothPlastic end)
-			pcall(function() obj.Reflectance = 0 end)
-			-- Optional: make everything same color so no texture cost
-			-- pcall(function() obj.Color = Color3.fromRGB(163,162,165) end)
-		end
-
-		-- Textures / Decals / SurfaceGuis / ParticleEmitters
-		if obj:IsA("Texture") or obj:IsA("Decal") then
-			texSave[obj] = obj.Transparency
-			pcall(function() obj.Transparency = 1 end)
-		elseif obj:IsA("SurfaceGui") or obj:IsA("BillboardGui") then
-			texSave[obj] = obj.Enabled
-			pcall(function() obj.Enabled = false end)
-		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
-			texSave[obj] = obj.Enabled
-			pcall(function() obj.Enabled = false end)
-		elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
-			texSave[obj] = obj.Enabled
-			pcall(function() obj.Enabled = false end)
-		elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-			texSave[obj] = obj.Enabled
-			pcall(function() obj.Enabled = false end)
-		elseif obj:IsA("MeshPart") then
-			-- Some MeshParts have TextureID
-			if obj.TextureID and obj.TextureID ~= "" then
-				texSave[obj] = obj.TextureID
-				pcall(function() obj.TextureID = "" end)
-			end
-		end
-	end
-	_G.AntiLagOriginals.Parts = partSave
-	_G.AntiLagOriginals.Textures = texSave
-
-	-- 4) Terrain
-	pcall(function()
-		_G.AntiLagOriginals.TerrainMaterial = Workspace.Terrain.Material
-		Workspace.Terrain.Material = Enum.Material.Air -- visually clears terrain (restores on unantilag)
-	end)
-	pcall(function()
-		Workspace.Terrain.WaterReflectance = 0
-		Workspace.Terrain.WaterTransparency = 1
-		Workspace.Terrain.WaterWaveSize = 0
-		Workspace.Terrain.WaterWaveSpeed = 0
-	end)
-
-	-- 5) Sky (disable custom sky)
-	for _, sky in ipairs(Lighting:GetChildren()) do
-		if sky:IsA("Sky") then
-			sky.Parent = nil -- hide, don't destroy
-			_G.AntiLagOriginals.Sky = sky
-			break
-		end
-	end
-
-	-- Notify
-	game:GetService("StarterGui"):SetCore("SendNotification", {
-		Title = "AntiLag",
-		Text = "FPS mode enabled. Textures & effects removed.",
-		Duration = 3
-	})
-end
-
-_G.StopAntiLag = function()
-	if not _G.AntiLagActive then return end
-	_G.AntiLagActive = false
-
-	Lighting = game:GetService("Lighting")
-	Workspace = game:GetService("Workspace")
-	Settings = UserSettings():GetService("UserGameSettings")
-
-	-- 1) Restore Lighting
-	for prop, val in pairs(_G.AntiLagOriginals.Lighting) do
-		pcall(function() Lighting[prop] = val end)
-	end
-	-- Re-enable effects
-	for _, effect in ipairs(Lighting:GetChildren()) do
-		if effect:IsA("Atmosphere") or effect:IsA("BlurEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") or effect:IsA("SunRaysEffect") or effect:IsA("DepthOfFieldEffect") then
-			effect.Enabled = true
-		end
-	end
-
-	-- 2) Restore graphics
-	if _G.AntiLagOriginals.Graphics.SavedQualityLevel then
-		pcall(function() Settings.SavedQualityLevel = _G.AntiLagOriginals.Graphics.SavedQualityLevel end)
-	end
-
-	-- 3) Restore parts
-	for part, mat in pairs(_G.AntiLagOriginals.Parts) do
-		if part and part.Parent then
-			pcall(function() part.Material = mat end)
-		end
-	end
-
-	-- 4) Restore textures / decals / guis / particles / lights
-	for obj, original in pairs(_G.AntiLagOriginals.Textures) do
-		if obj and obj.Parent then
-			if obj:IsA("Texture") or obj:IsA("Decal") then
-				pcall(function() obj.Transparency = original end)
-			elseif obj:IsA("SurfaceGui") or obj:IsA("BillboardGui") or obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-				pcall(function() obj.Enabled = original end)
-			elseif obj:IsA("MeshPart") then
-				pcall(function() obj.TextureID = original end)
-			end
-		end
-	end
-
-	-- 5) Restore Terrain
-	pcall(function()
-		if _G.AntiLagOriginals.TerrainMaterial then
-			Workspace.Terrain.Material = _G.AntiLagOriginals.TerrainMaterial
-		end
-	end)
-
-	-- 6) Restore Sky
-	if _G.AntiLagOriginals.Sky then
-		_G.AntiLagOriginals.Sky.Parent = Lighting
-	end
-
-	-- Clear saved state
-	_G.AntiLagOriginals = { Lighting = {}, Parts = {}, Textures = {}, Graphics = {} }
-
-	game:GetService("StarterGui"):SetCore("SendNotification", {
-		Title = "AntiLag",
-		Text = "Settings restored.",
-		Duration = 3
-	})
-end
 -- ═══════════════════════════════════════════════════════════
 -- MAIN OPEN FUNCTION
 -- ═══════════════════════════════════════════════════════════
@@ -3247,7 +3680,7 @@ local function Volume(plr, args)
 	end
 	
 	vol = math.clamp(vol, 0, 10)
-	scale = vol / 10
+	local scale = vol / 10
 	
 	-- Set all currently playing sounds in workspace
 	for _, sound in ipairs(workspace:GetDescendants()) do
@@ -3305,18 +3738,18 @@ local function rejoin(plr, args)
 
 	notify("🔄 Rejoining...", Color3.fromRGB(100, 200, 255))
 
-	placeId = game.PlaceId
+	local placeId = game.PlaceId
 
 	-- Use the SAME bypass method as serverhop: reserved server
 	-- This creates a fresh server slot that bypasses private restrictions
-	ok, err = pcall(function()
-		accessCode = TeleportService:ReserveServer(placeId)
+	local ok, err = pcall(function()
+		local accessCode = TeleportService:ReserveServer(placeId)
 		TeleportService:TeleportToPrivateServer(placeId, accessCode, {plr})
 	end)
 
 	if not ok then
 		-- Fallback: normal teleport (may land in public server)
-		ok2, err2 = pcall(function()
+		local ok2, err2 = pcall(function()
 			TeleportService:Teleport(placeId, plr)
 		end)
 
@@ -3336,12 +3769,12 @@ local function serverhop(plr, args)
 
 	notify("🚀 Finding different public server...", Color3.fromRGB(100, 255, 150))
 
-	placeId = game.PlaceId
-	currentJobId = game.JobId
+	local placeId = game.PlaceId
+	local currentJobId = game.JobId
 
 	-- Try 1: Use TeleportOptions to force public server (ignores friends/reserved)
-	ok, err = pcall(function()
-		teleportOptions = Instance.new("TeleportOptions")
+	local ok, err = pcall(function()
+		local teleportOptions = Instance.new("TeleportOptions")
 		teleportOptions.ShouldReserveServer = false
 		teleportOptions.ServerInstanceId = nil
 		TeleportService:Teleport(placeId, plr, teleportOptions)
@@ -3349,15 +3782,15 @@ local function serverhop(plr, args)
 
 	if not ok then
 		-- Try 2: Fallback using ReserveServer with delay to ensure different instance
-		ok2, err2 = pcall(function()
-			accessCode = TeleportService:ReserveServer(placeId)
+		local ok2, err2 = pcall(function()
+			local accessCode = TeleportService:ReserveServer(placeId)
 			task.wait(0.1)
 			TeleportService:TeleportToPrivateServer(placeId, accessCode, {plr})
 		end)
 
 		if not ok2 then
 			-- Try 3: Force teleport with random seed
-			ok3, err3 = pcall(function()
+			local ok3, err3 = pcall(function()
 				TeleportService:SetTeleportSetting("serverhop_seed", tostring(tick()))
 				TeleportService:Teleport(placeId, plr)
 			end)
@@ -3374,19 +3807,19 @@ end
 
 do
 	
-Players = game:GetService("Players")
-CoreGui = game:GetService("CoreGui")
-RunService = game:GetService("RunService")
-UserInputService = game:GetService("UserInputService")
-MarketplaceService = game:GetService("MarketplaceService")
-HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local HttpService = game:GetService("HttpService")
 
-	player = Players.LocalPlayer
-	isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-	scale = isMobile and 0.65 or 1
+	local player = Players.LocalPlayer
+	local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	local scale = isMobile and 0.65 or 1
 
 	_G.Boombox = _G.Boombox or {gui = {}, sound = nil, playing = false, looping = false, duration = 0, dragging = false, conn = nil, history = {}}
-	BB = _G.Boombox
+	local BB = _G.Boombox
 
 	-- Reuse single element reference for ALL Instance creation
 	local e
@@ -3450,12 +3883,12 @@ HttpService = game:GetService("HttpService")
 		if BB.gui.curTime then BB.gui.curTime.Text = "0:00" end
 		if BB.gui.totTime then BB.gui.totTime.Text = "0:00" end
 
-		name, artist = getInfo(id)
+		local name, artist = getInfo(id)
 		if BB.gui.songName then BB.gui.songName.Text = name end
 		if BB.gui.artistName then BB.gui.artistName.Text = artist end
 		if BB.gui.idBox then BB.gui.idBox.Text = id end
 
-		exists = false
+		local exists = false
 		for _, h in ipairs(BB.history) do
 			if h.id == id then exists = true break end
 		end
@@ -3472,7 +3905,7 @@ HttpService = game:GetService("HttpService")
 				e.AutoButtonColor = false
 				e.Parent = BB.gui.histFrame
 
-				nl = Instance.new("TextLabel")
+				local nl = Instance.new("TextLabel")
 				nl.Size = UDim2.new(1, -60, 1, 0)
 				nl.Position = UDim2.new(0, 10, 0, 0)
 				nl.BackgroundTransparency = 1
@@ -3484,7 +3917,7 @@ HttpService = game:GetService("HttpService")
 				nl.TextTruncate = Enum.TextTruncate.AtEnd
 				nl.Parent = e
 
-				il = Instance.new("TextLabel")
+				local il = Instance.new("TextLabel")
 				il.Size = UDim2.new(0, 50, 1, 0)
 				il.Position = UDim2.new(1, -55, 0, 0)
 				il.BackgroundTransparency = 1
@@ -3502,7 +3935,7 @@ HttpService = game:GetService("HttpService")
 				BB.gui.histFrame.CanvasSize = UDim2.new(0, 0, 0, BB.gui.histList.AbsoluteContentSize.Y)
 			end
 
-			v = player:FindFirstChild("BoomboxHistory")
+			local v = player:FindFirstChild("BoomboxHistory")
 			if not v then
 				v = Instance.new("StringValue")
 				v.Name = "BoomboxHistory"
@@ -3511,7 +3944,7 @@ HttpService = game:GetService("HttpService")
 			v.Value = HttpService:JSONEncode(BB.history)
 		end
 
-		snd = Instance.new("Sound")
+		local snd = Instance.new("Sound")
 		snd.SoundId = "rbxassetid://" .. id
 		snd.Parent = CoreGui
 		snd.Looped = BB.looping
@@ -3520,7 +3953,7 @@ HttpService = game:GetService("HttpService")
 
 		task.spawn(function()
 			if not snd.IsLoaded then
-				ok = pcall(function() snd.Loaded:Wait() end)
+				local ok = pcall(function() snd.Loaded:Wait() end)
 				if not ok then
 					if BB.gui.songName then BB.gui.songName.Text = "Failed to load" end
 					return
@@ -3534,7 +3967,7 @@ HttpService = game:GetService("HttpService")
 
 			BB.conn = RunService.Heartbeat:Connect(function()
 				if not BB.sound or not BB.playing or BB.dragging then return end
-				p = BB.duration > 0 and BB.sound.TimePosition / BB.duration or 0
+				local p = BB.duration > 0 and BB.sound.TimePosition / BB.duration or 0
 				if BB.gui.progFill then BB.gui.progFill.Size = UDim2.new(math.clamp(p, 0, 1), 0, 1, 0) end
 				if BB.gui.curTime then BB.gui.curTime.Text = fmtTime(BB.sound.TimePosition) end
 			end)
@@ -3556,15 +3989,15 @@ HttpService = game:GetService("HttpService")
 			return
 		end
 
-		C_BG = Color3.fromRGB(30, 30, 35)
-		C_DARK = Color3.fromRGB(25, 25, 30)
-		C_ACCENT = Color3.fromRGB(173, 216, 230)
-		C_WHITE = Color3.fromRGB(255, 255, 255)
-		C_GRAY = Color3.fromRGB(180, 180, 180)
-		C_SLIDER = Color3.fromRGB(60, 60, 65)
-		C_GREEN = Color3.fromRGB(100, 255, 100)
-		C_RED = Color3.fromRGB(255, 100, 100)
-		C_DGRAY = Color3.fromRGB(50, 50, 55)
+		local C_BG = Color3.fromRGB(30, 30, 35)
+		local C_DARK = Color3.fromRGB(25, 25, 30)
+		local C_ACCENT = Color3.fromRGB(173, 216, 230)
+		local C_WHITE = Color3.fromRGB(255, 255, 255)
+		local C_GRAY = Color3.fromRGB(180, 180, 180)
+		local C_SLIDER = Color3.fromRGB(60, 60, 65)
+		local C_GREEN = Color3.fromRGB(100, 255, 100)
+		local C_RED = Color3.fromRGB(255, 100, 100)
+		local C_DGRAY = Color3.fromRGB(50, 50, 55)
 
 		BB.gui.screen = Instance.new("ScreenGui")
 		BB.gui.screen.Name = "BoomboxGUI"
@@ -3595,7 +4028,7 @@ HttpService = game:GetService("HttpService")
 		e.Active = true
 		e.Parent = BB.gui.main
 
-		drag, dragStart, startPos = false, nil, nil
+		local drag, dragStart, startPos = false, nil, nil
 		e.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 				drag = true
@@ -3605,7 +4038,7 @@ HttpService = game:GetService("HttpService")
 		end)
 		UserInputService.InputChanged:Connect(function(input)
 			if drag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-				d = input.Position - dragStart
+				local d = input.Position - dragStart
 				BB.gui.main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
 			end
 		end)
@@ -3694,7 +4127,7 @@ HttpService = game:GetService("HttpService")
 		BB.gui.totTime.Parent = BB.gui.main
 
 		-- Progress bar
-		progBg = Instance.new("Frame")
+		local progBg = Instance.new("Frame")
 		progBg.Size = UDim2.new(1, -30 * scale, 0, 4 * scale)
 		progBg.Position = UDim2.new(0, 15 * scale, 0, 132 * scale)
 		progBg.BackgroundColor3 = C_SLIDER
@@ -3734,7 +4167,7 @@ HttpService = game:GetService("HttpService")
 		end)
 
 		-- Controls
-		ctrl = Instance.new("Frame")
+		local ctrl = Instance.new("Frame")
 		ctrl.Size = UDim2.new(1, -30 * scale, 0, 40 * scale)
 		ctrl.Position = UDim2.new(0, 15 * scale, 0, 148 * scale)
 		ctrl.BackgroundTransparency = 1
@@ -3825,7 +4258,7 @@ HttpService = game:GetService("HttpService")
 		end)
 
 		-- Volume
-		volFrame = Instance.new("Frame")
+		local volFrame = Instance.new("Frame")
 		volFrame.Size = UDim2.new(1, -30 * scale, 0, 30 * scale)
 		volFrame.Position = UDim2.new(0, 15 * scale, 0, 195 * scale)
 		volFrame.BackgroundTransparency = 1
@@ -3840,27 +4273,27 @@ HttpService = game:GetService("HttpService")
 		e.Font = Enum.Font.Code
 		e.Parent = volFrame
 
-		volHit = Instance.new("Frame")
+		local volHit = Instance.new("Frame")
 		volHit.Size = UDim2.new(1, -55 * scale, 0, 20 * scale)
 		volHit.Position = UDim2.new(0, 45 * scale, 0.5, -10 * scale)
 		volHit.BackgroundTransparency = 1
 		volHit.Active = true
 		volHit.Parent = volFrame
 
-		volSlider = Instance.new("Frame")
+		local volSlider = Instance.new("Frame")
 		volSlider.Size = UDim2.new(1, 0, 0, 4 * scale)
 		volSlider.Position = UDim2.new(0, 0, 0.5, -2 * scale)
 		volSlider.BackgroundColor3 = C_SLIDER
 		volSlider.BorderSizePixel = 0
 		volSlider.Parent = volHit
 
-		volFill = Instance.new("Frame")
+		local volFill = Instance.new("Frame")
 		volFill.Size = UDim2.new(0.5, 0, 1, 0)
 		volFill.BackgroundColor3 = C_ACCENT
 		volFill.BorderSizePixel = 0
 		volFill.Parent = volSlider
 
-		volDrag = false
+		local volDrag = false
 		local function setVol(input)
 			local rel = math.clamp((input.Position.X - volHit.AbsolutePosition.X) / volHit.AbsoluteSize.X, 0, 1)
 			volFill.Size = UDim2.new(rel, 0, 1, 0)
@@ -3884,7 +4317,7 @@ HttpService = game:GetService("HttpService")
 		end)
 
 		-- Input
-		inFrame = Instance.new("Frame")
+		local inFrame = Instance.new("Frame")
 		inFrame.Size = UDim2.new(1, -30 * scale, 0, 35 * scale)
 		inFrame.Position = UDim2.new(0, 15 * scale, 0, 235 * scale)
 		inFrame.BackgroundColor3 = C_DARK
@@ -3915,12 +4348,12 @@ HttpService = game:GetService("HttpService")
 		e.Font = Enum.Font.Code
 		e.Parent = inFrame
 		e.MouseButton1Click:Connect(function()
-			cleanId = BB.gui.idBox.Text:gsub("%D", "")
+			local cleanId = BB.gui.idBox.Text:gsub("%D", "")
 			if cleanId ~= "" then playSong(cleanId) end
 		end)
 		BB.gui.idBox.FocusLost:Connect(function(entered)
 			if entered then
-				cleanId = BB.gui.idBox.Text:gsub("%D", "")
+				local cleanId = BB.gui.idBox.Text:gsub("%D", "")
 				if cleanId ~= "" then playSong(cleanId) end
 			end
 		end)
@@ -3952,8 +4385,8 @@ HttpService = game:GetService("HttpService")
 		BB.gui.histList.Padding = UDim.new(0, 2 * scale)
 		BB.gui.histList.Parent = BB.gui.histFrame
 
-		ok, saved = pcall(function()
-			v = player:FindFirstChild("BoomboxHistory")
+		local ok, saved = pcall(function()
+			local v = player:FindFirstChild("BoomboxHistory")
 			return v and HttpService:JSONDecode(v.Value) or {}
 		end)
 		if ok then
@@ -3973,11 +4406,11 @@ HttpService = game:GetService("HttpService")
 		for word in msg:sub(2):gmatch("%S+") do
 			table.insert(args, word)
 		end
-		cmd = table.remove(args, 1)
+		local cmd = table.remove(args, 1)
 		if cmd == "boombox" then
 			_G.OpenBoombox()
 			if args[1] then
-				id = tostring(args[1]):gsub("%D", "")
+				local id = tostring(args[1]):gsub("%D", "")
 				if id ~= "" then
 					task.wait(0.1)
 					playSong(id)
@@ -4028,7 +4461,7 @@ function LoadLunarCrosshair()
 	data.enabled = true
 
 	-- ================= GUI =================
-	gui = Instance.new("ScreenGui")
+	local gui = Instance.new("ScreenGui")
 	gui.Name = "LunarCrosshairCMD"
 	gui.IgnoreGuiInset = true
 	gui.ResetOnSpawn = false
@@ -4039,7 +4472,7 @@ function LoadLunarCrosshair()
 	data.gui = gui
 
 	-- Settings
-	settings = {
+	local settings = {
 		VertLength = 60,
 		HorzLength = 60,
 		Width = 1,
@@ -4078,14 +4511,14 @@ function LoadLunarCrosshair()
 	data.settings = settings
 
 	-- ================= CROSSHAIR CONTAINER =================
-	center = Instance.new("Frame")
+	local center = Instance.new("Frame")
 	center.BackgroundTransparency = 1
 	center.Size = UDim2.fromOffset(1,1)
 	center.AnchorPoint = Vector2.new(0.5, 0.5)
 	center.ZIndex = 2147483647
 	center.Parent = gui
 
-	crosshairSymbol = Instance.new("TextLabel")
+	local crosshairSymbol = Instance.new("TextLabel")
 	crosshairSymbol.BackgroundTransparency = 1
 	crosshairSymbol.Size = UDim2.fromScale(1,1)
 	crosshairSymbol.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -4098,7 +4531,7 @@ function LoadLunarCrosshair()
 	crosshairSymbol.Parent = center
 	crosshairSymbol.Visible = false
 
-	crosshairParts = {}
+	local crosshairParts = {}
 
 	local function clearCrosshairParts()
 		for _, part in pairs(crosshairParts) do
@@ -4119,7 +4552,7 @@ function LoadLunarCrosshair()
 		return f
 	end
 
-	text = Instance.new("TextLabel")
+	local text = Instance.new("TextLabel")
 	text.Text = settings.Text
 	text.Font = Enum.Font.Code
 	text.TextSize = 18
@@ -4140,28 +4573,28 @@ function LoadLunarCrosshair()
 	end
 
 	-- ================= PRESETS =================
-	presets = {}
+	local presets = {}
 
 	presets["Classic"] = function()
 		clearCrosshairParts()
-		w, len = settings.Width, settings.VertLength
-		halfLen, gap = len / 2, 3
-		top = makeLine("Top")
+		local w, len = settings.Width, settings.VertLength
+		local halfLen, gap = len / 2, 3
+		local top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		bottom = makeLine("Bottom")
+		local bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		left = makeLine("Left")
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
@@ -4171,7 +4604,7 @@ function LoadLunarCrosshair()
 
 	presets["Dot"] = function()
 		clearCrosshairParts()
-		dot = makeLine("Dot")
+		local dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(settings.Width + 2, settings.Width + 2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4182,27 +4615,27 @@ function LoadLunarCrosshair()
 
 	presets["X"] = function()
 		clearCrosshairParts()
-		size = math.max(settings.VertLength, settings.HorzLength)
-		w, gap = settings.Width, 4
-		tl = makeLine("TL")
+		local size = math.max(settings.VertLength, settings.HorzLength)
+		local w, gap = settings.Width, 4
+		local tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(w, size/2 - gap)
 		tl.AnchorPoint = Vector2.new(0.5, 1)
 		tl.Position = UDim2.new(0.5, -gap, 0.5, -gap)
 		tl.Rotation = 45
 		tl:SetAttribute("OriginalPos", tl.Position)
-		tr = makeLine("TR")
+		local tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(w, size/2 - gap)
 		tr.AnchorPoint = Vector2.new(0.5, 1)
 		tr.Position = UDim2.new(0.5, gap, 0.5, -gap)
 		tr.Rotation = -45
 		tr:SetAttribute("OriginalPos", tr.Position)
-		bl = makeLine("BL")
+		local bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(w, size/2 - gap)
 		bl.AnchorPoint = Vector2.new(0.5, 0)
 		bl.Position = UDim2.new(0.5, -gap, 0.5, gap)
 		bl.Rotation = -45
 		bl:SetAttribute("OriginalPos", bl.Position)
-		br = makeLine("BR")
+		local br = makeLine("BR")
 		br.Size = UDim2.fromOffset(w, size/2 - gap)
 		br.AnchorPoint = Vector2.new(0.5, 0)
 		br.Position = UDim2.new(0.5, gap, 0.5, gap)
@@ -4213,29 +4646,29 @@ function LoadLunarCrosshair()
 
 	presets["Plus Dot"] = function()
 		clearCrosshairParts()
-		w, len = settings.Width, settings.VertLength
-		halfLen, gap = len / 2, 3
-		top = makeLine("Top")
+		local w, len = settings.Width, settings.VertLength
+		local halfLen, gap = len / 2, 3
+		local top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		bottom = makeLine("Bottom")
+		local bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		left = makeLine("Left")
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
 		right:SetAttribute("OriginalPos", right.Position)
-		dot = makeLine("CenterDot")
+		local dot = makeLine("CenterDot")
 		dot.Size = UDim2.fromOffset(w + 2, w + 2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4246,23 +4679,23 @@ function LoadLunarCrosshair()
 
 	presets["Brackets"] = function()
 		clearCrosshairParts()
-		len, w, gap = settings.VertLength, settings.Width, 5
-		tl = makeLine("TL")
+		local len, w, gap = settings.VertLength, settings.Width, 5
+		local tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(len * 0.5, w)
 		tl.AnchorPoint = Vector2.new(1, 0.5)
 		tl.Position = UDim2.new(0.5, -gap, 0.5, -len * 0.4)
 		tl:SetAttribute("OriginalPos", tl.Position)
-		bl = makeLine("BL")
+		local bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(len * 0.5, w)
 		bl.AnchorPoint = Vector2.new(1, 0.5)
 		bl.Position = UDim2.new(0.5, -gap, 0.5, len * 0.4)
 		bl:SetAttribute("OriginalPos", bl.Position)
-		tr = makeLine("TR")
+		local tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(len * 0.5, w)
 		tr.AnchorPoint = Vector2.new(0, 0.5)
 		tr.Position = UDim2.new(0.5, gap, 0.5, -len * 0.4)
 		tr:SetAttribute("OriginalPos", tr.Position)
-		br = makeLine("BR")
+		local br = makeLine("BR")
 		br.Size = UDim2.fromOffset(len * 0.5, w)
 		br.AnchorPoint = Vector2.new(0, 0.5)
 		br.Position = UDim2.new(0.5, gap, 0.5, len * 0.4)
@@ -4272,18 +4705,18 @@ function LoadLunarCrosshair()
 
 	presets["Circle"] = function()
 		clearCrosshairParts()
-		ringSize, w = settings.VertLength + 6, settings.Width
-		ring = makeLine("Ring")
+		local ringSize, w = settings.VertLength + 6, settings.Width
+		local ring = makeLine("Ring")
 		ring.Size = UDim2.fromOffset(ringSize, ringSize)
 		ring.AnchorPoint = Vector2.new(0.5, 0.5)
 		ring.Position = UDim2.fromScale(0.5, 0.5)
 		ring.BackgroundTransparency = 1
 		ring:SetAttribute("OriginalPos", ring.Position)
-		stroke = Instance.new("UIStroke", ring)
+		local stroke = Instance.new("UIStroke", ring)
 		stroke.Color = Color3.new(1,1,1)
 		stroke.Thickness = w
 		Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
-		dot = makeLine("CenterDot")
+		local dot = makeLine("CenterDot")
 		dot.Size = UDim2.fromOffset(w, w)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4294,14 +4727,14 @@ function LoadLunarCrosshair()
 
 	presets["Chevron"] = function()
 		clearCrosshairParts()
-		len, w, gap = settings.VertLength, settings.Width, 4
-		left = makeLine("Left")
+		local len, w, gap = settings.VertLength, settings.Width, 4
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(w, len * 0.5)
 		left.AnchorPoint = Vector2.new(0.5, 1)
 		left.Position = UDim2.new(0.5, -len * 0.25 - gap, 0.5, -gap)
 		left.Rotation = -25
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(w, len * 0.5)
 		right.AnchorPoint = Vector2.new(0.5, 1)
 		right.Position = UDim2.new(0.5, len * 0.25 + gap, 0.5, -gap)
@@ -4312,26 +4745,26 @@ function LoadLunarCrosshair()
 
 	presets["Wings"] = function()
 		clearCrosshairParts()
-		len, w, gap = settings.VertLength, settings.Width, 3
-		l1 = makeLine("L1")
+		local len, w, gap = settings.VertLength, settings.Width, 3
+		local l1 = makeLine("L1")
 		l1.Size = UDim2.fromOffset(w, len * 0.4)
 		l1.AnchorPoint = Vector2.new(0.5, 1)
 		l1.Position = UDim2.new(0.5, -len * 0.35 - gap, 0.5, -gap)
 		l1.Rotation = 15
 		l1:SetAttribute("OriginalPos", l1.Position)
-		l2 = makeLine("L2")
+		local l2 = makeLine("L2")
 		l2.Size = UDim2.fromOffset(w, len * 0.4)
 		l2.AnchorPoint = Vector2.new(0.5, 0)
 		l2.Position = UDim2.new(0.5, -len * 0.35 - gap, 0.5, gap)
 		l2.Rotation = -15
 		l2:SetAttribute("OriginalPos", l2.Position)
-		r1 = makeLine("R1")
+		local r1 = makeLine("R1")
 		r1.Size = UDim2.fromOffset(w, len * 0.4)
 		r1.AnchorPoint = Vector2.new(0.5, 1)
 		r1.Position = UDim2.new(0.5, len * 0.35 + gap, 0.5, -gap)
 		r1.Rotation = -15
 		r1:SetAttribute("OriginalPos", r1.Position)
-		r2 = makeLine("R2")
+		local r2 = makeLine("R2")
 		r2.Size = UDim2.fromOffset(w, len * 0.4)
 		r2.AnchorPoint = Vector2.new(0.5, 0)
 		r2.Position = UDim2.new(0.5, len * 0.35 + gap, 0.5, gap)
@@ -4342,13 +4775,13 @@ function LoadLunarCrosshair()
 
 	presets["T-Shape"] = function()
 		clearCrosshairParts()
-		len, w, gap = settings.VertLength, settings.Width, 3
-		top = makeLine("Top")
+		local len, w, gap = settings.VertLength, settings.Width, 3
+		local top = makeLine("Top")
 		top.Size = UDim2.fromOffset(len * 1.2, w)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		drop = makeLine("Drop")
+		local drop = makeLine("Drop")
 		drop.Size = UDim2.fromOffset(w, len * 0.6)
 		drop.AnchorPoint = Vector2.new(0.5, 0)
 		drop.Position = UDim2.new(0.5, 0, 0.5, gap)
@@ -4358,23 +4791,23 @@ function LoadLunarCrosshair()
 
 	presets["Diamond"] = function()
 		clearCrosshairParts()
-		len, w, gap = settings.VertLength, settings.Width, 4
-		t = makeLine("Top")
+		local len, w, gap = settings.VertLength, settings.Width, 4
+		local t = makeLine("Top")
 		t.Size = UDim2.fromOffset(w, len * 0.35)
 		t.AnchorPoint = Vector2.new(0.5, 1)
 		t.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		t:SetAttribute("OriginalPos", t.Position)
-		b = makeLine("Bottom")
+		local b = makeLine("Bottom")
 		b.Size = UDim2.fromOffset(w, len * 0.35)
 		b.AnchorPoint = Vector2.new(0.5, 0)
 		b.Position = UDim2.new(0.5, 0, 0.5, gap)
 		b:SetAttribute("OriginalPos", b.Position)
-		l = makeLine("Left")
+		local l = makeLine("Left")
 		l.Size = UDim2.fromOffset(len * 0.35, w)
 		l.AnchorPoint = Vector2.new(1, 0.5)
 		l.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		l:SetAttribute("OriginalPos", l.Position)
-		r = makeLine("Right")
+		local r = makeLine("Right")
 		r.Size = UDim2.fromOffset(len * 0.35, w)
 		r.AnchorPoint = Vector2.new(0, 0.5)
 		r.Position = UDim2.new(0.5, gap, 0.5, 0)
@@ -4384,29 +4817,29 @@ function LoadLunarCrosshair()
 
 	presets["Crosshair 2.0"] = function()
 		clearCrosshairParts()
-		w, len = settings.Width, settings.VertLength
-		halfLen, gap = len / 2, 2
-		top = makeLine("Top")
+		local w, len = settings.Width, settings.VertLength
+		local halfLen, gap = len / 2, 2
+		local top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		bottom = makeLine("Bottom")
+		local bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		left = makeLine("Left")
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
 		right:SetAttribute("OriginalPos", right.Position)
-		dot = makeLine("Dot")
+		local dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w, w)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4417,33 +4850,33 @@ function LoadLunarCrosshair()
 
 	presets["Reticle"] = function()
 		clearCrosshairParts()
-		ringSize, w, gap = settings.VertLength + 8, settings.Width, 3
-		ring = makeLine("Ring")
+		local ringSize, w, gap = settings.VertLength + 8, settings.Width, 3
+		local ring = makeLine("Ring")
 		ring.Size = UDim2.fromOffset(ringSize, ringSize)
 		ring.AnchorPoint = Vector2.new(0.5, 0.5)
 		ring.Position = UDim2.fromScale(0.5, 0.5)
 		ring.BackgroundTransparency = 1
 		ring:SetAttribute("OriginalPos", ring.Position)
-		stroke = Instance.new("UIStroke", ring)
+		local stroke = Instance.new("UIStroke", ring)
 		stroke.Color = Color3.new(1,1,1)
 		stroke.Thickness = w
 		Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
-		top = makeLine("Top")
+		local top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, ringSize * 0.15)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		bottom = makeLine("Bottom")
+		local bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, ringSize * 0.15)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		left = makeLine("Left")
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(ringSize * 0.15, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(ringSize * 0.15, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
@@ -4453,19 +4886,19 @@ function LoadLunarCrosshair()
 
 	presets["Arrow"] = function()
 		clearCrosshairParts()
-		len, w, gap = settings.VertLength, settings.Width, 3
-		shaft = makeLine("Shaft")
+		local len, w, gap = settings.VertLength, settings.Width, 3
+		local shaft = makeLine("Shaft")
 		shaft.Size = UDim2.fromOffset(w, len * 0.6)
 		shaft.AnchorPoint = Vector2.new(0.5, 1)
 		shaft.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		shaft:SetAttribute("OriginalPos", shaft.Position)
-		left = makeLine("Left")
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(w, len * 0.35)
 		left.AnchorPoint = Vector2.new(0.5, 1)
 		left.Position = UDim2.new(0.5, -len * 0.12, 0.5, -gap)
 		left.Rotation = -35
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(w, len * 0.35)
 		right.AnchorPoint = Vector2.new(0.5, 1)
 		right.Position = UDim2.new(0.5, len * 0.12, 0.5, -gap)
@@ -4476,28 +4909,28 @@ function LoadLunarCrosshair()
 
 	presets["Target"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
-		outer = makeLine("Outer")
+		local len, w = settings.VertLength, settings.Width
+		local outer = makeLine("Outer")
 		outer.Size = UDim2.fromOffset(len + 8, len + 8)
 		outer.AnchorPoint = Vector2.new(0.5, 0.5)
 		outer.Position = UDim2.fromScale(0.5, 0.5)
 		outer.BackgroundTransparency = 1
 		outer:SetAttribute("OriginalPos", outer.Position)
-		s1 = Instance.new("UIStroke", outer)
+		local s1 = Instance.new("UIStroke", outer)
 		s1.Color = Color3.new(1,1,1)
 		s1.Thickness = w
 		Instance.new("UICorner", outer).CornerRadius = UDim.new(1, 0)
-		inner = makeLine("Inner")
+		local inner = makeLine("Inner")
 		inner.Size = UDim2.fromOffset(len * 0.5, len * 0.5)
 		inner.AnchorPoint = Vector2.new(0.5, 0.5)
 		inner.Position = UDim2.fromScale(0.5, 0.5)
 		inner.BackgroundTransparency = 1
 		inner:SetAttribute("OriginalPos", inner.Position)
-		s2 = Instance.new("UIStroke", inner)
+		local s2 = Instance.new("UIStroke", inner)
 		s2.Color = Color3.new(1,1,1)
 		s2.Thickness = w
 		Instance.new("UICorner", inner).CornerRadius = UDim.new(1, 0)
-		dot = makeLine("Dot")
+		local dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w, w)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4508,10 +4941,10 @@ function LoadLunarCrosshair()
 
 	presets["Star"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
-		gap = 2
+		local len, w = settings.VertLength, settings.Width
+		local gap = 2
 		for i = 0, 4 do
-			arm = makeLine("Arm" .. i)
+			local arm = makeLine("Arm" .. i)
 			arm.Size = UDim2.fromOffset(w, len * 0.5)
 			arm.AnchorPoint = Vector2.new(0.5, 1)
 			arm.Position = UDim2.fromScale(0.5, 0.5)
@@ -4523,12 +4956,12 @@ function LoadLunarCrosshair()
 
 	presets["Hexagon"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
+		local len, w = settings.VertLength, settings.Width
 		for i = 0, 5 do
-			side = makeLine("Side" .. i)
+			local side = makeLine("Side" .. i)
 			side.Size = UDim2.fromOffset(len * 0.4, w)
 			side.AnchorPoint = Vector2.new(0.5, 0.5)
-			angle = math.rad(i * 60)
+			local angle = math.rad(i * 60)
 			side.Position = UDim2.new(0.5, math.cos(angle) * len * 0.3, 0.5, math.sin(angle) * len * 0.3)
 			side.Rotation = i * 60
 			side:SetAttribute("OriginalPos", side.Position)
@@ -4538,44 +4971,44 @@ function LoadLunarCrosshair()
 
 	presets["Crosshair 3.0"] = function()
 		clearCrosshairParts()
-		w, len = settings.Width, settings.VertLength
-		halfLen, gap = len / 2, 4
-		top = makeLine("Top")
+		local w, len = settings.Width, settings.VertLength
+		local halfLen, gap = len / 2, 4
+		local top = makeLine("Top")
 		top.Size = UDim2.fromOffset(w, halfLen - gap)
 		top.AnchorPoint = Vector2.new(0.5, 1)
 		top.Position = UDim2.new(0.5, 0, 0.5, -gap)
 		top:SetAttribute("OriginalPos", top.Position)
-		bottom = makeLine("Bottom")
+		local bottom = makeLine("Bottom")
 		bottom.Size = UDim2.fromOffset(w, halfLen - gap)
 		bottom.AnchorPoint = Vector2.new(0.5, 0)
 		bottom.Position = UDim2.new(0.5, 0, 0.5, gap)
 		bottom:SetAttribute("OriginalPos", bottom.Position)
-		left = makeLine("Left")
+		local left = makeLine("Left")
 		left.Size = UDim2.fromOffset(halfLen - gap, w)
 		left.AnchorPoint = Vector2.new(1, 0.5)
 		left.Position = UDim2.new(0.5, -gap, 0.5, 0)
 		left:SetAttribute("OriginalPos", left.Position)
-		right = makeLine("Right")
+		local right = makeLine("Right")
 		right.Size = UDim2.fromOffset(halfLen - gap, w)
 		right.AnchorPoint = Vector2.new(0, 0.5)
 		right.Position = UDim2.new(0.5, gap, 0.5, 0)
 		right:SetAttribute("OriginalPos", right.Position)
-		tl = makeLine("TL")
+		local tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(len * 0.2, w)
 		tl.AnchorPoint = Vector2.new(1, 0.5)
 		tl.Position = UDim2.new(0.5, -gap, 0.5, -len * 0.3)
 		tl:SetAttribute("OriginalPos", tl.Position)
-		tr = makeLine("TR")
+		local tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(len * 0.2, w)
 		tr.AnchorPoint = Vector2.new(0, 0.5)
 		tr.Position = UDim2.new(0.5, gap, 0.5, -len * 0.3)
 		tr:SetAttribute("OriginalPos", tr.Position)
-		bl = makeLine("BL")
+		local bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(len * 0.2, w)
 		bl.AnchorPoint = Vector2.new(1, 0.5)
 		bl.Position = UDim2.new(0.5, -gap, 0.5, len * 0.3)
 		bl:SetAttribute("OriginalPos", bl.Position)
-		br = makeLine("BR")
+		local br = makeLine("BR")
 		br.Size = UDim2.fromOffset(len * 0.2, w)
 		br.AnchorPoint = Vector2.new(0, 0.5)
 		br.Position = UDim2.new(0.5, gap, 0.5, len * 0.3)
@@ -4585,39 +5018,39 @@ function LoadLunarCrosshair()
 
 	presets["Scope"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
-		h = makeLine("H")
+		local len, w = settings.VertLength, settings.Width
+		local h = makeLine("H")
 		h.Size = UDim2.fromOffset(len * 2, w)
 		h.AnchorPoint = Vector2.new(0.5, 0.5)
 		h.Position = UDim2.fromScale(0.5, 0.5)
 		h:SetAttribute("OriginalPos", h.Position)
-		v = makeLine("V")
+		local v = makeLine("V")
 		v.Size = UDim2.fromOffset(w, len * 2)
 		v.AnchorPoint = Vector2.new(0.5, 0.5)
 		v.Position = UDim2.fromScale(0.5, 0.5)
 		v:SetAttribute("OriginalPos", v.Position)
-		dot = makeLine("Dot")
+		local dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w + 2, w + 2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
 		dot:SetAttribute("OriginalPos", dot.Position)
 		Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-		tl = makeLine("TL")
+		local tl = makeLine("TL")
 		tl.Size = UDim2.fromOffset(len * 0.3, w)
 		tl.AnchorPoint = Vector2.new(1, 0.5)
 		tl.Position = UDim2.new(0.5, -len * 0.6, 0.5, -len * 0.6)
 		tl:SetAttribute("OriginalPos", tl.Position)
-		tr = makeLine("TR")
+		local tr = makeLine("TR")
 		tr.Size = UDim2.fromOffset(len * 0.3, w)
 		tr.AnchorPoint = Vector2.new(0, 0.5)
 		tr.Position = UDim2.new(0.5, len * 0.6, 0.5, -len * 0.6)
 		tr:SetAttribute("OriginalPos", tr.Position)
-		bl = makeLine("BL")
+		local bl = makeLine("BL")
 		bl.Size = UDim2.fromOffset(len * 0.3, w)
 		bl.AnchorPoint = Vector2.new(1, 0.5)
 		bl.Position = UDim2.new(0.5, -len * 0.6, 0.5, len * 0.6)
 		bl:SetAttribute("OriginalPos", bl.Position)
-		br = makeLine("BR")
+		local br = makeLine("BR")
 		br.Size = UDim2.fromOffset(len * 0.3, w)
 		br.AnchorPoint = Vector2.new(0, 0.5)
 		br.Position = UDim2.new(0.5, len * 0.6, 0.5, len * 0.6)
@@ -4627,15 +5060,15 @@ function LoadLunarCrosshair()
 
 	presets["Pixel"] = function()
 		clearCrosshairParts()
-		w = settings.Width
-		size = w + 1
-		positions = {
+		local w = settings.Width
+		local size = w + 1
+		local positions = {
 			{-1,-1}, {0,-1}, {1,-1},
 			{-1,0},         {1,0},
 			{-1,1}, {0,1}, {1,1}
 		}
 		for i, pos in ipairs(positions) do
-			p = makeLine("P" .. i)
+			local p = makeLine("P" .. i)
 			p.Size = UDim2.fromOffset(size, size)
 			p.AnchorPoint = Vector2.new(0.5, 0.5)
 			p.Position = UDim2.new(0.5, pos[1] * size * 2, 0.5, pos[2] * size * 2)
@@ -4646,29 +5079,29 @@ function LoadLunarCrosshair()
 
 	presets["Box"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
-		gap = 4
-		t = makeLine("T")
+		local len, w = settings.VertLength, settings.Width
+		local gap = 4
+		local t = makeLine("T")
 		t.Size = UDim2.fromOffset(len, w)
 		t.AnchorPoint = Vector2.new(0.5, 1)
 		t.Position = UDim2.new(0.5, 0, 0.5, -len/2 - gap)
 		t:SetAttribute("OriginalPos", t.Position)
-		b = makeLine("B")
+		local b = makeLine("B")
 		b.Size = UDim2.fromOffset(len, w)
 		b.AnchorPoint = Vector2.new(0.5, 0)
 		b.Position = UDim2.new(0.5, 0, 0.5, len/2 + gap)
 		b:SetAttribute("OriginalPos", b.Position)
-		l = makeLine("L")
+		local l = makeLine("L")
 		l.Size = UDim2.fromOffset(w, len)
 		l.AnchorPoint = Vector2.new(1, 0.5)
 		l.Position = UDim2.new(0.5, -len/2 - gap, 0.5, 0)
 		l:SetAttribute("OriginalPos", l.Position)
-		r = makeLine("R")
+		local r = makeLine("R")
 		r.Size = UDim2.fromOffset(w, len)
 		r.AnchorPoint = Vector2.new(0, 0.5)
 		r.Position = UDim2.new(0.5, len/2 + gap, 0.5, 0)
 		r:SetAttribute("OriginalPos", r.Position)
-		dot = makeLine("Dot")
+		local dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w+1, w+1)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4679,26 +5112,26 @@ function LoadLunarCrosshair()
 
 	presets["Galaxy"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
+		local len, w = settings.VertLength, settings.Width
 		for i = 0, 3 do
-			arm = makeLine("Arm" .. i)
+			local arm = makeLine("Arm" .. i)
 			arm.Size = UDim2.fromOffset(w, len * 0.6)
 			arm.AnchorPoint = Vector2.new(0.5, 1)
 			arm.Position = UDim2.fromScale(0.5, 0.5)
 			arm.Rotation = i * 90 + 45
 			arm:SetAttribute("OriginalPos", arm.Position)
 		end
-		ring = makeLine("Ring")
+		local ring = makeLine("Ring")
 		ring.Size = UDim2.fromOffset(len * 0.4, len * 0.4)
 		ring.AnchorPoint = Vector2.new(0.5, 0.5)
 		ring.Position = UDim2.fromScale(0.5, 0.5)
 		ring.BackgroundTransparency = 1
 		ring:SetAttribute("OriginalPos", ring.Position)
-		stroke = Instance.new("UIStroke", ring)
+		local stroke = Instance.new("UIStroke", ring)
 		stroke.Color = Color3.new(1,1,1)
 		stroke.Thickness = w
 		Instance.new("UICorner", ring).CornerRadius = UDim.new(1, 0)
-		dot = makeLine("Dot")
+		local dot = makeLine("Dot")
 		dot.Size = UDim2.fromOffset(w+2, w+2)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4709,22 +5142,22 @@ function LoadLunarCrosshair()
 
 	presets["Ninja"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
+		local len, w = settings.VertLength, settings.Width
 		for i = 0, 3 do
-			blade = makeLine("Blade" .. i)
+			local blade = makeLine("Blade" .. i)
 			blade.Size = UDim2.fromOffset(w, len * 0.5)
 			blade.AnchorPoint = Vector2.new(0.5, 1)
 			blade.Position = UDim2.fromScale(0.5, 0.5)
 			blade.Rotation = i * 90
 			blade:SetAttribute("OriginalPos", blade.Position)
-			tip = makeLine("Tip" .. i)
+			local tip = makeLine("Tip" .. i)
 			tip.Size = UDim2.fromOffset(w, len * 0.2)
 			tip.AnchorPoint = Vector2.new(0.5, 0)
 			tip.Position = UDim2.new(0.5, 0, 0.5, -len * 0.1)
 			tip.Rotation = i * 90 + 30
 			tip:SetAttribute("OriginalPos", tip.Position)
 		end
-		centerDot = makeLine("Center")
+		local centerDot = makeLine("Center")
 		centerDot.Size = UDim2.fromOffset(w+2, w+2)
 		centerDot.AnchorPoint = Vector2.new(0.5, 0.5)
 		centerDot.Position = UDim2.fromScale(0.5, 0.5)
@@ -4735,28 +5168,28 @@ function LoadLunarCrosshair()
 
 	presets["Laser"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
-		h1 = makeLine("H1")
+		local len, w = settings.VertLength, settings.Width
+		local h1 = makeLine("H1")
 		h1.Size = UDim2.fromOffset(len, w)
 		h1.AnchorPoint = Vector2.new(0.5, 0.5)
 		h1.Position = UDim2.new(0.5, 0, 0.5, -len * 0.15)
 		h1:SetAttribute("OriginalPos", h1.Position)
-		h2 = makeLine("H2")
+		local h2 = makeLine("H2")
 		h2.Size = UDim2.fromOffset(len, w)
 		h2.AnchorPoint = Vector2.new(0.5, 0.5)
 		h2.Position = UDim2.new(0.5, 0, 0.5, len * 0.15)
 		h2:SetAttribute("OriginalPos", h2.Position)
-		v1 = makeLine("V1")
+		local v1 = makeLine("V1")
 		v1.Size = UDim2.fromOffset(w, len)
 		v1.AnchorPoint = Vector2.new(0.5, 0.5)
 		v1.Position = UDim2.new(0.5, -len * 0.15, 0.5, 0)
 		v1:SetAttribute("OriginalPos", v1.Position)
-		v2 = makeLine("V2")
+		local v2 = makeLine("V2")
 		v2.Size = UDim2.fromOffset(w, len)
 		v2.AnchorPoint = Vector2.new(0.5, 0.5)
 		v2.Position = UDim2.new(0.5, len * 0.15, 0.5, 0)
 		v2:SetAttribute("OriginalPos", v2.Position)
-		glow = makeLine("Glow")
+		local glow = makeLine("Glow")
 		glow.Size = UDim2.fromOffset(len * 0.3, len * 0.3)
 		glow.AnchorPoint = Vector2.new(0.5, 0.5)
 		glow.Position = UDim2.fromScale(0.5, 0.5)
@@ -4768,27 +5201,27 @@ function LoadLunarCrosshair()
 
 	presets["Cyber"] = function()
 		clearCrosshairParts()
-		len, w = settings.VertLength, settings.Width
+		local len, w = settings.VertLength, settings.Width
 		for i = 0, 5 do
-			side = makeLine("Side" .. i)
+			local side = makeLine("Side" .. i)
 			side.Size = UDim2.fromOffset(len * 0.25, w)
 			side.AnchorPoint = Vector2.new(0.5, 0.5)
-			angle = math.rad(i * 60)
+			local angle = math.rad(i * 60)
 			side.Position = UDim2.new(0.5, math.cos(angle) * len * 0.4, 0.5, math.sin(angle) * len * 0.4)
 			side.Rotation = i * 60
 			side:SetAttribute("OriginalPos", side.Position)
 		end
-		h = makeLine("H")
+		local h = makeLine("H")
 		h.Size = UDim2.fromOffset(len * 0.4, w)
 		h.AnchorPoint = Vector2.new(0.5, 0.5)
 		h.Position = UDim2.fromScale(0.5, 0.5)
 		h:SetAttribute("OriginalPos", h.Position)
-		v = makeLine("V")
+		local v = makeLine("V")
 		v.Size = UDim2.fromOffset(w, len * 0.4)
 		v.AnchorPoint = Vector2.new(0.5, 0.5)
 		v.Position = UDim2.fromScale(0.5, 0.5)
 		v:SetAttribute("OriginalPos", v.Position)
-		core = makeLine("Core")
+		local core = makeLine("Core")
 		core.Size = UDim2.fromOffset(w+2, w+2)
 		core.AnchorPoint = Vector2.new(0.5, 0.5)
 		core.Position = UDim2.fromScale(0.5, 0.5)
@@ -4797,10 +5230,10 @@ function LoadLunarCrosshair()
 		return crosshairParts
 	end
 
-	currentPresetParts = presets["Classic"]()
+	local currentPresetParts = presets["Classic"]()
 
 	-- ================= SETTINGS PANEL =================
-	panel = Instance.new("Frame")
+	local panel = Instance.new("Frame")
 	panel.Name = "SettingsPanel"
 	panel.Size = UDim2.fromOffset(280, 0)
 	panel.Position = UDim2.fromOffset(30, 100)
@@ -4812,14 +5245,14 @@ function LoadLunarCrosshair()
 	panel.Parent = gui
 	panel.ClipsDescendants = true
 
-	mainCorner = Instance.new("UICorner", panel)
+	local mainCorner = Instance.new("UICorner", panel)
 	mainCorner.CornerRadius = UDim.new(0, 16)
 
-	glowStroke = Instance.new("UIStroke", panel)
+	local glowStroke = Instance.new("UIStroke", panel)
 	glowStroke.Color = Color3.fromRGB(100, 80, 255)
 	glowStroke.Thickness = 1.5
 
-	shadow = Instance.new("Frame")
+	local shadow = Instance.new("Frame")
 	shadow.Name = "Shadow"
 	shadow.Size = UDim2.new(1, 12, 1, 12)
 	shadow.Position = UDim2.new(0, -6, 0, -6)
@@ -4828,10 +5261,10 @@ function LoadLunarCrosshair()
 	shadow.BorderSizePixel = 0
 	shadow.ZIndex = 2147483645
 	shadow.Parent = panel
-	shadowCorner = Instance.new("UICorner", shadow)
+	local shadowCorner = Instance.new("UICorner", shadow)
 	shadowCorner.CornerRadius = UDim.new(0, 20)
 
-	header = Instance.new("Frame")
+	local header = Instance.new("Frame")
 	header.Name = "Header"
 	header.Size = UDim2.new(1, 0, 0, 48)
 	header.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
@@ -4840,10 +5273,10 @@ function LoadLunarCrosshair()
 	header.ZIndex = 2147483646
 	header.Parent = panel
 
-	headerCorner = Instance.new("UICorner", header)
+	local headerCorner = Instance.new("UICorner", header)
 	headerCorner.CornerRadius = UDim.new(0, 16)
 
-	headerLine = Instance.new("Frame")
+	local headerLine = Instance.new("Frame")
 	headerLine.Name = "AccentLine"
 	headerLine.Size = UDim2.new(1, 0, 0, 2)
 	headerLine.Position = UDim2.new(0, 0, 1, -1)
@@ -4853,7 +5286,7 @@ function LoadLunarCrosshair()
 	headerLine.ZIndex = 2147483646
 	headerLine.Parent = header
 
-	moonIcon = Instance.new("TextLabel")
+	local moonIcon = Instance.new("TextLabel")
 	moonIcon.Name = "MoonIcon"
 	moonIcon.Text = ""
 	moonIcon.Size = UDim2.fromOffset(32, 32)
@@ -4864,7 +5297,7 @@ function LoadLunarCrosshair()
 	moonIcon.ZIndex = 2147483646
 	moonIcon.Parent = header
 
-	title = Instance.new("TextLabel")
+	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Text = "Lunar Crosshair"
 	title.Size = UDim2.new(1, -60, 0, 24)
@@ -4877,7 +5310,7 @@ function LoadLunarCrosshair()
 	title.ZIndex = 2147483646
 	title.Parent = header
 
-	subtitle = Instance.new("TextLabel")
+	local subtitle = Instance.new("TextLabel")
 	subtitle.Name = "Subtitle"
 	subtitle.Text = "Right Shift to toggle"
 	subtitle.Size = UDim2.new(1, -60, 0, 16)
@@ -4890,7 +5323,7 @@ function LoadLunarCrosshair()
 	subtitle.ZIndex = 2147483646
 	subtitle.Parent = header
 
-	toggleBtn = Instance.new("TextButton")
+	local toggleBtn = Instance.new("TextButton")
 	toggleBtn.Name = "ToggleBtn"
 	toggleBtn.Text = "−"
 	toggleBtn.Size = UDim2.fromOffset(28, 28)
@@ -4902,10 +5335,10 @@ function LoadLunarCrosshair()
 	toggleBtn.BorderSizePixel = 0
 	toggleBtn.ZIndex = 2147483646
 	toggleBtn.Parent = header
-	toggleBtnCorner = Instance.new("UICorner", toggleBtn)
+	local toggleBtnCorner = Instance.new("UICorner", toggleBtn)
 	toggleBtnCorner.CornerRadius = UDim.new(0, 8)
 
-	content = Instance.new("ScrollingFrame")
+	local content = Instance.new("ScrollingFrame")
 	content.Name = "Content"
 	content.Size = UDim2.new(1, -20, 1, -58)
 	content.Position = UDim2.fromOffset(10, 54)
@@ -4917,11 +5350,11 @@ function LoadLunarCrosshair()
 	content.ZIndex = 2147483646
 	content.Parent = panel
 
-	contentLayout = Instance.new("UIListLayout", content)
+	local contentLayout = Instance.new("UIListLayout", content)
 	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	contentLayout.Padding = UDim.new(0, 10)
 
-	topPad = Instance.new("UIPadding", content)
+	local topPad = Instance.new("UIPadding", content)
 	topPad.PaddingTop = UDim.new(0, 4)
 	topPad.PaddingBottom = UDim.new(0, 8)
 
@@ -4936,7 +5369,7 @@ function LoadLunarCrosshair()
 	end)
 	UserInputService.InputChanged:Connect(function(input)
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			delta = input.Position - dragStart
+			local delta = input.Position - dragStart
 			panel.Position = UDim2.new(
 				startPos.X.Scale, startPos.X.Offset + delta.X,
 				startPos.Y.Scale, startPos.Y.Offset + delta.Y
@@ -5064,7 +5497,7 @@ function LoadLunarCrosshair()
 			end)
 
 			box.FocusLost:Connect(function()
-				num = tonumber(box.Text)
+				local num = tonumber(box.Text)
 				if num then
 					settings[key] = math.clamp(num, minVal, maxVal)
 					box.Text = tostring(settings[key])
@@ -5173,8 +5606,8 @@ function LoadLunarCrosshair()
 	end
 
 	-- Color picker
-	colorPickerOpen = false
-	colorPreview = nil
+	local colorPickerOpen = false
+	local colorPreview = nil
 
 	local function createColorPicker(parent)
 		local container = Instance.new("Frame")
@@ -5413,7 +5846,7 @@ function LoadLunarCrosshair()
 			end)
 
 			valueBox.FocusLost:Connect(function()
-				num = tonumber(valueBox.Text)
+				local num = tonumber(valueBox.Text)
 				if num then
 					num = math.clamp(math.round(num), 0, 255)
 					settings[colorKey] = num
@@ -5435,7 +5868,7 @@ function LoadLunarCrosshair()
 		makeSlider("B", "ColorB", 72, Color3.fromRGB(80, 140, 255))
 
 		-- Done button
-		closePicker = Instance.new("TextButton")
+		local closePicker = Instance.new("TextButton")
 		closePicker.Text = "✓ Done"
 		closePicker.Size = UDim2.new(1, -20, 0, 26)
 		closePicker.Position = UDim2.fromOffset(10, 108)
@@ -5460,7 +5893,7 @@ function LoadLunarCrosshair()
 			if colorPickerOpen then
 				colorRow.Size = UDim2.new(1, 0, 0, 196)
 				for key, refs in pairs(sliderRefs) do
-					val = settings[key]
+					local val = settings[key]
 					refs.fill.Size = UDim2.new(val / 255, 0, 1, 0)
 					refs.knob.Position = UDim2.new(val / 255, -7, 0.5, -7)
 					refs.valueBox.Text = tostring(val)
@@ -5483,8 +5916,8 @@ function LoadLunarCrosshair()
 	end
 
 	-- ================= PRESET SELECTOR =================
-	presetNames = {"Classic", "Dot", "X", "Plus Dot", "Brackets", "Circle", "Chevron", "Wings", "T-Shape", "Diamond", "Crosshair 2.0", "Reticle", "Arrow", "Target", "Star", "Hexagon", "Crosshair 3.0", "Scope", "Pixel", "Box", "Galaxy", "Ninja", "Laser", "Cyber"}
-	selectedPresetBtn = nil
+	local presetNames = {"Classic", "Dot", "X", "Plus Dot", "Brackets", "Circle", "Chevron", "Wings", "T-Shape", "Diamond", "Crosshair 2.0", "Reticle", "Arrow", "Target", "Star", "Hexagon", "Crosshair 3.0", "Scope", "Pixel", "Box", "Galaxy", "Ninja", "Laser", "Cyber"}
+	local selectedPresetBtn = nil
 
 	local function createPresetSelector(parent)
 		local container = Instance.new("Frame")
@@ -5717,7 +6150,7 @@ function LoadLunarCrosshair()
 				return
 			end
 
-			originalText = btn.Text
+			local originalText = btn.Text
 			btn.Text = "✓  Copied!"
 			TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 180, 80)}):Play()
 
@@ -5767,7 +6200,7 @@ function LoadLunarCrosshair()
 
 		-- Trail Streaks
 		if settings.VFXTrail and math.random() < 0.5 * intensity / 5 then
-			trail = Instance.new("Frame")
+			local trail = Instance.new("Frame")
 			trail.Size = UDim2.fromOffset(vfxSize * 3, vfxSize)
 			trail.BackgroundColor3 = color
 			trail.BackgroundTransparency = 0.3
@@ -5778,7 +6211,7 @@ function LoadLunarCrosshair()
 			trail.Parent = center
 			Instance.new("UICorner", trail).CornerRadius = UDim.new(1, 0)
 
-			angle = math.random() * math.pi * 2
+			local angle = math.random() * math.pi * 2
 			trail.Rotation = math.deg(angle)
 
 			TweenService:Create(trail, TweenInfo.new(0.4 + math.random() * 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -5794,7 +6227,7 @@ function LoadLunarCrosshair()
 
 		-- Glow Rings
 		if settings.VFXGlow and math.random() < 0.15 * intensity / 5 then
-			glow = Instance.new("Frame")
+			local glow = Instance.new("Frame")
 			glow.Size = UDim2.fromOffset(10, 10)
 			glow.BackgroundColor3 = color
 			glow.BackgroundTransparency = 0.5
@@ -5817,7 +6250,7 @@ function LoadLunarCrosshair()
 
 		-- Bloom Burst
 		if settings.VFXBloom and math.random() < 0.2 * intensity / 5 then
-			bloom = Instance.new("Frame")
+			local bloom = Instance.new("Frame")
 			bloom.Size = UDim2.fromOffset(vfxSize * 4, vfxSize * 4)
 			bloom.BackgroundColor3 = color
 			bloom.BackgroundTransparency = 0.6
@@ -5840,7 +6273,7 @@ function LoadLunarCrosshair()
 
 		-- Sparkles
 		if settings.VFXSparkle and math.random() < 0.4 * intensity / 5 then
-			sparkle = Instance.new("TextLabel")
+			local sparkle = Instance.new("TextLabel")
 			sparkle.Text = "✦"
 			sparkle.Size = UDim2.fromOffset(20, 20)
 			sparkle.BackgroundTransparency = 1
@@ -5865,7 +6298,7 @@ function LoadLunarCrosshair()
 
 		-- Ripples
 		if settings.VFXRipple and math.random() < 0.1 * intensity / 5 then
-			ripple = Instance.new("Frame")
+			local ripple = Instance.new("Frame")
 			ripple.Size = UDim2.fromOffset(10, 10)
 			ripple.BackgroundTransparency = 1
 			ripple.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -5874,7 +6307,7 @@ function LoadLunarCrosshair()
 			ripple.ZIndex = 2147483643
 			ripple.Parent = center
 
-			stroke = Instance.new("UIStroke", ripple)
+			local stroke = Instance.new("UIStroke", ripple)
 			stroke.Color = color
 			stroke.Thickness = vfxSize * 0.5
 
@@ -5894,7 +6327,7 @@ function LoadLunarCrosshair()
 
 		-- Orbit Dots
 		if settings.VFXOrbit and math.random() < 0.3 * intensity / 5 then
-			orbit = Instance.new("Frame")
+			local orbit = Instance.new("Frame")
 			orbit.Size = UDim2.fromOffset(vfxSize * 2, vfxSize * 2)
 			orbit.BackgroundColor3 = color
 			orbit.BackgroundTransparency = 0
@@ -5905,10 +6338,10 @@ function LoadLunarCrosshair()
 			orbit.Parent = center
 			Instance.new("UICorner", orbit).CornerRadius = UDim.new(1, 0)
 
-			angle = math.random() * math.pi * 2
-			radius = 25 + math.random() * 30
-			speed = 1 + math.random() * 2
-			startTime = tick()
+			local angle = math.random() * math.pi * 2
+			local radius = 25 + math.random() * 30
+			local speed = 1 + math.random() * 2
+			local startTime = tick()
 
 			local conn
 			conn = RunService.RenderStepped:Connect(function()
@@ -5916,8 +6349,8 @@ function LoadLunarCrosshair()
 					conn:Disconnect()
 					return
 				end
-				elapsed = tick() - startTime
-				currentAngle = angle + elapsed * speed
+				local elapsed = tick() - startTime
+				local currentAngle = angle + elapsed * speed
 				orbit.Position = UDim2.fromOffset(math.cos(currentAngle) * radius, math.sin(currentAngle) * radius)
 				orbit.BackgroundTransparency = math.min(1, elapsed / 1.5)
 				if elapsed > 1.5 then
@@ -5929,21 +6362,21 @@ function LoadLunarCrosshair()
 
 		-- Shooting Stars
 		if settings.VFXShootingStar and math.random() < 0.15 * intensity / 5 then
-			star = Instance.new("Frame")
+			local star = Instance.new("Frame")
 			star.Size = UDim2.fromOffset(vfxSize * 3, vfxSize)
 			star.BackgroundColor3 = color
 			star.BackgroundTransparency = 0
 			star.AnchorPoint = Vector2.new(0.5, 0.5)
-			startX = math.random(-60, 60)
-			startY = math.random(-60, 60)
+			local startX = math.random(-60, 60)
+			local startY = math.random(-60, 60)
 			star.Position = UDim2.fromOffset(startX, startY)
 			star.BorderSizePixel = 0
 			star.ZIndex = 2147483645
 			star.Parent = center
 			Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
 
-			endX = startX + math.random(-80, 80)
-			endY = startY + math.random(-80, 80)
+			local endX = startX + math.random(-80, 80)
+			local endY = startY + math.random(-80, 80)
 
 			TweenService:Create(star, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 				Position = UDim2.fromOffset(endX, endY),
@@ -5958,7 +6391,7 @@ function LoadLunarCrosshair()
 
 		-- Hearts
 		if settings.VFXHeart and math.random() < 0.2 * intensity / 5 then
-			heart = Instance.new("TextLabel")
+			local heart = Instance.new("TextLabel")
 			heart.Text = "♥"
 			heart.Size = UDim2.fromOffset(20, 20)
 			heart.BackgroundTransparency = 1
@@ -5983,7 +6416,7 @@ function LoadLunarCrosshair()
 
 		-- Lightning
 		if settings.VFXLightning and math.random() < 0.15 * intensity / 5 then
-			bolt = Instance.new("Frame")
+			local bolt = Instance.new("Frame")
 			bolt.Size = UDim2.fromOffset(vfxSize, vfxSize * 6)
 			bolt.BackgroundColor3 = Color3.new(1, 1, 1)
 			bolt.BackgroundTransparency = 0
@@ -6005,7 +6438,7 @@ function LoadLunarCrosshair()
 
 		-- Ghosts
 		if settings.VFXGhost and math.random() < 0.2 * intensity / 5 then
-			ghost = Instance.new("TextLabel")
+			local ghost = Instance.new("TextLabel")
 			ghost.Text = "👻"
 			ghost.Size = UDim2.fromOffset(24, 24)
 			ghost.BackgroundTransparency = 1
@@ -6028,7 +6461,7 @@ function LoadLunarCrosshair()
 
 		-- Confetti
 		if settings.VFXConfetti and math.random() < 0.3 * intensity / 5 then
-			confetti = Instance.new("Frame")
+			local confetti = Instance.new("Frame")
 			confetti.Size = UDim2.fromOffset(vfxSize * 2, vfxSize * 3)
 			confetti.BackgroundColor3 = color
 			confetti.BackgroundTransparency = 0
@@ -6052,23 +6485,23 @@ function LoadLunarCrosshair()
 	end
 
 	-- ================= BUILD UI =================
-	presetSection, presetContent = createSection("Presets", content)
+	local presetSection, presetContent = createSection("Presets", content)
 	createPresetSelector(presetContent)
 
-	crosshairSection, crosshairContent = createSection("Crosshair Size", content)
+	local crosshairSection, crosshairContent = createSection("Crosshair Size", content)
 	createInputRow("Vertical Length", "VertLength", 1, 10000, false, crosshairContent)
 	createInputRow("Horizontal Length", "HorzLength", 1, 10000, false, crosshairContent)
 	createInputRow("Width", "Width", 1, 10000, false, crosshairContent)
 
-	colorSection, colorContent = createSection("Color", content)
+	local colorSection, colorContent = createSection("Color", content)
 	createColorPicker(colorContent)
 
-	animSection, animContent = createSection("Animation", content)
+	local animSection, animContent = createSection("Animation", content)
 	createToggleRow("Pulse Breathing", "PulseEnabled", animContent)
 	createInputRow("Pulse Speed", "PulseSpeed", 0.1, 20, false, animContent)
 	createInputRow("Pulse Distance", "PulseDistance", 0, 20, false, animContent)
 
-	vfxSection, vfxContent = createSection("VFX Effects", content)
+	local vfxSection, vfxContent = createSection("VFX Effects", content)
 	createToggleRow("✨ Enable VFX", "VFXEnabled", vfxContent)
 	createInputRow("VFX Intensity", "VFXIntensity", 1, 20, false, vfxContent)
 	createInputRow("VFX Size", "VFXSize", 1, 20, false, vfxContent)
@@ -6084,20 +6517,20 @@ function LoadLunarCrosshair()
 	createToggleRow("Ghosts", "VFXGhost", vfxContent)
 	createToggleRow("Confetti", "VFXConfetti", vfxContent)
 
-	appearanceSection, appearanceContent = createSection("Appearance", content)
+	local appearanceSection, appearanceContent = createSection("Appearance", content)
 	createInputRow("Rotation Speed", "RotationSpeed", 0, 10000, false, appearanceContent)
 	createInputRow("Rainbow Speed", "RainbowSpeed", 0, 10000, false, appearanceContent)
 	createInputRow("Y Offset", "YOffset", -50, 50, false, appearanceContent)
 	createInputRow("Text Gap", "TextGap", 0, 10000, false, appearanceContent)
 	createInputRow("Display Text", "Text", nil, nil, true, appearanceContent)
 
-	symbolSection, symbolContent = createSection("Symbol", content)
+	local symbolSection, symbolContent = createSection("Symbol", content)
 	createSymbolSelector(symbolContent)
 
-	toggleSection, toggleContent = createSection("Options", content)
+	local toggleSection, toggleContent = createSection("Options", content)
 	createToggleRow("Spin Animation", "SpinEnabled", toggleContent)
 
-	discordBtn = createDiscordButton(content)
+	local discordBtn = createDiscordButton(content)
 
 	-- Update canvas size
 	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -6113,7 +6546,7 @@ function LoadLunarCrosshair()
 	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updatePanelHeight)
 
 	-- ================= COLLAPSE / EXPAND =================
-	panelExpanded = true
+	local panelExpanded = true
 
 	local function collapsePanel()
 		panelExpanded = false
@@ -6151,9 +6584,9 @@ function LoadLunarCrosshair()
 	end)
 
 	-- ================= MAIN LOOP =================
-	hue = 0
-	rotation = 0
-	pulseTime = 0
+	local hue = 0
+	local rotation = 0
+	local pulseTime = 0
 
 	data.connection = RunService.RenderStepped:Connect(function(dt)
 		if not data.enabled then return end
@@ -6166,8 +6599,8 @@ function LoadLunarCrosshair()
 			mouse.Icon = ""
 		end
 
-		mousePos = UserInputService:GetMouseLocation()
-		baseY = mousePos.Y + settings.YOffset
+		local mousePos = UserInputService:GetMouseLocation()
+		local baseY = mousePos.Y + settings.YOffset
 
 		center.Position = UDim2.fromOffset(mousePos.X, baseY)
 
@@ -6204,19 +6637,19 @@ function LoadLunarCrosshair()
 		-- Pulse animation
 		if settings.PulseEnabled and settings.Symbol == "" then
 			pulseTime = pulseTime + dt * settings.PulseSpeed
-			pulseOffset = math.sin(pulseTime) * settings.PulseDistance
+			local pulseOffset = math.sin(pulseTime) * settings.PulseDistance
 
 			for _, part in pairs(crosshairParts) do
 				if part and part.Parent then
-					originalPos = part:GetAttribute("OriginalPos")
+					local originalPos = part:GetAttribute("OriginalPos")
 					if originalPos then
-						ox = originalPos.X.Offset
-						oy = originalPos.Y.Offset
-						dist = math.sqrt(ox * ox + oy * oy)
+						local ox = originalPos.X.Offset
+						local oy = originalPos.Y.Offset
+						local dist = math.sqrt(ox * ox + oy * oy)
 
 						if dist > 0.001 then
-							dirX = ox / dist
-							dirY = oy / dist
+							local dirX = ox / dist
+							local dirY = oy / dist
 							part.Position = UDim2.new(
 								originalPos.X.Scale,
 								ox + dirX * pulseOffset,
@@ -6306,7 +6739,7 @@ end
 -- =============================================================
 --  sun glare
 -- =============================================================
-sunGlareData = {
+local sunGlareData = {
 	enabled = false,
 	gui = nil,
 	renderConnection = nil,
@@ -6331,15 +6764,15 @@ local function enableSunGlare()
 		sunGlareData.blur:Destroy()
 	end
 	
-	Lighting = game:GetService("Lighting")
+	local Lighting = game:GetService("Lighting")
 
 	-- 🎥 Blur effect (depth simulation)
-	blur = Instance.new("BlurEffect")
+	local blur = Instance.new("BlurEffect")
 	blur.Size = 0
 	blur.Parent = Lighting
 	sunGlareData.blur = blur
 	
-	screenGui = Instance.new("ScreenGui")
+	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "SunGlare"
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
@@ -6348,12 +6781,12 @@ local function enableSunGlare()
 	screenGui.Parent = client.PlayerGui
 	sunGlareData.gui = screenGui
 
-	host = Instance.new("Frame")
+	local host = Instance.new("Frame")
 	host.Size = UDim2.new(1,0,1,0)
 	host.BackgroundTransparency = 1
 	host.Parent = screenGui
 
-	ShineOverlay = Instance.new("Frame")
+	local ShineOverlay = Instance.new("Frame")
 	ShineOverlay.Size = UDim2.new(2,0,2,0)
 	ShineOverlay.Position = UDim2.new(-0.5,0,-0.5,0)
 	ShineOverlay.BackgroundColor3 = Color3.new(1,1,1)
@@ -6361,7 +6794,7 @@ local function enableSunGlare()
 	ShineOverlay.ZIndex = 6
 	ShineOverlay.Parent = host
 
-	Haze = Instance.new("Frame")
+	local Haze = Instance.new("Frame")
 	Haze.Size = UDim2.new(2,0,2,0)
 	Haze.Position = UDim2.new(-0.5,0,-0.5,0)
 	Haze.BackgroundColor3 = Color3.new(1,1,1)
@@ -6369,7 +6802,7 @@ local function enableSunGlare()
 	Haze.ZIndex = 5
 	Haze.Parent = host
 
-	flareData = {
+	local flareData = {
 		{id="109801097", size=320},
 		{id="109801061", size=180},
 		{id="109801105", size=160},
@@ -6378,10 +6811,10 @@ local function enableSunGlare()
 		{id="109801105", size=90}
 	}
 
-	lFlares = {}
+	local lFlares = {}
 
 	for i,data in ipairs(flareData) do
-		img = Instance.new("ImageLabel")
+		local img = Instance.new("ImageLabel")
 		img.Image = "http://www.roblox.com/asset/?id="..data.id
 		img.Size = UDim2.new(0,data.size,0,data.size)
 		img.BackgroundTransparency = 1
@@ -6421,27 +6854,27 @@ local function enableSunGlare()
 		return false
 	end
 
-	exposure = 0
+	local exposure = 0
 
 	sunGlareData.renderConnection = game:GetService("RunService").RenderStepped:Connect(function(dt)
 		if not sunGlareData.enabled then return end
 		
-		cam = workspace.CurrentCamera
-		Lighting = game:GetService("Lighting")
+		local cam = workspace.CurrentCamera
+		local Lighting = game:GetService("Lighting")
 		
-		x,y,z = findFlareCoord(cam.CFrame, cam.CFrame.Position + Lighting:GetSunDirection()*8)
-		blocked = isSunBlocked(cam.CFrame.Position, Lighting:GetSunDirection())
-		minutes = Lighting:GetMinutesAfterMidnight()
+		local x,y,z = findFlareCoord(cam.CFrame, cam.CFrame.Position + Lighting:GetSunDirection()*8)
+		local blocked = isSunBlocked(cam.CFrame.Position, Lighting:GetSunDirection())
+		local minutes = Lighting:GetMinutesAfterMidnight()
 
 		if z and not blocked and minutes > 335 and minutes < 1105 then
-			dot = cam.CFrame.LookVector:Dot(Lighting:GetSunDirection())
-			target = math.clamp((dot - 0.65) * 2.8, 0, 1)
+			local dot = cam.CFrame.LookVector:Dot(Lighting:GetSunDirection())
+			local target = math.clamp((dot - 0.65) * 2.8, 0, 1)
 			target = target * target
 
 			exposure = exposure + (target - exposure) * math.clamp(dt * 2, 0, 1)
 
 			for flare,pos in pairs(lFlares) do
-				spread = pos*(1.4 + exposure*1.2)
+				local spread = pos*(1.4 + exposure*1.2)
 
 				flare.Position = UDim2.new(
 					0.5 + x*spread,
@@ -6455,14 +6888,14 @@ local function enableSunGlare()
 				flare.ImageTransparency = 1-(0.6*exposure)
 			end
 
-			centerDist = math.clamp(math.abs(x)+math.abs(y),0,2)
-			hazeStrength = (1-centerDist) * exposure
+			local centerDist = math.clamp(math.abs(x)+math.abs(y),0,2)
+			local hazeStrength = (1-centerDist) * exposure
 
 			Haze.BackgroundTransparency = 1 - (hazeStrength * 0.25)
 			ShineOverlay.BackgroundTransparency = 1 - (exposure * 0.18)
 
 			-- 🎥 DEPTH-BASED BLUR (cinematic)
-			blurTarget = exposure * 18
+			local blurTarget = exposure * 18
 			blur.Size = blur.Size + (blurTarget - blur.Size) * math.clamp(dt * 3, 0, 1)
 
 		else
@@ -6507,7 +6940,7 @@ end
 -- =============================================================
 --  speed system
 -- =============================================================
-speedPanelData = {
+local speedPanelData = {
 	panel = nil,
 	enabled = false,
 	bypassEnabled = false,
@@ -6526,7 +6959,7 @@ local function createSpeedPanel()
 		return
 	end
 
-	panel = Instance.new("ScreenGui")
+	local panel = Instance.new("ScreenGui")
 	panel.Name = "SpeedPanel"
 	panel.ResetOnSpawn = false
 	panel.DisplayOrder = 999999
@@ -6534,7 +6967,7 @@ local function createSpeedPanel()
 	panel.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	panel.Parent = client.PlayerGui
 
-	main = Instance.new("Frame")
+	local main = Instance.new("Frame")
 	main.Name = "Main"
 	main.Size = UDim2.new(0, 350, 0, 290)
 	main.Position = UDim2.new(0.5, -175, 0.5, -145)
@@ -6544,7 +6977,7 @@ local function createSpeedPanel()
 	main.Parent = panel
 	applyGlassEffect(main, globalConfig.uiTransparency, 0.4)
 
-	title = Instance.new("TextLabel", main)
+	local title = Instance.new("TextLabel", main)
 	title.Size = UDim2.new(1, 0, 0, 50)
 	title.BackgroundTransparency = 1
 	title.Text = "SPEED CONTROL"
@@ -6555,7 +6988,7 @@ local function createSpeedPanel()
 	title.TextStrokeTransparency = 0.5
 	title.TextStrokeColor3 = Color3.new(0,0,0)
 
-	speedDisplay = Instance.new("TextLabel", main)
+	local speedDisplay = Instance.new("TextLabel", main)
 	speedDisplay.Size = UDim2.new(1, 0, 0, 40)
 	speedDisplay.Position = UDim2.new(0, 0, 0, 50)
 	speedDisplay.BackgroundTransparency = 1
@@ -6568,7 +7001,7 @@ local function createSpeedPanel()
 	speedDisplay.TextStrokeColor3 = Color3.new(0,0,0)
 
 	-- TextBox (clean input)
-	speedBox = Instance.new("TextBox", main)
+	local speedBox = Instance.new("TextBox", main)
 	speedBox.Size = UDim2.new(0.8, 0, 0, 50)
 	speedBox.Position = UDim2.new(0.1, 0, 0, 100)
 	speedBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
@@ -6581,7 +7014,7 @@ local function createSpeedPanel()
 	applyGlassEffect(speedBox, 0.3, 0.6)
 	Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 8)
 
-	toggle1Btn = Instance.new("TextButton", main)
+	local toggle1Btn = Instance.new("TextButton", main)
 	toggle1Btn.Size = UDim2.new(0.9, 0, 0, 45)
 	toggle1Btn.Position = UDim2.new(0.05, 0, 0, 165)
 	toggle1Btn.BackgroundColor3 = speedPanelData.enabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
@@ -6591,7 +7024,7 @@ local function createSpeedPanel()
 	toggle1Btn.TextColor3 = Color3.new(0,0,0)
 	applyGlassEffect(toggle1Btn, 0.2, 0.5)
 
-	toggle2Btn = Instance.new("TextButton", main)
+	local toggle2Btn = Instance.new("TextButton", main)
 	toggle2Btn.Size = UDim2.new(0.9, 0, 0, 45)
 	toggle2Btn.Position = UDim2.new(0.05, 0, 0, 220)
 	toggle2Btn.BackgroundColor3 = speedPanelData.bypassEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
@@ -6601,7 +7034,7 @@ local function createSpeedPanel()
 	toggle2Btn.TextColor3 = Color3.new(0,0,0)
 	applyGlassEffect(toggle2Btn, 0.2, 0.5)
 
-	closeBtn = Instance.new("TextButton", main)
+	local closeBtn = Instance.new("TextButton", main)
 	closeBtn.Size = UDim2.new(0, 35, 0, 35)
 	closeBtn.Position = UDim2.new(1, -45, 0, 8)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
@@ -6620,7 +7053,7 @@ local function createSpeedPanel()
 
 	-- TextBox logic
 	speedBox.FocusLost:Connect(function()
-		num = tonumber(speedBox.Text)
+		local num = tonumber(speedBox.Text)
 		if num then
 			speedPanelData.speedValue = math.clamp(math.floor(num), 1, 10000)
 			speedDisplay.Text = "Speed: " .. speedPanelData.speedValue
@@ -6657,16 +7090,16 @@ local function createSpeedPanel()
 
 			-- Instant direction change (no sliding when turning)
 			if speedPanelData.directionConnection then speedPanelData.directionConnection:Disconnect() end
-			lastDir = Vector3.new()
+			local lastDir = Vector3.new()
 			speedPanelData.directionConnection = RunService.Heartbeat:Connect(function()
 				if not hum or not speedPanelData.enabled then return end
 
-				moveDir = hum.MoveDirection
+				local moveDir = hum.MoveDirection
 				if moveDir.Magnitude > 0.1 then
 					if lastDir:Dot(moveDir) < 0.65 then -- Sharp direction change
-						root = hum.RootPart
+						local root = hum.RootPart
 						if root then
-							vel = root.AssemblyLinearVelocity
+							local vel = root.AssemblyLinearVelocity
 							root.AssemblyLinearVelocity = Vector3.new(0, vel.Y, 0) -- Clear sideways momentum
 						end
 					end
@@ -6708,7 +7141,7 @@ end
 -- =============================================================
 -- Vehicle fly 
 -- =============================================================
-VehicleFlySystem = {
+local VehicleFlySystem = {
 	enabled = false,
 	uiSpeed = 1,
 	actualSpeed = 50,
@@ -6905,10 +7338,10 @@ function VehicleFlySystem:CreatePanel()
 	end)
 
 	-- Minimize Handler
-	minimized = false
+	local minimized = false
 	MinBtn.MouseButton1Click:Connect(function()
 		minimized = not minimized
-		tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if minimized then
 			TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 320, 0, 45)}):Play()
 			MinBtn.Text = "+"
@@ -6951,7 +7384,7 @@ function VehicleFlySystem:GetVehiclePart()
 	end
 
 	-- Get the primary part or a suitable base part
-	vehiclePart = vehicleModel.PrimaryPart
+	local vehiclePart = vehicleModel.PrimaryPart
 	if not vehiclePart then
 		-- Try to find a main chassis part
 		for _, part in pairs(vehicleModel:GetDescendants()) do
@@ -7007,13 +7440,13 @@ function VehicleFlySystem:StartFly()
 	self.connection = RunService.RenderStepped:Connect(function()
 		if not self.enabled then return end
 
-		currentVehiclePart = self:GetVehiclePart()
+		local currentVehiclePart = self:GetVehiclePart()
 		if not currentVehiclePart then
 			self:StopFly()
 			return
 		end
 
-		cam = workspace.CurrentCamera
+		local cam = workspace.CurrentCamera
 
 		if UserInputService:GetFocusedTextBox() then
 			self.bodyVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -7022,7 +7455,7 @@ function VehicleFlySystem:StartFly()
 
 		self.bodyGyro.CFrame = cam.CFrame
 
-		moveDir = Vector3.new(0, 0, 0)
+		local moveDir = Vector3.new(0, 0, 0)
 		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
@@ -7030,7 +7463,7 @@ function VehicleFlySystem:StartFly()
 		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
 		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
 
-		targetVel = Vector3.new(0, 0, 0)
+		local targetVel = Vector3.new(0, 0, 0)
 		if moveDir.Magnitude > 0 then
 			targetVel = moveDir.Unit * self.actualSpeed
 		end
@@ -7105,13 +7538,13 @@ local function vehiclefly(plr, spd)
 	end
 
 	-- Check if in a seat first
-	char = client.Character
+	local char = client.Character
 	if not char then
 		notify("Character not found!", Color3.fromRGB(255, 100, 100))
 		return
 	end
 
-	hum = char:FindFirstChildOfClass("Humanoid")
+	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum or not hum.SeatPart then
 		notify("You must be in a vehicle seat first!", Color3.fromRGB(255, 100, 100))
 		return
@@ -7122,7 +7555,7 @@ local function vehiclefly(plr, spd)
 
 	-- Update speed if provided
 	if spd then
-		newSpeed = tonumber(spd)
+		local newSpeed = tonumber(spd)
 		if newSpeed then
 			VehicleFlySystem.uiSpeed = math.clamp(math.floor(newSpeed), 1, 10000)
 			VehicleFlySystem.actualSpeed = VehicleFlySystem.uiSpeed * VehicleFlySystem.speedMultiplier
@@ -7159,7 +7592,7 @@ end
 -- =============================================================
 -- Fly
 -- =============================================================
-FlySystem = {
+local FlySystem = {
 	enabled = false,
 	uiSpeed = 1,
 	actualSpeed = 50,
@@ -7354,10 +7787,10 @@ function FlySystem:CreatePanel()
 	end)
 
 	-- Minimize Handler
-	minimized = false
+	local minimized = false
 	MinBtn.MouseButton1Click:Connect(function()
 		minimized = not minimized
-		tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if minimized then
 			TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 320, 0, 45)}):Play()
 			MinBtn.Text = "+"
@@ -7422,8 +7855,8 @@ function FlySystem:StartFly()
 			return
 		end
 
-		currentHrp = client.Character.HumanoidRootPart
-		cam = workspace.CurrentCamera
+		local currentHrp = client.Character.HumanoidRootPart
+		local cam = workspace.CurrentCamera
 
 		if UserInputService:GetFocusedTextBox() then
 			self.bodyVelocity.Velocity = Vector3.new(0, 0, 0)
@@ -7432,17 +7865,17 @@ function FlySystem:StartFly()
 
 		self.bodyGyro.CFrame = cam.CFrame
 
-		moveDir = Vector3.new(0, 0, 0)
+		local moveDir = Vector3.new(0, 0, 0)
 
 		if isMobile then
-	hum = client.Character:FindFirstChildOfClass("Humanoid")
+	local hum = client.Character:FindFirstChildOfClass("Humanoid")
 
 	if hum then
-		stickDir = hum.MoveDirection
+		local stickDir = hum.MoveDirection
 
 		if stickDir.Magnitude > 0 then
-			camLook = cam.CFrame.LookVector
-			camRight = cam.CFrame.RightVector
+			local camLook = cam.CFrame.LookVector
+			local camRight = cam.CFrame.RightVector
 
 			moveDir =
 				(camLook * stickDir.Magnitude) +
@@ -7459,7 +7892,7 @@ else
 			if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
 		end
 
-		targetVel = Vector3.new(0, 0, 0)
+		local targetVel = Vector3.new(0, 0, 0)
 		if moveDir.Magnitude > 0 then
 			targetVel = moveDir.Unit * self.actualSpeed
 		end
@@ -7521,7 +7954,7 @@ local function fly(plr, spd)
 
 	-- Update speed if provided
 	if spd then
-		newSpeed = tonumber(spd)
+		local newSpeed = tonumber(spd)
 		if newSpeed then
 			FlySystem.uiSpeed = math.clamp(math.floor(newSpeed), 1, 10000)
 			FlySystem.actualSpeed = FlySystem.uiSpeed * FlySystem.speedMultiplier
@@ -7558,13 +7991,13 @@ end
 -- =============================================================
 -- VIEW SYSTEM
 -- =============================================================
-Players = game:GetService("Players")
-RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
-LocalPlayer = Players.LocalPlayer
-Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
-viewData = {
+local viewData = {
 	enabled = false,
 	target = nil,
 	originalCameraSubject = nil,
@@ -7616,7 +8049,7 @@ local function view(targetPlayer)
 		return
 	end
 
-	targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+	local targetHum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if not targetHum or targetHum.Health <= 0 then
 		notify("❌ Target is dead or has no Humanoid", Color3.fromRGB(255, 100, 100))
 		return
@@ -7635,13 +8068,13 @@ local function view(targetPlayer)
 	Camera.CameraType    = Enum.CameraType.Custom   
 
 	-- Top label
-	viewGui = Instance.new("ScreenGui")
+	local viewGui = Instance.new("ScreenGui")
 	viewGui.Name = "SpectateGui"
 	viewGui.ResetOnSpawn = false
 	viewGui.DisplayOrder = 999999
 	viewGui.Parent = client.PlayerGui 
 
-	label = Instance.new("TextLabel")
+	local label = Instance.new("TextLabel")
 	label.Size           = UDim2.new(0, 360, 0, 40)
 	label.Position       = UDim2.new(0.5, -180, 0, 10)
 	label.BackgroundTransparency = globalConfig.uiTransparency or 0.45
@@ -7707,7 +8140,7 @@ end)
 -- =============================================================
 -- JOIN LOGS PANEL
 -- =============================================================
-joinLogsData = {
+local joinLogsData = {
 	panel = nil,
 	entries = {},
 	connections = {}
@@ -7724,13 +8157,13 @@ local function createJoinLogsPanel()
 		return
 	end
 
-	panel = Instance.new("ScreenGui")
+	local panel = Instance.new("ScreenGui")
 	panel.Name = "JoinLogsPanel"
 	panel.ResetOnSpawn = false
 	panel.DisplayOrder = 999999
 	panel.Parent = client.PlayerGui
 
-	main = Instance.new("Frame")
+	local main = Instance.new("Frame")
 	main.Name = "Main"
 	main.Size = UDim2.new(0, 500, 0, 400)
 	main.Position = UDim2.new(0.5, -250, 0.5, -200)
@@ -7740,7 +8173,7 @@ local function createJoinLogsPanel()
 	main.Parent = panel
 	applyGlassEffect(main, globalConfig.uiTransparency, 0.4)
 
-	title = Instance.new("TextLabel", main)
+	local title = Instance.new("TextLabel", main)
 	title.Size = UDim2.new(1, -50, 0, 45)
 	title.Position = UDim2.new(0, 15, 0, 5)
 	title.BackgroundTransparency = 1
@@ -7753,7 +8186,7 @@ local function createJoinLogsPanel()
 	title.TextStrokeColor3 = Color3.new(0,0,0)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-	closeBtn = Instance.new("TextButton", main)
+	local closeBtn = Instance.new("TextButton", main)
 	closeBtn.Size = UDim2.new(0, 35, 0, 35)
 	closeBtn.Position = UDim2.new(1, -45, 0, 5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
@@ -7764,13 +8197,13 @@ local function createJoinLogsPanel()
 	closeBtn.TextTransparency = 0 -- SOLID
 	applyGlassEffect(closeBtn, 0.2, 0.4)
 
-	headers = Instance.new("Frame", main)
+	local headers = Instance.new("Frame", main)
 	headers.Size = UDim2.new(1, -20, 0, 30)
 	headers.Position = UDim2.new(0, 10, 0, 55)
 	headers.BackgroundColor3 = currentTheme.btn
 	applyGlassEffect(headers, 0.3, 0.6)
 
-	timeHeader = Instance.new("TextLabel", headers)
+	local timeHeader = Instance.new("TextLabel", headers)
 	timeHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	timeHeader.BackgroundTransparency = 1
 	timeHeader.Text = "Time"
@@ -7781,7 +8214,7 @@ local function createJoinLogsPanel()
 	timeHeader.TextStrokeTransparency = 0.5
 	timeHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	userHeader = Instance.new("TextLabel", headers)
+	local userHeader = Instance.new("TextLabel", headers)
 	userHeader.Size = UDim2.new(0.4, 0, 1, 0)
 	userHeader.Position = UDim2.new(0.2, 0, 0, 0)
 	userHeader.BackgroundTransparency = 1
@@ -7793,7 +8226,7 @@ local function createJoinLogsPanel()
 	userHeader.TextStrokeTransparency = 0.5
 	userHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	distHeader = Instance.new("TextLabel", headers)
+	local distHeader = Instance.new("TextLabel", headers)
 	distHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	distHeader.Position = UDim2.new(0.6, 0, 0, 0)
 	distHeader.BackgroundTransparency = 1
@@ -7805,7 +8238,7 @@ local function createJoinLogsPanel()
 	distHeader.TextStrokeTransparency = 0.5
 	distHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	actionHeader = Instance.new("TextLabel", headers)
+	local actionHeader = Instance.new("TextLabel", headers)
 	actionHeader.Size = UDim2.new(0.2, 0, 1, 0)
 	actionHeader.Position = UDim2.new(0.8, 0, 0, 0)
 	actionHeader.BackgroundTransparency = 1
@@ -7817,7 +8250,7 @@ local function createJoinLogsPanel()
 	actionHeader.TextStrokeTransparency = 0.5
 	actionHeader.TextStrokeColor3 = Color3.new(0,0,0)
 
-	scroll = Instance.new("ScrollingFrame", main)
+	local scroll = Instance.new("ScrollingFrame", main)
 	scroll.Size = UDim2.new(1, -20, 1, -100)
 	scroll.Position = UDim2.new(0, 10, 0, 90)
 	scroll.BackgroundTransparency = 0.4
@@ -7826,7 +8259,7 @@ local function createJoinLogsPanel()
 	scroll.ScrollBarImageColor3 = currentTheme.accent
 	applyGlassEffect(scroll, 0.5, 0.7)
 
-	layout = Instance.new("UIListLayout", scroll)
+	local layout = Instance.new("UIListLayout", scroll)
 	layout.Padding = UDim.new(0, 5)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 
@@ -7865,7 +8298,7 @@ local function createJoinLogsPanel()
 			dist = math.floor((plr.Character.HumanoidRootPart.Position - hrp.Position).Magnitude) .. " studs"
 		end
 
-		distLabel = Instance.new("TextLabel", entry)
+		local distLabel = Instance.new("TextLabel", entry)
 		distLabel.Size = UDim2.new(0.2, 0, 1, 0)
 		distLabel.Position = UDim2.new(0.6, 0, 0, 0)
 		distLabel.BackgroundTransparency = 1
@@ -7877,7 +8310,7 @@ local function createJoinLogsPanel()
 		distLabel.TextStrokeTransparency = 0.5
 		distLabel.TextStrokeColor3 = Color3.new(0,0,0)
 
-		actionLabel = Instance.new("TextLabel", entry)
+		local actionLabel = Instance.new("TextLabel", entry)
 		actionLabel.Size = UDim2.new(0.2, 0, 1, 0)
 		actionLabel.Position = UDim2.new(0.8, 0, 0, 0)
 		actionLabel.BackgroundTransparency = 1
@@ -7901,11 +8334,11 @@ local function createJoinLogsPanel()
 		scroll.CanvasPosition = Vector2.new(0, #joinLogsData.entries * 40)
 	end
 
-	joinConn = Players.PlayerAdded:Connect(function(plr)
+	local joinConn = Players.PlayerAdded:Connect(function(plr)
 		addLogEntry(plr, "JOINED")
 	end)
 
-	leaveConn = Players.PlayerRemoving:Connect(function(plr)
+	local leaveConn = Players.PlayerRemoving:Connect(function(plr)
 		addLogEntry(plr, "LEFT")
 	end)
 
@@ -7928,15 +8361,15 @@ end
 -- =============================================================
 -- ENHANCED ESP 
 -- =============================================================
-Players = game:GetService("Players")
-RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
-client = Players.LocalPlayer
+local client = Players.LocalPlayer
 
 -- ============================================
 -- ESP DATA - PERSISTENT TRACKING
 -- ============================================
-espData = {
+local espData = {
 	enabled = false,
 	playerESP = {},
 	globalConnections = {},
@@ -8017,10 +8450,10 @@ local function attachESP(plr, char)
 		return 
 	end
 
-	teamColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
+	local teamColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
 
 	-- HIGHLIGHT (Chams)
-	highlight = Instance.new("Highlight")
+	local highlight = Instance.new("Highlight")
 	highlight.Name = "LunarESP_" .. plr.Name
 	highlight.Adornee = char
 	highlight.FillTransparency = 0.85
@@ -8032,7 +8465,7 @@ local function attachESP(plr, char)
 	table.insert(data.objects, highlight)
 
 	-- BILLBOARD GUI
-	billboard = Instance.new("BillboardGui")
+	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "LunarESP_Billboard_" .. plr.Name
 	billboard.Adornee = head
 	billboard.Size = UDim2.new(0, 200, 0, 50)
@@ -8042,7 +8475,7 @@ local function attachESP(plr, char)
 	billboard.Parent = client.PlayerGui
 
 	-- Name Label
-	nameLabel = Instance.new("TextLabel")
+	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Size = UDim2.new(1, 0, 0.55, 0)
@@ -8056,7 +8489,7 @@ local function attachESP(plr, char)
 	nameLabel.Parent = billboard
 
 	-- Distance Label
-	distLabel = Instance.new("TextLabel")
+	local distLabel = Instance.new("TextLabel")
 	distLabel.Name = "Distance"
 	distLabel.BackgroundTransparency = 1
 	distLabel.Position = UDim2.new(0, 0, 0.55, 0)
@@ -8075,8 +8508,8 @@ local function attachESP(plr, char)
 
 	-- Health tracking
 	if humanoid then
-		healthConn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-			healthPercent = humanoid.Health / humanoid.MaxHealth
+		local healthConn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+			local healthPercent = humanoid.Health / humanoid.MaxHealth
 			if healthPercent <= 0 then
 				for _, obj in ipairs(data.objects) do
 					if obj:IsA("Highlight") then
@@ -8102,7 +8535,7 @@ local function attachESP(plr, char)
 		table.insert(data.connections, healthConn)
 
 		-- Death handler - IMMEDIATELY reattach on respawn (NO DELAY)
-		diedConn = humanoid.Died:Connect(function()
+		local diedConn = humanoid.Died:Connect(function()
 			-- Clear current ESP immediately
 			clearPlayerESP(plr)
 
@@ -8113,7 +8546,7 @@ local function attachESP(plr, char)
 					newCharConn:Disconnect()
 				end
 				-- Check if this player should still have ESP (global or individual)
-				shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
+				local shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
 				if shouldTrack then
 					task.wait(0.3)
 					attachESP(plr, newChar)
@@ -8124,8 +8557,8 @@ local function attachESP(plr, char)
 	end
 
 	-- Team change handler
-	teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function()
-		newColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
+	local teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function()
+		local newColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
 		for _, obj in ipairs(data.objects) do
 			if obj:IsA("Highlight") then
 				obj.FillColor = newColor
@@ -8138,7 +8571,7 @@ local function attachESP(plr, char)
 	table.insert(data.connections, teamConn)
 
 	-- Character removing handler (for when they reset without dying)
-	charRemovingConn = char.AncestryChanged:Connect(function()
+	local charRemovingConn = char.AncestryChanged:Connect(function()
 		if not char.Parent then
 			-- Character was destroyed, clear ESP
 			task.delay(0.1, function()
@@ -8165,9 +8598,9 @@ local function createPlayerESP(plr)
 	end
 
 	-- Handle their respawns
-	charConn = plr.CharacterAdded:Connect(function(char)
+	local charConn = plr.CharacterAdded:Connect(function(char)
 		-- Check if this player should still have ESP
-		shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
+		local shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
 		if shouldTrack then
 			task.wait(0.3)
 			clearPlayerESP(plr)
@@ -8273,7 +8706,7 @@ function enableESPAll()
 	end
 
 	-- Auto-apply to NEW players joining
-	newPlayerConn = Players.PlayerAdded:Connect(function(plr)
+	local newPlayerConn = Players.PlayerAdded:Connect(function(plr)
 		if espData.globalEnabled then
 			-- NEW: Automatically track new players
 			espData.trackedUserIds[plr.UserId] = true
@@ -8284,7 +8717,7 @@ function enableESPAll()
 	table.insert(espData.globalConnections, newPlayerConn)
 
 	-- Handle players LEAVING
-	playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
+	local playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
 		clearPlayerESP(plr)
 		-- NEW: Keep them tracked so ESP reapplies if they rejoin
 		-- (don't remove from trackedUserIds - they stay tracked)
@@ -8313,7 +8746,7 @@ function enableESPAll()
 	end)
 
 	-- NEW: Handle rejoins - when a tracked player rejoins, reapply ESP
-	rejoinConn = Players.PlayerAdded:Connect(function(plr)
+	local rejoinConn = Players.PlayerAdded:Connect(function(plr)
 		if espData.trackedUserIds[plr.UserId] then
 			-- This player was previously tracked, reapply ESP
 			task.wait(0.5)
@@ -8370,10 +8803,10 @@ end
 -- =============================================================
 -- SPIN SYSTEM
 -- =============================================================
-Players = game:GetService("Players")
-RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
-spinData = {}
+local spinData = {}
 
 function spin(plr, speed)
 
@@ -8395,12 +8828,12 @@ function spin(plr, speed)
 	hum.AutoRotate = false
 
 	-- Attachment (YOU ALREADY HAD THIS)
-	attachment = Instance.new("Attachment")
+	local attachment = Instance.new("Attachment")
 	attachment.Name = "SpinAttachment"
 	attachment.Parent = hrp
 
 	-- REAL SPIN MOTOR (replaces AlignOrientation only)
-	angular = Instance.new("AngularVelocity")
+	local angular = Instance.new("AngularVelocity")
 	angular.Name = "SpinVelocity"
 	angular.Attachment0 = attachment
 	angular.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
@@ -8445,9 +8878,9 @@ function unspin(plr)
 		data.attachment:Destroy()
 	end
 
-	char = plr.Character
+	local char = plr.Character
 	if char then
-		hum = char:FindFirstChildOfClass("Humanoid")
+		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then
 			hum.AutoRotate = true
 		end
@@ -8518,7 +8951,7 @@ local function unload()
 	end
 
 	-- Clean up other data tables
-	dataTables = {speedPanelData, viewData, spinData}
+	local dataTables = {speedPanelData, viewData, spinData}
 	for _, data in ipairs(dataTables) do
 		if data then
 			for k, v in pairs(data) do
@@ -8557,7 +8990,7 @@ end
 -- ============================================
 -- INFINITE JUMP 
 -- ============================================
-infJumpData = {
+local infJumpData = {
 	enabled = false,
 	beganConnection = nil,
 	endedConnection = nil,
@@ -8577,7 +9010,7 @@ local function setupInfJump()
 
 	infJumpData.currentChar = char
 
-	hrp = char:WaitForChild("HumanoidRootPart", 5)
+	local hrp = char:WaitForChild("HumanoidRootPart", 5)
 	if hrp then
 		infJumpData.currentHRP = hrp
 	end
@@ -8638,10 +9071,10 @@ local function enableInfJump()
 			return
 		end
 
-		hrp = infJumpData.currentHRP
+		local hrp = infJumpData.currentHRP
 
 		if hrp and hrp.Parent then
-			vel = hrp.AssemblyLinearVelocity
+			local vel = hrp.AssemblyLinearVelocity
 			hrp.AssemblyLinearVelocity = Vector3.new(
 				vel.X,
 				math.max(vel.Y + 15, 60),
@@ -8660,10 +9093,10 @@ local function enableInfJump()
 			return
 		end
 
-		hrp = infJumpData.currentHRP
+		local hrp = infJumpData.currentHRP
 
 		if hrp and hrp.Parent then
-			vel = hrp.AssemblyLinearVelocity
+			local vel = hrp.AssemblyLinearVelocity
 
 			if vel.Y <= 25 then
 				hrp.AssemblyLinearVelocity = Vector3.new(
@@ -8733,7 +9166,7 @@ end
 -- =============================================================
 -- Aimbot
 -- =============================================================
-aimbotData = {
+local aimbotData = {
 	enabled = false,
 	smoothness = 0.5,
 	smoothnessEnabled = true,
@@ -8882,7 +9315,7 @@ local function createAimbotPanel()
 	end)
 
 	-- CONTENT
-	contentScroll = Instance.new("ScrollingFrame")
+	local contentScroll = Instance.new("ScrollingFrame")
 	contentScroll.Name = "Content"
 	contentScroll.Size = UDim2.new(1, -20, 1, -60)
 	contentScroll.Position = UDim2.new(0, 10, 0, 55)
@@ -8894,12 +9327,12 @@ local function createAimbotPanel()
 	contentScroll.ZIndex = 2147483646
 	contentScroll.Parent = main
 
-	listLayout = Instance.new("UIListLayout")
+	local listLayout = Instance.new("UIListLayout")
 	listLayout.Padding = UDim.new(0, 8)
 	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	listLayout.Parent = contentScroll
 
-	padding = Instance.new("UIPadding")
+	local padding = Instance.new("UIPadding")
 	padding.PaddingTop = UDim.new(0, 10)
 	padding.PaddingBottom = UDim.new(0, 20)
 	padding.Parent = contentScroll
@@ -8973,7 +9406,7 @@ local function createAimbotPanel()
 	createToggle("Wall Check", "wallCheck")
 
 	-- Aim Part
-	aimPartBtn = createButton()
+	local aimPartBtn = createButton()
 	aimPartBtn.Text = "Aim Part: " .. (aimbotData.aimPart == "Head" and "HEAD" or "TORSO")
 	aimPartBtn.TextColor3 = currentTheme.accent
 	aimPartBtn.Parent = contentScroll
@@ -9075,7 +9508,7 @@ local function createAimbotPanel()
 			end
 		end)
 
-		initP = (aimbotData[dataKey] - minVal) / (maxVal - minVal)
+		local initP = (aimbotData[dataKey] - minVal) / (maxVal - minVal)
 		fill.Size = UDim2.new(initP, 0, 1, 0)
 		drag.Position = UDim2.new(initP, -8, 0.5, -8)
 	end
@@ -9099,15 +9532,15 @@ local function createAimbotPanel()
 		end
 
 		if aimbotData.wallCheck then
-			cam = workspace.CurrentCamera
-			root = char:FindFirstChild(aimbotData.aimPart) or char:FindFirstChild("HumanoidRootPart")
+			local cam = workspace.CurrentCamera
+			local root = char:FindFirstChild(aimbotData.aimPart) or char:FindFirstChild("HumanoidRootPart")
 			if not root then return false end
-			origin = cam.CFrame.Position
-			dir = (root.Position - origin) * 0.95
-			params = RaycastParams.new()
+			local origin = cam.CFrame.Position
+			local dir = (root.Position - origin) * 0.95
+			local params = RaycastParams.new()
 			params.FilterDescendantsInstances = {client.Character or Instance.new("Folder"), char}
 			params.FilterType = Enum.RaycastFilterType.Blacklist
-			result = workspace:Raycast(origin, dir, params)
+			local result = workspace:Raycast(origin, dir, params)
 			if result then return false end
 		end
 		return true
@@ -9168,10 +9601,10 @@ local function createAimbotPanel()
 		end
 
 		-- Find new target
-		closest, closestDist = nil, math.huge
+		local closest, closestDist = nil, math.huge
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if isValidTarget(plr) then
-				dist = getDistanceToMouse(plr)
+				local dist = getDistanceToMouse(plr)
 				if dist < closestDist then
 					closestDist = dist
 					closest = plr
@@ -9188,9 +9621,9 @@ local function createAimbotPanel()
 	end
 
 	-- FOV Circle update
-	fovConnection = RunService.RenderStepped:Connect(function()
+	local fovConnection = RunService.RenderStepped:Connect(function()
 		if aimbotData.fovEnabled and aimbotData.fovCircle then
-			mousePos = UserInputService:GetMouseLocation()
+			local mousePos = UserInputService:GetMouseLocation()
 			aimbotData.fovCircle.Position = mousePos
 			aimbotData.fovCircle.Radius = aimbotData.fovSize
 			aimbotData.fovCircle.Color = aimbotData.currentTarget and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(100, 200, 255)
@@ -9207,16 +9640,16 @@ local function createAimbotPanel()
 			return
 		end
 
-		target = updateStickyTarget()
+		local target = updateStickyTarget()
 		if not target or not target.Character then return end
 
-		root = target.Character:FindFirstChild(aimbotData.aimPart) or target.Character:FindFirstChild("HumanoidRootPart")
+		local root = target.Character:FindFirstChild(aimbotData.aimPart) or target.Character:FindFirstChild("HumanoidRootPart")
 		if not root then return end
 
-		predictedPos = getTargetPosition(root)
-		screenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPos)
-		mousePos = UserInputService:GetMouseLocation()
-		targetScreen = Vector2.new(screenPos.X, screenPos.Y)
+		local predictedPos = getTargetPosition(root)
+		local screenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPos)
+		local mousePos = UserInputService:GetMouseLocation()
+		local targetScreen = Vector2.new(screenPos.X, screenPos.Y)
 
 		local moveVec
 		if aimbotData.smoothnessEnabled then
@@ -9248,7 +9681,7 @@ end
 -- =============================================================
 -- UNLOCK MOUSE SYSTEM
 -- =============================================================
-mouseUnlockData = {
+local mouseUnlockData = {
 	enabled = false,
 	connection = nil
 }
@@ -9287,7 +9720,7 @@ end
 -- =============================================================
 -- panel management
 -- =============================================================
-subPanels = {
+local subPanels = {
 	logs = nil,
 	stopwatch = nil
 }
@@ -9302,13 +9735,13 @@ local function createSubPanel(name, size, titleText)
 		return nil
 	end
 
-	panel = Instance.new("ScreenGui")
+	local panel = Instance.new("ScreenGui")
 	panel.Name = name .. "Panel"
 	panel.ResetOnSpawn = false
 	panel.DisplayOrder = 999999
 	panel.Parent = client.PlayerGui
 
-	main = Instance.new("Frame")
+	local main = Instance.new("Frame")
 	main.Name = "Main"
 	main.Size = size
 	main.Position = UDim2.new(0, 430, 0.5, -size.Y.Offset/2)
@@ -9318,7 +9751,7 @@ local function createSubPanel(name, size, titleText)
 	main.Parent = panel
 	applyGlassEffect(main, globalConfig.uiTransparency, 0.4)
 
-	title = Instance.new("TextLabel", main)
+	local title = Instance.new("TextLabel", main)
 	title.Size = UDim2.new(1, -50, 0, 45)
 	title.Position = UDim2.new(0, 15, 0, 5)
 	title.BackgroundTransparency = 1
@@ -9331,7 +9764,7 @@ local function createSubPanel(name, size, titleText)
 	title.TextStrokeColor3 = Color3.new(0,0,0)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-	closeBtn = Instance.new("TextButton", main)
+	local closeBtn = Instance.new("TextButton", main)
 	closeBtn.Size = UDim2.new(0, 35, 0, 35)
 	closeBtn.Position = UDim2.new(1, -45, 0, 5)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
@@ -9354,7 +9787,7 @@ end
 -- =============================================================
 -- Logs panel
 -- =============================================================
-logsScroll, logEntries = nil, {}
+local logsScroll, logEntries = nil, {}
 
 local function addLog(sender, message)
 	if not logsScroll or not logsScroll.Parent then return end
@@ -9362,7 +9795,7 @@ local function addLog(sender, message)
 		if logEntries[1] then logEntries[1]:Destroy() end
 		table.remove(logEntries, 1)
 	end
-	entry = Instance.new("TextLabel")
+	local entry = Instance.new("TextLabel")
 	entry.Size = UDim2.new(1, -16, 0, 32)
 	entry.BackgroundTransparency = 0.8
 	entry.BackgroundColor3 = currentTheme.btn
@@ -9391,7 +9824,7 @@ local function toggleLogs()
 		return
 	end
 
-	main = createSubPanel("logs", UDim2.new(0, 420, 0, 380), "CHAT LOGS")
+	local main = createSubPanel("logs", UDim2.new(0, 420, 0, 380), "CHAT LOGS")
 	if not main then return end
 
 	logsScroll = Instance.new("ScrollingFrame", main)
@@ -9403,11 +9836,11 @@ local function toggleLogs()
 	logsScroll.ScrollBarImageColor3 = currentTheme.accent
 	applyGlassEffect(logsScroll, 0.5, 0.7)
 
-	layout = Instance.new("UIListLayout", logsScroll)
+	local layout = Instance.new("UIListLayout", logsScroll)
 	layout.Padding = UDim.new(0, 6)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-	clearBtn = Instance.new("TextButton", main)
+	local clearBtn = Instance.new("TextButton", main)
 	clearBtn.Size = UDim2.new(0, 90, 0, 35)
 	clearBtn.Position = UDim2.new(1, -140, 0, 5)
 	clearBtn.BackgroundColor3 = currentTheme.btn
@@ -9438,7 +9871,7 @@ end)
 -- =============================================================
 -- Stopwatch panel
 -- =============================================================
-stopwatchData = {
+local stopwatchData = {
 	running = false,
 	startTime = 0,
 	conn = nil,
@@ -9457,10 +9890,10 @@ local function toggleStopwatch()
 		return
 	end
 
-	main = createSubPanel("stopwatch", UDim2.new(0, 380, 0, 220), "STOPWATCH")
+	local main = createSubPanel("stopwatch", UDim2.new(0, 380, 0, 220), "STOPWATCH")
 	if not main then return end
 
-	timeLabel = Instance.new("TextLabel", main)
+	local timeLabel = Instance.new("TextLabel", main)
 	timeLabel.Size = UDim2.new(1, -20, 0, 90)
 	timeLabel.Position = UDim2.new(0, 10, 0, 55)
 	timeLabel.BackgroundTransparency = 0.3
@@ -9474,12 +9907,12 @@ local function toggleStopwatch()
 	timeLabel.TextStrokeColor3 = Color3.new(0,0,0)
 	applyGlassEffect(timeLabel, 0.4, 0.6)
 
-	btnFrame = Instance.new("Frame", main)
+	local btnFrame = Instance.new("Frame", main)
 	btnFrame.Size = UDim2.new(1, -20, 0, 55)
 	btnFrame.Position = UDim2.new(0, 10, 0, 155)
 	btnFrame.BackgroundTransparency = 1
 
-	startBtn = Instance.new("TextButton", btnFrame)
+	local startBtn = Instance.new("TextButton", btnFrame)
 	startBtn.Size = UDim2.new(0.48, 0, 1, 0)
 	startBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 	startBtn.Text = "START"
@@ -9489,7 +9922,7 @@ local function toggleStopwatch()
 	startBtn.TextTransparency = 0 -- SOLID
 	applyGlassEffect(startBtn, 0.15, 0.4)
 
-	resetBtn = Instance.new("TextButton", btnFrame)
+	local resetBtn = Instance.new("TextButton", btnFrame)
 	resetBtn.Size = UDim2.new(0.48, 0, 1, 0)
 	resetBtn.Position = UDim2.new(0.52, 0, 0, 0)
 	resetBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
@@ -9518,11 +9951,11 @@ local function toggleStopwatch()
 			startBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 		else
 			stopwatchData.running = true
-			current = tick()
+			local current = tick()
 			stopwatchData.startTime = current - (stopwatchData.startTime or 0)
 			stopwatchData.conn = RunService.Heartbeat:Connect(function()
 				if stopwatchData.running then
-					elapsed = tick() - stopwatchData.startTime
+					local elapsed = tick() - stopwatchData.startTime
 					timeLabel.Text = formatTime(elapsed)
 				end
 			end)
@@ -9556,7 +9989,7 @@ local function removeWaypoint()
 		return
 	end
 
-	last = waypoints[#waypoints]
+	local last = waypoints[#waypoints]
 	if last then
 		if last.conn then last.conn:Disconnect() end
 		if last.part then last.part:Destroy() end
@@ -9605,11 +10038,11 @@ end
 -- ALL COMMANDS
 -- =============================================================
 local noclipConn
-frozen = {}
-gods = {}
-invis = {}
-rainbowData = {}
-ragdolls = {}
+local frozen = {}
+local gods = {}
+local invis = {}
+local rainbowData = {}
+local ragdolls = {}
 ------------------------------------------------
 --  speed
 ------------------------------------------------
@@ -9618,7 +10051,7 @@ local function setspeed(plr, num)
 		notify("❌ Speed only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if hum then
 		hum.WalkSpeed = tonumber(num) or 16
 		notify("WalkSpeed set to " .. hum.WalkSpeed, currentTheme.accent)
@@ -9678,7 +10111,7 @@ local function kill(plr)
 		return 
 	end
 	pcall(function()
-		hum = getHum(plr)
+		local hum = getHum(plr)
 		if hum then hum.Health = 0 end
 		char:BreakJoints()
 	end)
@@ -9696,7 +10129,7 @@ local function tp(p1, p2)
 		notify("❌ No target player specified", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	h1, h2 = getHRP(p1), getHRP(p2)
+	local h1, h2 = getHRP(p1), getHRP(p2)
 	if h1 and h2 then
 		h1.CFrame = h2.CFrame * CFrame.new(0, 3, 0)
 		notify("Teleported to " .. p2.Name, currentTheme.accent)
@@ -9722,7 +10155,7 @@ local function jump(plr, pow)
 		notify("❌ Jump only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if hum then
 		hum.JumpPower = tonumber(pow) or 50
 		notify("Jump power set to " .. hum.JumpPower, Color3.fromRGB(200, 200, 100))
@@ -9736,7 +10169,7 @@ local function sit(plr)
 		notify("❌ Sit only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if hum then 
 		hum.Sit = true 
 		notify("Sitting", Color3.fromRGB(200, 150, 255))
@@ -9750,11 +10183,11 @@ local function lay(plr)
 		notify("❌ Lay only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if hum then
 		hum.Sit = true
 		task.wait(0.1)
-		hrp = getHRP(plr)
+		local hrp = getHRP(plr)
 		if hrp then hrp.CFrame = hrp.CFrame * CFrame.Angles(math.rad(90), 0, 0) end
 		notify("Laying down", Color3.fromRGB(200, 150, 255))
 	end
@@ -9767,7 +10200,7 @@ local function freeze(plr)
 		notify("❌ Freeze only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if not hum or frozen[plr] then 
 		notify("⚠️ Already frozen", Color3.fromRGB(255, 200, 100))
 		return 
@@ -9785,8 +10218,8 @@ local function unfreeze(plr)
 		notify("❌ Unfreeze only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	data = frozen[plr]
-	hum = getHum(plr)
+	local data = frozen[plr]
+	local hum = getHum(plr)
 	if data and hum then
 		hum.WalkSpeed = data.ws
 		hum.JumpPower = data.jp
@@ -9986,9 +10419,9 @@ function TouchFling:StartFlingLoop()
 			RunService.Heartbeat:Wait()
 		end
 		-- When stopped, make sure velocity is normal
-		char = client.Character
+		local char = client.Character
 		if char then
-			root = char:FindFirstChild("HumanoidRootPart")
+			local root = char:FindFirstChild("HumanoidRootPart")
 			if root then
 				root.Velocity = Vector3.new(0, 0, 0)
 			end
@@ -10002,9 +10435,9 @@ function TouchFling:StopFlingLoop()
 		self.flingThread = nil
 	end
 	-- Reset velocity immediately
-	char = client.Character
+	local char = client.Character
 	if char then
-		root = char:FindFirstChild("HumanoidRootPart")
+		local root = char:FindFirstChild("HumanoidRootPart")
 		if root then
 			root.Velocity = Vector3.new(0, 0, 0)
 		end
@@ -10051,7 +10484,7 @@ function TouchFling:CreateGUI()
 	TouchFling._s.ResetOnSpawn = false
 	TouchFling._s.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	success = pcall(function()
+	local success = pcall(function()
 		TouchFling._s.Parent = game:GetService("CoreGui")
 	end)
 	if not success then
@@ -10360,7 +10793,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if not TouchFling.clickTP then return end
 
-	shouldTP = false
+	local shouldTP = false
 
 	if TouchFling.clickTPKey == "MouseButton1" and input.UserInputType == Enum.UserInputType.MouseButton1 then
 		shouldTP = true
@@ -10382,12 +10815,12 @@ end)
 RunService.Heartbeat:Connect(function(deltaTime)
 	-- FIXED: Fling All - teleport into person, stick until flung, then move to next
 	if TouchFling.flingAll then
-		targets = TouchFling:GetValidTargets()
+		local targets = TouchFling:GetValidTargets()
 		if #targets == 0 then return end
 
 		-- If no current target or current target is flung/dead, pick next
 		if not TouchFling.flingAllCurrentTarget or TouchFling:IsPlayerFlung(TouchFling.flingAllCurrentTarget) then
-			targetIndex = TouchFling.flingAllIndex
+			local targetIndex = TouchFling.flingAllIndex
 			if targetIndex > #targets then
 				targetIndex = 1
 				TouchFling.flingAllIndex = 1
@@ -10403,8 +10836,8 @@ RunService.Heartbeat:Connect(function(deltaTime)
 
 		-- Stick to current target and fling them using the SAME spin method
 		if TouchFling.flingAllCurrentTarget and TouchFling.flingAllCurrentTarget.Character then
-			targetRoot = TouchFling.flingAllCurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-			myRoot = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
+			local targetRoot = TouchFling.flingAllCurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+			local myRoot = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
 
 			if targetRoot and myRoot then
 				-- Teleport directly into them
@@ -10479,15 +10912,15 @@ local function ragdoll(plr)
 		notify("❌ Ragdoll only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	char = plr.Character
+	local char = plr.Character
 	if not char then 
 		notify("❌ No character to ragdoll", Color3.fromRGB(255, 100, 100))
 		return 
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	hum:ChangeState(Enum.HumanoidStateType.Physics)
 	hum.PlatformStand = true
-	joints = {}
+	local joints = {}
 	for _, v in char:GetDescendants() do
 		if v:IsA("Motor6D") then
 			v.Enabled = false
@@ -10505,13 +10938,13 @@ local function unragdoll(plr)
 		notify("❌ Unragdoll only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	joints = ragdolls[plr]
+	local joints = ragdolls[plr]
 	if not joints then 
 		notify("⚠️ Not ragdolled", Color3.fromRGB(255, 200, 100))
 		return 
 	end
 	for _, v in ipairs(joints) do v.Enabled = true end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if hum then
 		hum:ChangeState(Enum.HumanoidStateType.GettingUp)
 		hum.PlatformStand = false
@@ -10549,7 +10982,7 @@ local function enableCore(name)
 		notify("❌ Unknown core GUI: " .. tostring(name), Color3.fromRGB(255, 100, 100))
 		return 
 	end
-	current = StarterGui:GetCoreGuiEnabled(enum)
+	local current = StarterGui:GetCoreGuiEnabled(enum)
 	StarterGui:SetCoreGuiEnabled(enum, not current)
 	notify("✅ " .. name:gsub("^%l", string.upper) .. (not current and " enabled" or " disabled"), Color3.fromRGB(180, 180, 255))
 end
@@ -10561,7 +10994,7 @@ local function trip(plr)
 		notify("❌ Trip only works on yourself", Color3.fromRGB(255, 100, 100))
 		return
 	end
-	hum = getHum(plr)
+	local hum = getHum(plr)
 	if hum then
 		hum.Sit = true
 		hum.Jump = true
@@ -10580,8 +11013,8 @@ local function explode(plr)
 		return
 	end
 
-	humanoid = char:FindFirstChildOfClass("Humanoid")
-	root = char:FindFirstChild("HumanoidRootPart")
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	local root = char:FindFirstChild("HumanoidRootPart")
 
 	if not humanoid or not root or humanoid.Health <= 0 then
 		notify("❌ Cannot explode - invalid or already dead", Color3.fromRGB(255, 100, 100))
@@ -10589,7 +11022,7 @@ local function explode(plr)
 	end
 
 	-- Step 1: Create a big visible explosion for everyone
-	explosion = Instance.new("Explosion")
+	local explosion = Instance.new("Explosion")
 	explosion.Position = root.Position
 	explosion.BlastRadius = 12           -- decent size
 	explosion.BlastPressure = 500000     -- strong visual push
@@ -10609,7 +11042,7 @@ local function explode(plr)
 			motor.Enabled = false
 
 			-- Option B: Replace with BallSocket + NoCollision for flying parts (more dramatic)
-			socket = Instance.new("BallSocketConstraint")
+			local socket = Instance.new("BallSocketConstraint")
 			socket.Attachment0 = Instance.new("Attachment", motor.Part0)
 			socket.Attachment1 = Instance.new("Attachment", motor.Part1)
 			socket.LimitsEnabled = false
@@ -10642,7 +11075,7 @@ local function explode(plr)
 	end
 
 	-- Optional: Hide head or make dramatic (some games detect head removal)
-	head = char:FindFirstChild("Head")
+	local head = char:FindFirstChild("Head")
 	if head then
 		head.Transparency = 0.3  -- slight fade or leave visible
 		head.Velocity = Vector3.new(math.random(-50,50), 100, math.random(-50,50))
@@ -10682,10 +11115,10 @@ end
 ------------------------------------------------
 -- first person/thrid person
 ------------------------------------------------
-Players = game:GetService("Players")
-RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
-client = Players.LocalPlayer  -- assuming 'client' is LocalPlayer in your script
+local client = Players.LocalPlayer  -- assuming 'client' is LocalPlayer in your script
 
 local function thirdp()
 	-- Step 1: Switch to Classic mode (allows zooming)
@@ -10714,14 +11147,14 @@ local function thirdp()
 		end
 
 		-- Optional: If head/face is still hidden, force it visible too
-		head = character:FindFirstChild("Head")
+		local head = character:FindFirstChild("Head")
 		if head then
 			head.LocalTransparencyModifier = 0
 		end
 	end
 
 	-- Optional: Re-focus camera on your humanoid to snap back cleanly
-	humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		workspace.CurrentCamera.CameraSubject = humanoid
 	end
@@ -10782,14 +11215,14 @@ end
 -- advanced tracers
 ------------------------------------------------
 
-tracerSystem = {
+local tracerSystem = {
 	enabled = false,
 	players = {},
 	beams = {} -- Track all beams for cleanup
 }
 
 -- Thinner, better looking tracers
-TRACER_SETTINGS = {
+local TRACER_SETTINGS = {
 	width0 = 0.05,        -- Much thinner (was 0.2)
 	width1 = 0.02,        -- Taper to point
 	transparency = 0.15,   -- More visible (was 0.3)
@@ -10927,7 +11360,7 @@ local function attachTracer(plr, char)
 	)
 
 	-- Handle THEIR death (remove beam until respawn)
-	humanoid = char:FindFirstChildOfClass("Humanoid")
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		table.insert(data.connections,
 			humanoid.Died:Connect(function()
@@ -10985,7 +11418,7 @@ function tracerSystem:Enable()
 	self.updateLoop = RunService.Heartbeat:Connect(function()
 		if not self.enabled then return end
 
-		myHRP = getMyHRP()
+		local myHRP = getMyHRP()
 		if not myHRP then return end
 
 		for plr, data in pairs(self.players) do
@@ -11113,27 +11546,24 @@ end
 -- COMMAND PROCESSOR
 -- =============================================================
 function processCmd(msg)
-	if not msg or msg:sub(1,1) ~= _G.LunarPrefix then return end
+	if not msg or msg:sub(1,1) ~= prefix then return end
 	
 	local args = {}
 	for word in msg:sub(2):gmatch("%S+") do
 		table.insert(args, word)
 	end
 	
-	cmd = table.remove(args, 1):lower()
-	target = getPlr(args[1] or "me")
+	local cmd = table.remove(args, 1):lower()
+	local target = getPlr(args[1] or "me")
 
-	notify(_G.LunarPrefix .. cmd, Color3.fromRGB(180, 180, 255))
+	notify(prefix .. cmd, Color3.fromRGB(180, 180, 255))
 
 	if cmd == "aimbot" then
 		createAimbotPanel()
 		
-	elseif cmd == "antilag" then
-		_G.StartAntiLag(msg)
-
-	elseif cmd == "unantilag" then
-		_G.StopAntiLag(msg)
-
+	elseif cmd == "autoexec" then
+		autoexecCommand()
+		
 	elseif cmd == "boombox" then
 		_G.BoomboxRun(msg)
 		
@@ -11246,7 +11676,7 @@ function processCmd(msg)
 		disableFallDamage()
 
 	elseif cmd == "enable" then
-		what = args[1] or ""
+		local what = args[1] or ""
 		if what == "inventory" or what == "playerlist" then
 			enableCore(what)
 		end
@@ -11256,7 +11686,7 @@ function processCmd(msg)
 			enableESPAll()
 		else
 			-- ESP specific player
-			target = getPlr(args[1] or "me")
+			local target = getPlr(args[1] or "me")
 			if target and target ~= client then
 				enableESPPlayer(target)
 			else
@@ -11269,7 +11699,7 @@ function processCmd(msg)
 			disableESPAll()
 		else
 			-- Remove ESP from specific player
-			target = getPlr(args[1] or "me")
+			local target = getPlr(args[1] or "me")
 			if target and target ~= client then
 				disableESPPlayer(target)
 			else
@@ -11371,7 +11801,7 @@ function processCmd(msg)
 	elseif cmd == "serverhop" then
 		serverhop(target, args)
 
-	elseif cmd == "rejoin" then
+	elseif cmd == "!rejoin" then
     	rejoin(client, args)
 
 	elseif cmd == "spin" then
@@ -11508,9 +11938,9 @@ end
 -- Main Gui :3
 -- =============================================================
 -- Mobile detection at top
-isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-smallestSide = math.min(viewport.X, viewport.Y)
+local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+local smallestSide = math.min(viewport.X, viewport.Y)
 
 local scale, fontScale
 if isMobile then
@@ -11588,8 +12018,8 @@ minBtn.ZIndex = 2147483647
 Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
 -- Minimize functionality
-minimized = false
-origSize = mainFrame.Size
+local minimized = false
+local origSize = mainFrame.Size
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
 	if minimized then
@@ -11618,7 +12048,7 @@ resizeHandle.ZIndex = 2147483647
 Instance.new("UICorner", resizeHandle).CornerRadius = UDim.new(0, 4)
 
 -- Resize logic
-resizing = false
+local resizing = false
 local startSize, startPos
 
 resizeHandle.InputBegan:Connect(function(input)
@@ -11637,11 +12067,10 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		d = input.Position - startPos
+		local d = input.Position - startPos
 		mainFrame.Size = UDim2.new(0, math.clamp(startSize.X.Offset + d.X, math.floor(320 * scale), math.floor(800 * scale)), 0, math.clamp(startSize.Y.Offset + d.Y, math.floor(300 * scale), math.floor(700 * scale)))
 	end
 end)
-
 
 -- Tabs
 tabBar = Instance.new("Frame", mainFrame)
@@ -11701,7 +12130,7 @@ cmdBarFrame.ZIndex = 2147483647
 Instance.new("UICorner", cmdBarFrame).CornerRadius = UDim.new(0, 6)
 
 -- Icon
-a = Instance.new("TextLabel", cmdBarFrame)
+local a = Instance.new("TextLabel", cmdBarFrame)
 a.Name = "CmdIcon"
 a.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(28 * scale))
 a.Position = UDim2.new(0, math.floor(6 * scale), 0.5, math.floor(-14 * scale))
@@ -11844,112 +12273,19 @@ a = Instance.new("UIListLayout", listScroll)
 a.Padding = UDim.new(0, math.floor(2 * scale))
 
 -- All commands for dropdown and panel
-baseAllCommands = {
-	"aimbot",
-	"antilag",
-	"bang",
-	"unbang",
-	"boombox",
-	"camlock",
-	"uncamlock",
-	"clicktp",
-	"cmdbar",
-	"console",
-	"copychat",
-	"uncopychat",
-	"crosshair",
-	"unload",
-	"disablefalldamage",
-	"enable inventory",
-	"enable playerlist",
-	"esp all",
-	"explode",
-	"fire",
-	"firstp",
-	"fling",
-	"flashlight",
-	"fly",
-	"flyspeed",
-	"freecam",
-	"freeze",
-	"gravity",
-	"resetgravity",
-	"infjump",
-	"joinlogs",
-	"jerk",
-	"unjerk",
-	"jump",
-	"kill",
-	"lay",
-	"leave",
-	"logs",
-	"loopgoto",
-	"tpwalk",
-	"untpwalk",
-	"unloopgoto",
-	"noclip",
-	"mm2",
-	"orbit",
-	"unorbit",
-	"ping",
-	"ragdoll",
-	"rejoin",
-	"removewaypoint",
-	"resetspeed",
-	"resettime",
-	"sit",
-	"speed",
-	"serverhop",
-	"spin",
-	"stopwatch",
-	"sunglare",
-	"superjump",
-	"unsuperjump",
-	"thirdp",
-	"timeset",
-	"to",
-	"trip",
-	"tracers",
-	"unantilag",
-	"uncrosshair",
-	"unesp",
-	"unfire",
-	"unfling",
-	"unflashlight",
-	"unfly",
-	"unfreecam",
-	"unfreeze",
-	"unnoclip",
-	"unragdoll",
-	"unsunglare",
-	"unspin",
-	"untracers",
-	"unview",
-	"unvehiclefly",
-	"unwalkonwater",
-	"unxray",
-	"unzoom",
-	"view",
-	"vehiclefly",
-	"volume",
-	"waypoint",
-	"walkonwater",
-	"xray",
-	"zoom",
-	"fov",
-	"kick",
-	"unlockmouse"
+allCommands = {
+"!aimbot", "!autoexec", "!bang", "!unbang", "!boombox", "!camlock", "!uncamlock", "!clicktp", "!cmdbar", "!console", "!copychat", "!uncopychat", "!crosshair", "!unload",
+	"!disablefalldamage", "!enable inventory", "!enable playerlist",
+	"!esp all", "!explode", "!fire", "!firstp", "!fling", "!flashlight", "!fly",
+	"!flyspeed", "!freecam", "!freeze", "!gravity", "!resetgravity", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump",
+	"!kill", "!lay", "!leave", "!logs", "!loopgoto", "!tpwalk", "!untpwalk", "!unloopgoto", "!noclip", "!mm2", "!orbit", "!unorbit", "!ping", "!ragdoll",
+	"!rejoin", "!removewaypoint", "!resetspeed", "!resettime", "!sit", "!speed", "!serverhop",
+	"!spin", "!stopwatch", "!sunglare", "!superjump", "!unsuperjump", "!thirdp", "!timeset", "!to", "!trip", "!tracers",
+	"!unautoexec", "!uncrosshair", "!unesp", "!unfire", "!unfling", "!unflashlight", "!unfly",
+	"!unfreecam", "!unfreeze", "!unnoclip", "!unragdoll",
+	"!unsunglare", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", "!view", "!vehiclefly", "!volume", "!waypoint",
+	"!walkonwater", "!xray", "!zoom", "!fov", "!kick", "!unlockmouse"
 }
-
-function BuildAllCommands()
-	local t = {}
-	for _, cmd in ipairs(baseAllCommands) do
-		table.insert(t, _G.LunarPrefix .. cmd)
-	end
-	return t
-end
-
-allCommands = BuildAllCommands()
 
 -- Populate command list panel (FIXED: Proper hover detection for ScrollingFrame)
 local function createCmdListButton(cmd)
@@ -12006,11 +12342,11 @@ local function createCmdListButton(cmd)
 	return btn
 end
 
-for _, cmd in ipairs(BuildAllCommands()) do
+for _, cmd in ipairs(allCommands) do
 	createCmdListButton(cmd)
 end
 
-listScroll.CanvasSize = UDim2.new(0, 0, 0, #BuildAllCommands() * math.floor(26 * scale))
+listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
 
 -- Panel close
 panelClose.MouseButton1Click:Connect(function()
@@ -12061,8 +12397,8 @@ function updateDropdown(text)
 	-- Hide the big command list so dropdown is clickable on top
 	cmdScroll.Visible = false
 
-	matches = {}
-	lowerText = text:lower()
+	local matches = {}
+	local lowerText = text:lower()
 
 	-- Priority 1: Starts with text
 	for _, cmd in ipairs(allCommands) do
@@ -12073,7 +12409,7 @@ function updateDropdown(text)
 
 	-- Priority 2: Contains text anywhere
 	for _, cmd in ipairs(allCommands) do
-		alreadyAdded = false
+		local alreadyAdded = false
 		for _, m in ipairs(matches) do
 			if m == cmd then alreadyAdded = true break end
 		end
@@ -12085,8 +12421,8 @@ function updateDropdown(text)
 	-- Priority 3: Fuzzy match (each char appears in order)
 	if #matches == 0 then
 		for _, cmd in ipairs(allCommands) do
-			cmdLower = cmd:lower()
-			textIdx = 1
+			local cmdLower = cmd:lower()
+			local textIdx = 1
 			for i = 1, #cmdLower do
 				if cmdLower:sub(i, i) == lowerText:sub(textIdx, textIdx) then
 					textIdx = textIdx + 1
@@ -12102,7 +12438,7 @@ function updateDropdown(text)
 	if #matches > 0 then
 		dropdown.Visible = true
 		for _, match in ipairs(matches) do
-			btn = Instance.new("TextButton")
+			local btn = Instance.new("TextButton")
 			btn.Size = UDim2.new(1, 0, 0, math.floor(24 * scale))
 			btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
 			btn.BackgroundTransparency = 0.4
@@ -12149,25 +12485,25 @@ end)
 UserInputService.InputBegan:Connect(function(inp)
 	if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
 		if not cmdBarFrame then return end
-		mousePos = UserInputService:GetMouseLocation()
-		barPos = cmdBarFrame.AbsolutePosition
-		barSize = cmdBarFrame.AbsoluteSize
+		local mousePos = UserInputService:GetMouseLocation()
+		local barPos = cmdBarFrame.AbsolutePosition
+		local barSize = cmdBarFrame.AbsoluteSize
 
 		-- Check if click is inside dropdown
-		inDropdown = false
+		local inDropdown = false
 		if dropdown.Visible then
-			ddPos = dropdown.AbsolutePosition
-			ddSize = dropdown.AbsoluteSize
+			local ddPos = dropdown.AbsolutePosition
+			local ddSize = dropdown.AbsoluteSize
 			inDropdown = mousePos.X >= ddPos.X and mousePos.X <= ddPos.X + ddSize.X and
 						mousePos.Y >= ddPos.Y and mousePos.Y <= ddPos.Y + ddSize.Y
 		end
 
-		inBar = mousePos.X >= barPos.X and mousePos.X <= barPos.X + barSize.X and
+		local inBar = mousePos.X >= barPos.X and mousePos.X <= barPos.X + barSize.X and
 					  mousePos.Y >= barPos.Y and mousePos.Y <= barPos.Y + barSize.Y
 
-		panelPos = cmdListPanel.AbsolutePosition
-		panelSize = cmdListPanel.AbsoluteSize
-		inPanel = cmdListPanel.Visible and
+		local panelPos = cmdListPanel.AbsolutePosition
+		local panelSize = cmdListPanel.AbsoluteSize
+		local inPanel = cmdListPanel.Visible and
 			mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
 			mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y
 
@@ -12194,220 +12530,117 @@ cmdList = Instance.new("UIListLayout", cmdScroll)
 cmdList.Padding = UDim.new(0, math.floor(6 * scale))
 cmdList.SortOrder = Enum.SortOrder.LayoutOrder
 
-baseCmdDesc = {
-	["aimbot"] = "Opens aimbot control panel",
-	["antilag"] = "antilag",
-	["bang [user] [speed]"] = "Rape someone lol",
-	["boombox"] = "Enables client sided boombox",
-	["camlock [player]"] = "Lock camera on a player",
-	["clicktp"] = "Click to teleport",
-	["cmdbar"] = "Toggle command bar",
-	["console"] = "Opens dev console",
-	["copychat [player]"] = "Copy everything a player says",
-	["crosshair"] = "Loads custom crosshair",
-	["disablefalldamage"] = "WIP",
-	["enable inventory"] = "Toggle backpack",
-	["enable playerlist"] = "Toggle player list",
-	["esp all"] = "Enable esp on player or all",
-	["explode [plr]"] = "Explodes player(visual)",
-	["fire [plr]"] = "Sets player on fire(visual)",
-	["firstp"] = "First person mode",
-	["fling"] = "Opens fling GUI",
-	["flashlight"] = "Turns on flashlight",
-	["fly"] = "Opens fly panel",
-	["flyspeed [num]"] = "Set fly speed",
-	["fov [1-120]"] = "Set camera FOV",
-	["freecam"] = "Free camera mode",
-	["freeze"] = "Freezes player",
-	["gravity [num]"] = "Set gravity",
-	["infjump"] = "Infinite jump toggle",
-	["jerk"] = "Gives jerk off tool",
-	["joinlogs"] = "Show join/leave logs",
-	["jump [power]"] = "Set jump power",
-	["kick"] = "Kick yourself",
-	["kill"] = "Kill self",
-	["lay"] = "Makes character lay down",
-	["leave"] = "Leave game",
-	["logs"] = "Open chat logs",
-	["loopgoto [player] [delay]"] = "Repeatedly teleport to a player",
-	["mm2"] = "Enables mm2 esp by lunar",
-	["noclip"] = "Walk through walls",
-	["orbit [player] [speed]"] = "Orbit around a player like a moon",
-	["ping"] = "Show ping",
-	["ragdoll"] = "Ragdoll character(Broken?)",
-	["rejoin"] = "Rejoin server",
-	["removewaypoint"] = "Remove last waypoint",
-	["resetgravity"] = "Reset gravity to normal",
-	["resetspeed"] = "Reset walkspeed",
-	["resettime"] = "Reset time of day",
-	["serverhop"] = "(Broken)",
-	["sit"] = "Makes character sit",
-	["speed [plr] [num]"] = "Set walkspeed",
-	["spin [speed]"] = "Spin character",
-	["stopwatch"] = "Open stopwatch",
-	["sunglare"] = "Enable sun glare effect",
-	["superjump [power]"] = "Mega jump",
-	["thirdp"] = "Third person mode",
-	["timeset [0-24]"] = "Change time of day",
-	["to [plr]"] = "Teleport to player",
-	["tpwalk [speed]"] = "Teleport walk — move by teleporting",
-	["trip [plr]"] = "Makes player trip",
-	["tracers"] = "Show player tracers",
-	["unantilag"] = "unantilag",
-	["unbang"] = "unRape someone lol",
-	["uncamlock"] = "Unlock camera",
-	["uncopychat"] = "Stop copying chat",
-	["uncrosshair"] = "Remove crosshair",
-	["unesp [plr/all]"] = "Disable esp on player or all",
-	["unfire"] = "Extinguish player(visual)",
-	["unfling"] = "Close fling GUI",
-	["unflashlight"] = "Turns off flashlight",
-	["unfly"] = "Stop flying",
-	["unfreecam"] = "Disable freecam",
-	["unfreeze"] = "Unfreeze player",
-	["uninfjump"] = "Disable infinite jump",
-	["unjerk"] = "Removes jerk off tool",
-	["unloopgoto"] = "Stop loop teleport",
-	["unnoclip"] = "Disable noclip",
-	["unorbit"] = "Stop orbiting",
-	["unragdoll"] = "Stop ragdoll",
-	["unsunglare"] = "Disable sun glare effect",
-	["unsuperjump"] = "Disable super jump",
-	["unspin"] = "Stop spinning",
-	["untpwalk"] = "Disable teleport walk",
-	["untracers"] = "Hide tracers",
-	["unvehiclefly"] = "unFly in cars!",
-	["unview"] = "Stop spectating",
-	["unwalkonwater"] = "Disable walk on water",
-	["unxray"] = "Disable xray",
-	["unzoom"] = "Reset zoom",
-	["vehiclefly"] = "Fly in cars!",
-	["view [plr]"] = "Spectate player",
-	["volume"] = "Set game volume (0-10)",
-	["walkonwater"] = "Walk on any water surface",
-	["waypoint"] = "Create waypoint",
-	["xray"] = "See through walls",
-	["zoom [distance] [key]"] = "Custom zoom distance (PC only)",
-	["unlockmouse"] = "Toggle mouse lock"
+local cmdDesc = {
+	["!aimbot"] = "Opens aimbot control panel",
+	["!autoexec"] = "Enables auto-run on join",
+	["!bang [user] [speed]"] = "Rape someone lol",
+	["!boombox"] = "Enables client sided boombox",
+	["!camlock [player]"] = "Lock camera on a player",
+	["!clicktp"] = "Click to teleport",
+	["!cmdbar"] = "Toggle command bar",
+	["!console"] = "Opens dev console",
+	["!copychat [player]"] = "Copy everything a player says",
+	["!crosshair"] = "Loads custom crosshair",
+	["!disablefalldamage"] = "WIP",
+	["!enable inventory"] = "Toggle backpack",
+	["!enable playerlist"] = "Toggle player list",
+	["!esp all"] = "Enable esp on player or all",
+	["!explode [plr]"] = "Explodes player(visual)",
+	["!fire [plr]"] = "Sets player on fire(visual)",
+	["!firstp"] = "First person mode",
+	["!fling"] = "Opens fling GUI",
+	["!flashlight"] = "Turns on flashlight",
+	["!fly"] = "Opens fly panel",
+	["!flyspeed [num]"] = "Set fly speed",
+	["!fov [1-120]"] = "Set camera FOV",
+	["!freecam"] = "Free camera mode",
+	["!freeze"] = "Freezes player",
+	["!gravity [num]"] = "Set gravity",
+	["!infjump"] = "Infinite jump toggle",
+	["!jerk"] = "Gives jerk off tool",
+	["!joinlogs"] = "Show join/leave logs",
+	["!jump [power]"] = "Set jump power",
+	["!kick"] = "Kick yourself",
+	["!kill"] = "Kill self",
+	["!lay"] = "Makes character lay down",
+	["!leave"] = "Leave game",
+	["!logs"] = "Open chat logs",
+	["!loopgoto [player] [delay]"] = "Repeatedly teleport to a player",
+	["!mm2"] = "Enables mm2 esp by lunar",
+	["!noclip"] = "Walk through walls",
+	["!orbit [player] [speed]"] = "Orbit around a player like a moon",
+	["!ping"] = "Show ping",
+	["!ragdoll"] = "Ragdoll character(Broken?)",
+	["!rejoin"] = "Rejoin server",
+	["!removewaypoint"] = "Remove last waypoint",
+	["!resetgravity"] = "Reset gravity to normal",
+	["!resetspeed"] = "Reset walkspeed",
+	["!resettime"] = "Reset time of day",
+	["!serverhop"] = "(Broken)",
+	["!sit"] = "Makes character sit",
+	["!speed [plr] [num]"] = "Set walkspeed",
+	["!spin [speed]"] = "Spin character",
+	["!stopwatch"] = "Open stopwatch",
+	["!sunglare"] = "Enable sun glare effect",
+	["!superjump [power]"] = "Mega jump",
+	["!thirdp"] = "Third person mode",
+	["!timeset [0-24]"] = "Change time of day",
+	["!to [plr]"] = "Teleport to player",
+	["!tpwalk [speed]"] = "Teleport walk — move by teleporting",
+	["!trip [plr]"] = "Makes player trip",
+	["!tracers"] = "Show player tracers",
+	["!unautoexec"] = "Disables auto-run",
+	["!unbang"] = "unRape someone lol",
+	["!uncamlock"] = "Unlock camera",
+	["!uncopychat"] = "Stop copying chat",
+	["!uncrosshair"] = "Remove crosshair",
+	["!unesp [plr/all]"] = "Disable esp on player or all",
+	["!unfire"] = "Extinguish player(visual)",
+	["!unfling"] = "Close fling GUI",
+	["!unflashlight"] = "Turns off flashlight",
+	["!unfly"] = "Stop flying",
+	["!unfreecam"] = "Disable freecam",
+	["!unfreeze"] = "Unfreeze player",
+	["!uninfjump"] = "Disable infinite jump",
+	["!unjerk"] = "Removes jerk off tool",
+	["!unloopgoto"] = "Stop loop teleport",
+	["!unnoclip"] = "Disable noclip",
+	["!unorbit"] = "Stop orbiting",
+	["!unragdoll"] = "Stop ragdoll",
+	["!unsunglare"] = "Disable sun glare effect",
+	["!unsuperjump"] = "Disable super jump",
+	["!unspin"] = "Stop spinning",
+	["!untpwalk"] = "Disable teleport walk",
+	["!untracers"] = "Hide tracers",
+	["!unvehiclefly"] = "unFly in cars!",
+	["!unview"] = "Stop spectating",
+	["!unwalkonwater"] = "Disable walk on water",
+	["!unxray"] = "Disable xray",
+	["!unzoom"] = "Reset zoom",
+	["!vehiclefly"] = "Fly in cars!",
+	["!view [plr]"] = "Spectate player",
+	["!volume"] = "Set game volume (0-10)",
+	["!walkonwater"] = "Walk on any water surface",
+	["!waypoint"] = "Create waypoint",
+	["!xray"] = "See through walls",
+	["!zoom [distance] [key]"] = "Custom zoom distance (PC only)",
+	["!unlockmouse"] = "Toggle mouse lock"
 }
 
-function BuildCmdDesc()
-	local t = {}
-	for k, v in pairs(baseCmdDesc) do
-		t[_G.LunarPrefix .. k] = v
-	end
-	return t
-end
-
-cmdDesc = BuildCmdDesc()
-
-baseCmds = {
-	"aimbot",
-	"antilag",
-	"bang [user] [speed]",
-	"boombox",
-	"camlock [player]",
-	"clicktp",
-	"cmdbar",
-	"console",
-	"copychat [player]",
-	"crosshair",
-	"unload",
-	"disablefalldamage",
-	"enable inventory",
-	"enable playerlist",
-	"esp all",
-	"explode [plr]",
-	"fire [plr]",
-	"firstp",
-	"fling",
-	"flashlight",
-	"fly",
-	"flyspeed [num]",
-	"freecam",
-	"freeze",
-	"gravity [num]",
-	"infjump",
-	"joinlogs",
-	"jerk",
-	"unjerk",
-	"jump [power]",
-	"kill",
-	"lay",
-	"leave",
-	"logs",
-	"loopgoto [player] [delay]",
-	"noclip",
-	"mm2",
-	"orbit [player] [speed]",
-	"ping",
-	"ragdoll",
-	"rejoin",
-	"removewaypoint",
-	"resetgravity",
-	"resetspeed",
-	"tpwalk [speed]",
-	"untpwalk",
-	"resettime",
-	"sit",
-	"speed [plr] [num]",
-	"serverhop",
-	"spin [speed]",
-	"stopwatch",
-	"sunglare",
-	"superjump [power]",
-	"thirdp",
-	"timeset [0-24]",
-	"to [plr]",
-	"trip",
-	"tracers",
-	"unantilag",
-	"unbang",
-	"uncamlock",
-	"uncopychat",
-	"uncrosshair",
-	"unesp all",
-	"unfire [plr]",
-	"unfling",
-	"unflashlight",
-	"unfly",
-	"unfreecam",
-	"unfreeze",
-	"uninfjump",
-	"unnoclip",
-	"unloopgoto",
-	"unorbit",
-	"unragdoll",
-	"unsunglare",
-	"unsuperjump",
-	"unspin",
-	"untracers",
-	"unview",
-	"unvehiclefly",
-	"unwalkonwater",
-	"unxray",
-	"unzoom",
-	"view [plr]",
-	"vehiclefly",
-	"volume",
-	"waypoint",
-	"walkonwater",
-	"xray",
-	"zoom [distance] [key]",
-	"fov [1-120]",
-	"kick",
-	"unlockmouse"
+cmds = {
+"!aimbot", "!autoexec", "!bang [user] [speed]", "!boombox", "!camlock [player]", "!clicktp", "!cmdbar", "!console", "!copychat [player]", "!crosshair",
+	"!unload", "!disablefalldamage", "!enable inventory", "!enable playerlist",
+	"!esp all", "!explode [plr]", "!fire [plr]", "!firstp", "!fling", "!flashlight", "!fly",
+	"!flyspeed [num]", "!freecam", "!freeze", "!gravity [num]", "!infjump", "!joinlogs", "!jerk", "!unjerk", "!jump [power]",
+	"!kill", "!lay", "!leave", "!logs", "!loopgoto [player] [delay]", "!noclip", "!mm2", "!orbit [player] [speed]", "!ping", "!ragdoll",
+	"!rejoin", "!removewaypoint", "!resetgravity", "!resetspeed", "!tpwalk [speed]", "!untpwalk", "!resettime", "!sit", "!speed [plr] [num]", "!serverhop",
+	"!spin [speed]", "!stopwatch", "!sunglare", "!superjump [power]", "!thirdp", "!timeset [0-24]", "!to [plr]", "!trip", "!tracers",
+	"!unautoexec", "!unbang", "!uncamlock", "!uncopychat", "!uncrosshair", "!unesp all", "!unfire [plr]", "!unfling", "!unflashlight", "!unfly",
+	"!unfreecam", "!unfreeze", "!uninfjump", "!unnoclip", "!unloopgoto", "!unorbit", "!unragdoll",
+	"!unsunglare", "!unsuperjump", "!unspin", "!untracers", "!unview", "!unvehiclefly", "!unwalkonwater", "!unxray", "!unzoom", 
+	"!view [plr]", "!vehiclefly", "!volume", "!waypoint",
+	"!walkonwater", "!xray", "!zoom [distance] [key]", "!fov [1-120]", "!kick", "!unlockmouse"
 }
-
-function BuildCmds()
-	local t = {}
-	for _, cmd in ipairs(baseCmds) do
-		table.insert(t, _G.LunarPrefix .. cmd)
-	end
-	return t
-end
-
-cmds = BuildCmds()
 
 -- PC-only tooltip (follows mouse) — sharp corners, no border, like the screenshot
 tooltip = nil
@@ -12435,8 +12668,8 @@ if not isMobile then
 	a.TextYAlignment = Enum.TextYAlignment.Top
 	a.ZIndex = 2147483647
 
-	RunService = game:GetService("RunService")
-	mouseConn = nil
+	local RunService = game:GetService("RunService")
+	local mouseConn = nil
 	function followMouse()
 		if not tooltip or not tooltip.Visible then return end
 		local mousePos = UserInputService:GetMouseLocation()
@@ -12468,7 +12701,7 @@ for i, cmdStr in ipairs(cmds) do
 	a.ZIndex = 2147483647
 	Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
 
-	desc = cmdDesc[cmdStr]
+	local desc = cmdDesc[cmdStr]
 	if desc then
 		a.MouseEnter:Connect(function()
 			a.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
@@ -12476,8 +12709,8 @@ for i, cmdStr in ipairs(cmds) do
 			if tooltip and not isMobile then
 				tooltip.Visible = true
 				tooltip:FindFirstChild("TipText").Text = desc
-				textService = game:GetService("TextService")
-				textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
+				local textService = game:GetService("TextService")
+				local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
 				tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
 			end
 		end)
@@ -12544,207 +12777,6 @@ function makeSection(parent, titleText, h)
 	t.ZIndex = 2147483647
 
 	return s
-end
-
--- ========== PREFIX CHANGE SECTION ==========
-do
-a = makeSection(setScroll, "PREFIX CHANGE", 110)
-
-a = Instance.new("TextLabel", a)
-a.Size = UDim2.new(0.9, 0, 0, math.floor(22 * scale))
-a.Position = UDim2.new(0.05, 0, 0, math.floor(36 * scale))
-a.BackgroundTransparency = 1
-a.Text = "Current Prefix: " .. _G.LunarPrefix
-a.Font = Enum.Font.Code
-a.TextSize = math.floor(14 * fontScale)
-a.TextColor3 = globalConfig.textColor
-a.TextXAlignment = Enum.TextXAlignment.Left
-a.ZIndex = 2147483647
-_G.prefixLabel = a
-
-a = Instance.new("TextBox", _G.prefixLabel.Parent)
-a.Size = UDim2.new(0.5, 0, 0, math.floor(32 * scale))
-a.Position = UDim2.new(0.05, 0, 0, math.floor(62 * scale))
-a.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-a.BorderSizePixel = 0
-a.Text = _G.LunarPrefix
-a.PlaceholderText = "Enter symbol..."
-a.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-a.Font = Enum.Font.Code
-a.TextSize = math.floor(14 * fontScale)
-a.TextColor3 = globalConfig.textColor
-a.ClearTextOnFocus = false
-a.ZIndex = 2147483647
-Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
-_G.prefixInput = a
-
-a = Instance.new("TextButton", _G.prefixLabel.Parent)
-a.Size = UDim2.new(0.35, 0, 0, math.floor(32 * scale))
-a.Position = UDim2.new(0.6, 0, 0, math.floor(62 * scale))
-a.BackgroundColor3 = currentTheme.accent
-a.Text = "Set Prefix"
-a.Font = Enum.Font.Code
-a.TextSize = math.floor(12 * fontScale)
-a.TextColor3 = Color3.new(0, 0, 0)
-a.BorderSizePixel = 0
-a.ZIndex = 2147483647
-Instance.new("UICorner", a).CornerRadius = UDim.new(0, 6)
-
-a.MouseButton1Click:Connect(function()
-	local newPrefix = _G.prefixInput.Text:gsub("%s+", "")
-	if #newPrefix == 0 then notify("Prefix cannot be empty!", Color3.fromRGB(255, 100, 100)); return end
-	if #newPrefix > 3 then notify("Prefix too long! Max 3 chars.", Color3.fromRGB(255, 100, 100)); return end
-	_G.LunarPrefix = newPrefix
-	_G.prefixLabel.Text = "Current Prefix: " .. newPrefix
-	_G.prefixInput.Text = newPrefix
-
-	-- Rebuild all command displays with new prefix
-	allCommands = BuildAllCommands()
-	cmds = BuildCmds()
-	cmdDesc = BuildCmdDesc()
-
-	-- Rebuild command list panel
-	for _, child in ipairs(listScroll:GetChildren()) do
-		if child:IsA("TextButton") then child:Destroy() end
-	end
-	for _, cmd in ipairs(allCommands) do
-		createCmdListButton(cmd)
-	end
-	listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
-
-	-- Rebuild main command buttons
-	for _, child in ipairs(cmdScroll:GetChildren()) do
-		if child:IsA("TextButton") then child:Destroy() end
-	end
-	local rebuiltCmds = BuildCmds()
-	local rebuiltDesc = BuildCmdDesc()
-	for i, cmdStr in ipairs(rebuiltCmds) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(42 * scale))
-		btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
-		btn.Text = "  " .. cmdStr
-		btn.Font = Enum.Font.Code
-		btn.TextSize = math.floor(14 * fontScale)
-		btn.TextColor3 = globalConfig.textColor
-		btn.TextXAlignment = Enum.TextXAlignment.Left
-		btn.TextStrokeTransparency = 0.5
-		btn.TextStrokeColor3 = Color3.new(0,0,0)
-		btn.BorderSizePixel = 0
-		btn.Parent = cmdScroll
-		btn.LayoutOrder = i
-		btn.ZIndex = 2147483647
-		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-		local desc = rebuiltDesc[cmdStr]
-		if desc then
-			btn.MouseEnter:Connect(function()
-				btn.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
-				btn.TextColor3 = currentTheme.accent
-				if tooltip and not isMobile then
-					tooltip.Visible = true
-					tooltip:FindFirstChild("TipText").Text = desc
-					local textService = game:GetService("TextService")
-					local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
-					tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
-				end
-			end)
-			btn.MouseLeave:Connect(function()
-				btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
-				btn.TextColor3 = globalConfig.textColor
-				if tooltip and not isMobile then
-					tooltip.Visible = false
-				end
-			end)
-		end
-		btn.MouseButton1Click:Connect(function()
-			if setclipboard then
-				setclipboard(cmdStr)
-				notify("Copied: " .. cmdStr, Color3.fromRGB(100, 255, 100))
-			end
-		end)
-	end
-
-	notify("Prefix changed to: " .. newPrefix, Color3.fromRGB(100, 255, 100))
-end)
-
-_G.prefixInput.FocusLost:Connect(function(enterPressed)
-	if enterPressed then
-		local newPrefix = _G.prefixInput.Text:gsub("%s+", "")
-		if #newPrefix == 0 then notify("Prefix cannot be empty!", Color3.fromRGB(255, 100, 100)); return end
-		if #newPrefix > 3 then notify("Prefix too long! Max 3 chars.", Color3.fromRGB(255, 100, 100)); return end
-		_G.LunarPrefix = newPrefix
-		_G.prefixLabel.Text = "Current Prefix: " .. newPrefix
-		_G.prefixInput.Text = newPrefix
-
-		-- Rebuild all command displays with new prefix
-		allCommands = BuildAllCommands()
-		cmds = BuildCmds()
-		cmdDesc = BuildCmdDesc()
-
-		-- Rebuild command list panel
-		for _, child in ipairs(listScroll:GetChildren()) do
-			if child:IsA("TextButton") then child:Destroy() end
-		end
-		for _, cmd in ipairs(allCommands) do
-			createCmdListButton(cmd)
-		end
-		listScroll.CanvasSize = UDim2.new(0, 0, 0, #allCommands * math.floor(26 * scale))
-
-		-- Rebuild main command buttons
-		for _, child in ipairs(cmdScroll:GetChildren()) do
-			if child:IsA("TextButton") then child:Destroy() end
-		end
-		local rebuiltCmds = BuildCmds()
-		local rebuiltDesc = BuildCmdDesc()
-		for i, cmdStr in ipairs(rebuiltCmds) do
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(42 * scale))
-			btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
-			btn.Text = "  " .. cmdStr
-			btn.Font = Enum.Font.Code
-			btn.TextSize = math.floor(14 * fontScale)
-			btn.TextColor3 = globalConfig.textColor
-			btn.TextXAlignment = Enum.TextXAlignment.Left
-			btn.TextStrokeTransparency = 0.5
-			btn.TextStrokeColor3 = Color3.new(0,0,0)
-			btn.BorderSizePixel = 0
-			btn.Parent = cmdScroll
-			btn.LayoutOrder = i
-			btn.ZIndex = 2147483647
-			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-			local desc = rebuiltDesc[cmdStr]
-			if desc then
-				btn.MouseEnter:Connect(function()
-					btn.BackgroundColor3 = currentTheme.btn or Color3.fromRGB(50, 50, 60)
-					btn.TextColor3 = currentTheme.accent
-					if tooltip and not isMobile then
-						tooltip.Visible = true
-						tooltip:FindFirstChild("TipText").Text = desc
-						local textService = game:GetService("TextService")
-						local textSize = textService:GetTextSize(desc, math.floor(13 * fontScale), Enum.Font.Code, Vector2.new(math.floor(244 * scale), 9999))
-						tooltip.Size = UDim2.new(0, math.floor(260 * scale), 0, math.max(math.floor(44 * scale), textSize.Y + math.floor(20 * scale)))
-					end
-				end)
-				btn.MouseLeave:Connect(function()
-					btn.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
-					btn.TextColor3 = globalConfig.textColor
-					if tooltip and not isMobile then
-						tooltip.Visible = false
-					end
-				end)
-			end
-			btn.MouseButton1Click:Connect(function()
-				if setclipboard then
-					setclipboard(cmdStr)
-					notify("Copied: " .. cmdStr, Color3.fromRGB(100, 255, 100))
-				end
-			end)
-		end
-
-		notify("Prefix changed to: " .. newPrefix, Color3.fromRGB(100, 255, 100))
-	end
-end)
 end
 
 -- Text Color Section
@@ -12856,10 +12888,10 @@ UserInputService.InputChanged:Connect(function(input)
 	if not activeSliderComp then return end
 	if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
 
-	s = sliders[activeSliderComp]
+	local s = sliders[activeSliderComp]
 	if not s then return end
 
-	pos = math.clamp((input.Position.X - s.track.AbsolutePosition.X) / s.track.AbsoluteSize.X, 0, 1)
+	local pos = math.clamp((input.Position.X - s.track.AbsolutePosition.X) / s.track.AbsoluteSize.X, 0, 1)
 	s.fill.Size = UDim2.new(pos, 0, 1, 0)
 	s.knob.Position = UDim2.new(pos, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
 	updateAllColors()
@@ -12901,7 +12933,7 @@ tKnob.BorderSizePixel = 0
 tKnob.ZIndex = 2147483647
 Instance.new("UICorner", tKnob).CornerRadius = UDim.new(1, 0)
 
-tDragging = false
+local tDragging = false
 
 function updateTrans(x)
 	local pos = math.clamp((x - tTrack.AbsolutePosition.X) / tTrack.AbsoluteSize.X, 0, 1)
@@ -12935,13 +12967,13 @@ end)
 
 -- ========== SOUND SETTINGS SECTION ==========
 do
-	mSection = makeSection(setScroll, "SOUND SETTINGS", 320)
+	local mSection = makeSection(setScroll, "SOUND SETTINGS", 320)
 
 	_G.uiSoundVol = 1
 	_G.notifSoundVol = 0.55
 	_G.customNotifId = "rbxassetid://97643101798871"
 
-	activeSlider = nil
+	local activeSlider = nil
 
 	local function mkSlider(parent, y, lbl, def, key)
 		local c = Instance.new("Frame", parent)
@@ -13007,8 +13039,8 @@ do
 		return setVol
 	end
 
-	uiSetVol = mkSlider(mSection, 38, "UI Vol", 1, "uiSoundVol")
-	nfSetVol = mkSlider(mSection, 96, "Notif Vol", 0.55, "notifSoundVol")
+	local uiSetVol = mkSlider(mSection, 38, "UI Vol", 1, "uiSoundVol")
+	local nfSetVol = mkSlider(mSection, 96, "Notif Vol", 0.55, "notifSoundVol")
 
 	UserInputService.InputChanged:Connect(function(inp)
 		if not activeSlider then return end
@@ -13026,13 +13058,13 @@ do
 		end
 	end)
 
-	c = Instance.new("Frame", mSection)
+	local c = Instance.new("Frame", mSection)
 	c.Size = UDim2.new(0.9, 0, 0, math.floor(70*scale))
 	c.Position = UDim2.new(0.05, 0, 0, math.floor(154*scale))
 	c.BackgroundTransparency = 1
 	c.ZIndex = 2147483647
 
-	l = Instance.new("TextLabel", c)
+	local l = Instance.new("TextLabel", c)
 	l.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
 	l.BackgroundTransparency = 1
 	l.Text = "Custom Notif Sound ID"
@@ -13042,7 +13074,7 @@ do
 	l.TextXAlignment = Enum.TextXAlignment.Left
 	l.ZIndex = 2147483647
 
-	b = Instance.new("TextBox", c)
+	local b = Instance.new("TextBox", c)
 	b.Size = UDim2.new(1, math.floor(-70*scale), 0, math.floor(36*scale))
 	b.Position = UDim2.new(0, 0, 0, math.floor(24*scale))
 	b.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
@@ -13060,7 +13092,7 @@ do
 	b.TextEditable = true
 	b.ClearTextOnFocus = false
 
-	btn = Instance.new("TextButton", c)
+	local btn = Instance.new("TextButton", c)
 	btn.Size = UDim2.new(0, math.floor(60*scale), 0, math.floor(28*scale))
 	btn.Position = UDim2.new(1, math.floor(-65*scale), 0, math.floor(28*scale))
 	btn.BackgroundColor3 = currentTheme.accent
@@ -13073,7 +13105,7 @@ do
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
 	btn.MouseButton1Click:Connect(function()
-		t = b.Text:gsub("%s+", "")
+		local t = b.Text:gsub("%s+", "")
 		if t ~= "" then
 			if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
 			_G.customNotifId = t
@@ -13083,7 +13115,7 @@ do
 
 	b.FocusLost:Connect(function(enterPressed)
 		if enterPressed then
-			t = b.Text:gsub("%s+", "")
+			local t = b.Text:gsub("%s+", "")
 			if t ~= "" then
 				if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
 				_G.customNotifId = t
@@ -13092,7 +13124,7 @@ do
 		end
 	end)
 
-	test = Instance.new("TextButton", mSection)
+	local test = Instance.new("TextButton", mSection)
 	test.Size = UDim2.new(0.9, 0, 0, math.floor(32*scale))
 	test.Position = UDim2.new(0.05, 0, 0, math.floor(232*scale))
 	test.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
@@ -13106,11 +13138,11 @@ do
 
 	test.MouseButton1Click:Connect(function()
 		if notifSoundMuted then notify("Notif sounds muted!", Color3.fromRGB(255, 100, 100)); return end
-		s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
+		local s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
 		s.Parent = SoundService; s:Play(); Debris:AddItem(s, 4)
 	end)
 
-	mc = Instance.new("Frame", mSection)
+	local mc = Instance.new("Frame", mSection)
 	mc.Size = UDim2.new(0.9, 0, 0, math.floor(36*scale))
 	mc.Position = UDim2.new(0.05, 0, 0, math.floor(272*scale))
 	mc.BackgroundTransparency = 1
@@ -13153,30 +13185,31 @@ do
 	mkMute(mc, 0.52, 0.48, notifSoundMuted, "🔊 Notif", "🔇 Notif", false)
 end
 
--- ========== THEME SELECTOR SECTION ==========
+-- ========== THEME SELECTOR SECTION (BEAUTIFUL) ==========
 thSection = makeSection(setScroll, "THEME SELECTOR", 0)
 
 thCont = Instance.new("Frame", thSection)
+thCont.Name = "ThemeContainer"
 thCont.Size = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-40 * scale))
 thCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale))
 thCont.BackgroundTransparency = 1
 thCont.ZIndex = 2147483647
 
-sortedThemes = {}
+local sortedThemes = {}
 for name in pairs(themes) do
 	table.insert(sortedThemes, name)
 end
 table.sort(sortedThemes)
 
-thCount = #sortedThemes
-cols = 2
-rows = math.ceil(thCount / cols)
+local thCount = #sortedThemes
+local cols = 2
+local rows = math.ceil(thCount / cols)
 
-sectionHeight = math.floor(36 * scale) + math.floor(rows * 55 * scale) + math.floor(10 * scale)
+local sectionHeight = math.floor(36 * scale) + math.floor(rows * 70 * scale) + math.floor(10 * scale)
 thSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, sectionHeight)
 
 thGrid = Instance.new("UIGridLayout", thCont)
-thGrid.CellSize = UDim2.new(0.48, 0, 0, math.floor(45 * scale))
+thGrid.CellSize = UDim2.new(0.48, 0, 0, math.floor(60 * scale))
 thGrid.CellPadding = UDim2.new(0, math.floor(10 * scale), 0, math.floor(10 * scale))
 thGrid.SortOrder = Enum.SortOrder.LayoutOrder
 thGrid.FillDirection = Enum.FillDirection.Horizontal
@@ -13184,92 +13217,213 @@ thGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 thGrid.VerticalAlignment = Enum.VerticalAlignment.Top
 
 for i, name in ipairs(sortedThemes) do
-	th = themes[name]
-	themeBtn = Instance.new("TextButton", thCont)
-	themeBtn.Name = name .. "ThemeBtn"
-	themeBtn.BackgroundColor3 = th.accent
-	themeBtn.Text = name
-	themeBtn.Font = Enum.Font.Code
-	themeBtn.TextSize = math.floor(13 * fontScale)
-	themeBtn.TextColor3 = th.text
-	themeBtn.TextScaled = false
-	themeBtn.TextWrapped = true
-	themeBtn.TextTruncate = Enum.TextTruncate.AtEnd
-	themeBtn.BorderSizePixel = 0
-	themeBtn.LayoutOrder = i
-	themeBtn.ZIndex = 2147483647
-	Instance.new("UICorner", themeBtn).CornerRadius = UDim.new(0, 6)
-
-	btnStroke = Instance.new("UIStroke", themeBtn)
-	btnStroke.Color = Color3.fromRGB(255, 255, 255)
-	btnStroke.Transparency = 0.85
-	btnStroke.Thickness = 1
-
-	themeBtn.MouseButton1Click:Connect(function()
-		oldTheme = currentTheme
-		currentTheme = th
-
-		mainFrame.BackgroundColor3 = th.glass
-		if topBar then topBar.BackgroundColor3 = th.glass end
-
-		titleLabel.TextColor3 = th.accent
-
-		cmdTab.BackgroundColor3 = th.accent
-		cmdTab.TextColor3 = th.text
-		setTab.BackgroundColor3 = th.btn
-		setTab.TextColor3 = globalConfig.textColor
-
-		cmdBarFrame.BackgroundColor3 = th.list
-
-		if cmdScroll then cmdScroll.BackgroundColor3 = th.glass end
-		if setScroll then setScroll.BackgroundColor3 = th.glass end
-
-		for _, obj in ipairs(lunarGui:GetDescendants()) do
-			if obj:IsDescendantOf(thCont) then continue end
-
-			if obj:IsA("TextButton") then
-				if obj.BackgroundColor3 == oldTheme.accent then obj.BackgroundColor3 = th.accent end
-				if obj.BackgroundColor3 == oldTheme.btn then obj.BackgroundColor3 = th.btn end
-				if obj.BackgroundColor3 == oldTheme.glass then obj.BackgroundColor3 = th.glass end
-				if obj.BackgroundColor3 == oldTheme.list then obj.BackgroundColor3 = th.list end
-				if obj.TextColor3 == oldTheme.accent then obj.TextColor3 = th.accent end
-				if obj.TextColor3 == oldTheme.text then obj.TextColor3 = th.text end
-			end
-			if obj:IsA("TextLabel") then
-				if obj.TextColor3 == oldTheme.accent then obj.TextColor3 = th.accent end
-				if obj.TextColor3 == oldTheme.text then obj.TextColor3 = th.text end
-			end
-			if obj:IsA("Frame") then
-				if obj.BackgroundColor3 == oldTheme.glass then obj.BackgroundColor3 = th.glass end
-				if obj.BackgroundColor3 == oldTheme.list then obj.BackgroundColor3 = th.list end
-				if obj.BackgroundColor3 == oldTheme.btn then obj.BackgroundColor3 = th.btn end
+	local th = themes[name]
+	
+	-- Card frame
+	local card = Instance.new("TextButton", thCont)
+	card.Name = name .. "ThemeCard"
+	card.Text = ""
+	card.Size = UDim2.new(1, 0, 1, 0)
+	card.BackgroundColor3 = th.glass
+	card.BorderSizePixel = 0
+	card.LayoutOrder = i
+	card.ZIndex = 2147483647
+	card.AutoButtonColor = false
+	card:SetAttribute("LunarBgRole", "glass")
+	
+	local cardCorner = Instance.new("UICorner", card)
+	cardCorner.CornerRadius = UDim.new(0, 8)
+	
+	local cardStroke = Instance.new("UIStroke", card)
+	cardStroke.Color = th.accent
+	cardStroke.Transparency = 0.7
+	cardStroke.Thickness = 1.5
+	cardStroke:SetAttribute("LunarStrokeRole", "accent")
+	
+	-- Color preview strip
+	local preview = Instance.new("Frame", card)
+	preview.Name = "Preview"
+	preview.Size = UDim2.new(1, 0, 0, math.floor(18 * scale))
+	preview.Position = UDim2.new(0, 0, 0, 0)
+	preview.BorderSizePixel = 0
+	preview.ZIndex = 2147483647
+	preview:SetAttribute("LunarBgRole", "accent")
+	
+	local pCorner = Instance.new("UICorner", preview)
+	pCorner.CornerRadius = UDim.new(0, 8)
+	
+	-- Gradient overlay on preview
+	local grad = Instance.new("UIGradient", preview)
+	grad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, th.accent),
+		ColorSequenceKeypoint.new(0.5, th.btn),
+		ColorSequenceKeypoint.new(1, th.list),
+	})
+	grad.Rotation = 90
+	
+	-- Theme name
+	local nameLabel = Instance.new("TextLabel", card)
+	nameLabel.Name = "Name"
+	nameLabel.Size = UDim2.new(1, 0, 0, math.floor(20 * scale))
+	nameLabel.Position = UDim2.new(0, 0, 0, math.floor(20 * scale))
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = name
+	nameLabel.Font = Enum.Font.Code
+	nameLabel.TextSize = math.floor(13 * fontScale)
+	nameLabel.TextColor3 = th.text
+	nameLabel.TextScaled = false
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	nameLabel.ZIndex = 2147483647
+	nameLabel:SetAttribute("LunarTxtRole", "text")
+	
+	-- Subtle "Active" indicator dot
+	local dot = Instance.new("Frame", card)
+	dot.Name = "ActiveDot"
+	dot.Size = UDim2.new(0, 6, 0, 6)
+	dot.Position = UDim2.new(1, -12, 0, 6)
+	dot.BackgroundColor3 = th.accent
+	dot.BorderSizePixel = 0
+	dot.ZIndex = 2147483647
+	dot.Visible = (currentTheme == th)
+	dot:SetAttribute("LunarBgRole", "accent")
+	local dotCorner = Instance.new("UICorner", dot)
+	dotCorner.CornerRadius = UDim.new(1, 0)
+	
+	-- Hover effect
+	local hoverConn
+	hoverConn = card.MouseEnter:Connect(function()
+		cardStroke.Transparency = 0.3
+		cardStroke.Thickness = 2
+	end)
+	local leaveConn
+	leaveConn = card.MouseLeave:Connect(function()
+		cardStroke.Transparency = 0.7
+		cardStroke.Thickness = 1.5
+	end)
+	
+	-- Click to apply
+	card.MouseButton1Click:Connect(function()
+		applyTheme(name)
+		-- Update all dots
+		for _, child in ipairs(thCont:GetChildren()) do
+			if child:IsA("TextButton") and child:FindFirstChild("ActiveDot") then
+				child.ActiveDot.Visible = (child.Name == name .. "ThemeCard")
 			end
 		end
-
-		for _, s in pairs(sliders) do
-			if s and s.fill and s.fill.BackgroundColor3 == oldTheme.accent then
-				s.fill.BackgroundColor3 = th.accent
-			end
-		end
-		if tFill and tFill.BackgroundColor3 == oldTheme.accent then
-			tFill.BackgroundColor3 = th.accent
-		end
-
-		for _, obj in ipairs(cmdScroll:GetChildren()) do
-			if obj:IsA("TextButton") then
-				if obj.BackgroundColor3 == Color3.fromRGB(40, 40, 48) or obj.BackgroundColor3 == (oldTheme.list or Color3.fromRGB(40, 40, 48)) then
-					obj.BackgroundColor3 = th.list or Color3.fromRGB(40, 40, 48)
-				end
-				if obj.BackgroundColor3 == Color3.fromRGB(50, 50, 60) or obj.BackgroundColor3 == (oldTheme.btn or Color3.fromRGB(50, 50, 60)) then
-					obj.BackgroundColor3 = th.btn or Color3.fromRGB(50, 50, 60)
-				end
-			end
-		end
-
-		cDisplay.BackgroundColor3 = globalConfig.textColor
-		notify("Theme changed to " .. name, th.accent)
 	end)
 end
+
+-- ========== LAYOUT PRESET SELECTOR ==========
+layoutSection = makeSection(setScroll, "UI LAYOUT", 0)
+
+layoutCont = Instance.new("Frame", layoutSection)
+layoutCont.Name = "LayoutContainer"
+layoutCont.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(50 * scale))
+layoutCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale))
+layoutCont.BackgroundTransparency = 1
+layoutCont.ZIndex = 2147483647
+
+layoutSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(90 * scale))
+
+local layoutList = Instance.new("UIListLayout", layoutCont)
+layoutList.FillDirection = Enum.FillDirection.Horizontal
+layoutList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layoutList.VerticalAlignment = Enum.VerticalAlignment.Center
+layoutList.Padding = UDim.new(0, math.floor(10 * scale))
+
+for key, preset in pairs(layoutPresets) do
+	local lBtn = Instance.new("TextButton", layoutCont)
+	lBtn.Name = key .. "LayoutBtn"
+	lBtn.Size = UDim2.new(0, math.floor(80 * scale), 0, math.floor(32 * scale))
+	lBtn.BackgroundColor3 = currentTheme.btn
+	lBtn.Text = preset.name
+	lBtn.Font = Enum.Font.Code
+		lBtn.TextSize = math.floor(12 * fontScale)
+	lBtn.TextColor3 = currentTheme.text
+	lBtn.BorderSizePixel = 0
+	lBtn.ZIndex = 2147483647
+	lBtn:SetAttribute("LunarBgRole", "btn")
+	lBtn:SetAttribute("LunarTxtRole", "text")
+	Instance.new("UICorner", lBtn).CornerRadius = UDim.new(0, 6)
+
+	local lStroke = Instance.new("UIStroke", lBtn)
+	lStroke.Color = currentTheme.accent
+	lStroke.Transparency = 0.85
+	lStroke.Thickness = 1
+	lStroke:SetAttribute("LunarStrokeRole", "accent")
+
+	-- Active indicator for layout buttons
+	local lDot = Instance.new("Frame", lBtn)
+	lDot.Name = "ActiveDot"
+	lDot.Size = UDim2.new(0, 4, 0, 4)
+	lDot.Position = UDim2.new(0.5, -2, 1, -8)
+	lDot.BackgroundColor3 = currentTheme.accent
+	lDot.BorderSizePixel = 0
+	lDot.ZIndex = 2147483647
+	lDot.Visible = (currentLayout == preset)
+	lDot:SetAttribute("LunarBgRole", "accent")
+	Instance.new("UICorner", lDot).CornerRadius = UDim.new(1, 0)
+
+	-- Hover
+lBtn.MouseEnter:Connect(function()
+	lStroke.Transparency = 0.4
+	lStroke.Thickness = 1.5
+end)
+lBtn.MouseLeave:Connect(function()
+	lStroke.Transparency = 0.85
+	lStroke.Thickness = 1
+end)
+
+	-- Apply layout
+	lBtn.MouseButton1Click:Connect(function()
+		applyLayout(preset)
+		for _, child in ipairs(layoutCont:GetChildren()) do
+			if child:IsA("TextButton") and child:FindFirstChild("ActiveDot") then
+				child.ActiveDot.Visible = (child.Name == key .. "LayoutBtn")
+			end
+		end
+	end)
+end
+
+-- ========== LAYOUT APPLICATION ==========
+function applyLayout(preset)
+	currentLayout = preset
+
+	-- Update global spacing vars if they exist in your script
+	if _G.LunarScale then
+		-- Optional: store layout in config for persistence
+		_G.LunarLayout = preset.name
+	end
+
+	-- Recalculate section sizes based on preset
+	local newBtnHeight = preset.btnHeight
+	local newPad = preset.sectionPad
+	local newInner = preset.innerPad
+
+	-- Apply to all existing sections in setScroll
+	for _, section in ipairs(setScroll:GetChildren()) do
+		if section:IsA("Frame") and section.Name ~= "UIListLayout" then
+			local content = section:FindFirstChildWhichIsA("Frame")
+			if content then
+				content.Size = UDim2.new(1, math.floor(-newPad * 2 * scale), 1, math.floor(-40 * scale))
+				content.Position = UDim2.new(0, math.floor(newPad * scale), 0, math.floor(36 * scale))
+			end
+		end
+	end
+
+	-- Apply to command list buttons
+	for _, btn in ipairs(cmdScroll:GetChildren()) do
+		if btn:IsA("TextButton") then
+			btn.Size = UDim2.new(1, math.floor(-newInner * 2 * scale), 0, math.floor(newBtnHeight * scale))
+		end
+	end
+
+	notify("Layout changed to " .. preset.name, currentTheme.accent)
+end
+
+-- ========== INIT CALL ==========
+-- Call this ONCE at the very bottom of your script after everything is built:
+-- initThemeTags()
 
 -- Discord Section
 dSection = makeSection(setScroll, "COMMUNITY", 90)
@@ -13337,7 +13491,7 @@ el.TextSize = math.floor(12 * fontScale)
 el.TextColor3 = globalConfig.textColor
 el.ZIndex = 2147483647
 Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
-tpwalkInput = el
+local tpwalkInput = el
 
 el = Instance.new("TextButton", tpwalkInput.Parent)
 el.Size = UDim2.new(0.35, 0, 0, math.floor(28 * scale))
@@ -13351,7 +13505,7 @@ el.BorderSizePixel = 0
 el.ZIndex = 2147483647
 Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
 el.MouseButton1Click:Connect(function()
-	spd = tonumber(tpwalkInput.Text) or 5
+	local spd = tonumber(tpwalkInput.Text) or 5
 	_G.EnableTPWalk({tostring(spd)})
 end)
 
@@ -13374,7 +13528,7 @@ end)
 el = makeSection(uniScroll, "QUICK ACTIONS", 0)
 
 -- Modern muted colors
-btnColors = {
+local btnColors = {
 	fly = Color3.fromRGB(55, 75, 110),
 	fling = Color3.fromRGB(110, 55, 55),
 	aimbot = Color3.fromRGB(110, 70, 40),
@@ -13387,7 +13541,7 @@ btnColors = {
 	thirdp = Color3.fromRGB(60, 60, 70)
 }
 
-btnTextColors = {
+local btnTextColors = {
 	fly = Color3.fromRGB(180, 200, 255),
 	fling = Color3.fromRGB(255, 180, 180),
 	aimbot = Color3.fromRGB(255, 200, 160),
@@ -13400,11 +13554,11 @@ btnTextColors = {
 	thirdp = Color3.fromRGB(200, 200, 210)
 }
 
-bH = math.floor(38 * scale)
-bP = math.floor(6 * scale)
+local bH = math.floor(38 * scale)
+local bP = math.floor(6 * scale)
 el.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(32 * scale) + (5 * bH) + (6 * bP))
 
-grid = Instance.new("UIGridLayout", el)
+local grid = Instance.new("UIGridLayout", el)
 grid.CellSize = UDim2.new(0.48, 0, 0, bH)
 grid.CellPadding = UDim2.new(0, bP, 0, bP)
 grid.SortOrder = Enum.SortOrder.LayoutOrder
@@ -13451,8 +13605,8 @@ qBtn(el, "SitBtn", "Sit", "sit", function()
 end)
 
 -- Noclip toggle (needs state tracking)
-ncBtn = qBtn(el, "NoclipBtn", "Noclip: OFF", "noclip", function() end)
-ncOn = false
+local ncBtn = qBtn(el, "NoclipBtn", "Noclip: OFF", "noclip", function() end)
+local ncOn = false
 ncBtn.MouseButton1Click:Connect(function()
 	ncOn = not ncOn
 	if ncOn then
@@ -13544,11 +13698,11 @@ setupButtonSounds()
 
 task.spawn(function()
 	task.wait(0.8)
-	wm = Instance.new("ScreenGui")
+	local wm = Instance.new("ScreenGui")
 	wm.ResetOnSpawn = false
 	wm.DisplayOrder = 999999
 	wm.Parent = client.PlayerGui
-	label = Instance.new("TextLabel", wm)
+	local label = Instance.new("TextLabel", wm)
 	label.Size = UDim2.new(0, 320, 0, 40)
 	label.Position = UDim2.new(0.5, -160, 0.94, 0)
 	label.BackgroundTransparency = 1
