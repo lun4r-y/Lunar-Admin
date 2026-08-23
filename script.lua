@@ -10250,13 +10250,6 @@ TouchFling = {
 	flingAllIndex = 1,
 	flingAllTimer = 0,
 	isMobile = false,
-	-- NEW: Track the active fling loop thread so we can stop it
-	flingThread = nil,
-	-- NEW: Track if fling loop should stop
-	stopFling = false,
-	-- NEW: For fling all - track current target and whether to move on
-	flingAllCurrentTarget = nil,
-	flingAllStuckTimer = 0,
 	_t = nil,
 	_v = nil,
 	_p = nil,
@@ -10286,33 +10279,38 @@ TouchFling = {
 }
 
 -- Check mobile
-TouchFling._v = workspace.CurrentCamera.ViewportSize
-if UserInputService.TouchEnabled and (not UserInputService.KeyboardEnabled or not UserInputService.MouseEnabled or TouchFling._v.X < 700 or TouchFling._v.Y < 500) then
+local viewport = workspace.CurrentCamera.ViewportSize
+if UserInputService.TouchEnabled and (not UserInputService.KeyboardEnabled or not UserInputService.MouseEnabled or viewport.X < 700 or viewport.Y < 500) then
 	TouchFling.isMobile = true
 end
 
 function TouchFling:UpdateToggle(name, displayName)
-	TouchFling._t = self[name]
-	TouchFling._b = self.toggles[name]
-	if TouchFling._b then
-		TouchFling._b.Text = displayName .. ": " .. (TouchFling._t and "ON" or "OFF")
-		if name == "lockFling" then
-			TouchFling._b.TextColor3 = TouchFling._t and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(255, 80, 80)
-		else
-			TouchFling._b.TextColor3 = TouchFling._t and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 80, 80)
-		end
+	local btn = self.toggles[name]
+	if not btn or not btn.Parent then
+		-- Button was destroyed, clean up reference
+		self.toggles[name] = nil
+		return
+	end
+	local state = self[name]
+	btn.Text = displayName .. ": " .. (state and "ON" or "OFF")
+	if name == "lockFling" then
+		btn.TextColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(255, 80, 80)
+	else
+		btn.TextColor3 = state and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 80, 80)
 	end
 end
 
 function TouchFling:UpdateKeybindButton()
-	TouchFling._b = self.toggles.keybindBtn
-	if TouchFling._b then
-		TouchFling._t = self.clickTPKey and self.clickTPKey.Name or "None"
-		if self.clickTPKey == "MouseButton1" then TouchFling._t = "Mouse1" end
-		if self.clickTPKey == "MouseButton2" then TouchFling._t = "Mouse2" end
-		TouchFling._b.Text = "Click TP Key: " .. TouchFling._t
-		TouchFling._b.TextColor3 = Color3.fromRGB(100, 200, 255)
+	local btn = self.toggles.keybindBtn
+	if not btn or not btn.Parent then
+		self.toggles.keybindBtn = nil
+		return
 	end
+	local keyName = self.clickTPKey and self.clickTPKey.Name or "None"
+	if self.clickTPKey == "MouseButton1" then keyName = "Mouse1" end
+	if self.clickTPKey == "MouseButton2" then keyName = "Mouse2" end
+	btn.Text = "Click TP Key: " .. keyName
+	btn.TextColor3 = Color3.fromRGB(100, 200, 255)
 end
 
 function TouchFling:SelectPlayer(player)
@@ -10326,51 +10324,51 @@ end
 
 function TouchFling:ToggleMinimize()
 	if not self.mainFrame then return end
-	TouchFling._t = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	TouchFling._f = self.mainFrame
+	local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local main = self.mainFrame
 	if not self.isMinimized then
 		self.isMinimized = true
-		TweenService:Create(TouchFling._f, TouchFling._t, {Size = UDim2.new(0, TouchFling._f.Size.X.Offset, 0, 40)}):Play()
-		for _, obj in pairs(TouchFling._f:GetDescendants()) do
+		TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, main.Size.X.Offset, 0, 40)}):Play()
+		for _, obj in pairs(main:GetDescendants()) do
 			if obj:IsA("TextButton") and obj.Name ~= "MinimizeBtn" and obj.Name ~= "CloseBtn" then
-				TweenService:Create(obj, TouchFling._t, {TextTransparency = 1}):Play()
+				TweenService:Create(obj, tweenInfo, {TextTransparency = 1}):Play()
 			elseif obj:IsA("TextLabel") and obj.Name ~= "Title" then
-				TweenService:Create(obj, TouchFling._t, {TextTransparency = 1}):Play()
+				TweenService:Create(obj, tweenInfo, {TextTransparency = 1}):Play()
 			elseif obj:IsA("ScrollingFrame") or (obj:IsA("Frame") and obj.Name ~= "TopBar") then
-				TweenService:Create(obj, TouchFling._t, {BackgroundTransparency = 1}):Play()
+				TweenService:Create(obj, tweenInfo, {BackgroundTransparency = 1}):Play()
 			end
 		end
-		TouchFling._b = TouchFling._f:FindFirstChild("TopBar") and TouchFling._f.TopBar:FindFirstChild("MinimizeBtn")
-		if TouchFling._b then TouchFling._b.Text = "+" end
+		local minBtn = main:FindFirstChild("TopBar") and main.TopBar:FindFirstChild("MinimizeBtn")
+		if minBtn then minBtn.Text = "+" end
 	else
 		self.isMinimized = false
-		TouchFling._h = self.isMobile and 420 or 540
-		TweenService:Create(TouchFling._f, TouchFling._t, {Size = UDim2.new(0, TouchFling._f.Size.X.Offset, 0, TouchFling._h)}):Play()
-		for _, obj in pairs(TouchFling._f:GetDescendants()) do
+		local restoreHeight = self.isMobile and 420 or 540
+		TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, main.Size.X.Offset, 0, restoreHeight)}):Play()
+		for _, obj in pairs(main:GetDescendants()) do
 			if obj:IsA("TextButton") and obj.Name ~= "MinimizeBtn" and obj.Name ~= "CloseBtn" then
-				TweenService:Create(obj, TouchFling._t, {TextTransparency = 0}):Play()
+				TweenService:Create(obj, tweenInfo, {TextTransparency = 0}):Play()
 			elseif obj:IsA("TextLabel") then
-				TweenService:Create(obj, TouchFling._t, {TextTransparency = (obj.Name == "Watermark") and 0.5 or 0}):Play()
+				TweenService:Create(obj, tweenInfo, {TextTransparency = (obj.Name == "Watermark") and 0.5 or 0}):Play()
 			elseif obj:IsA("ScrollingFrame") then
-				TweenService:Create(obj, TouchFling._t, {BackgroundTransparency = 0.7}):Play()
+				TweenService:Create(obj, tweenInfo, {BackgroundTransparency = 0.7}):Play()
 			elseif obj:IsA("Frame") and obj.Name ~= "TopBar" then
-				TweenService:Create(obj, TouchFling._t, {BackgroundTransparency = 0}):Play()
+				TweenService:Create(obj, tweenInfo, {BackgroundTransparency = 0}):Play()
 			end
 		end
-		TouchFling._b = TouchFling._f:FindFirstChild("TopBar") and TouchFling._f.TopBar:FindFirstChild("MinimizeBtn")
-		if TouchFling._b then TouchFling._b.Text = "-" end
+		local minBtn = main:FindFirstChild("TopBar") and main.TopBar:FindFirstChild("MinimizeBtn")
+		if minBtn then minBtn.Text = "-" end
 	end
 end
 
 function TouchFling:StartKeySelection()
 	if self.isSelectingKey then return end
 	self.isSelectingKey = true
-	if self.toggles.keybindBtn then
+	if self.toggles.keybindBtn and self.toggles.keybindBtn.Parent then
 		self.toggles.keybindBtn.Text = "Press any key..."
 		self.toggles.keybindBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
 	end
-	TouchFling._c = nil
-	TouchFling._c = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	local conn
+	conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			self.clickTPKey = input.KeyCode
@@ -10381,96 +10379,10 @@ function TouchFling:StartKeySelection()
 		else
 			return
 		end
-		TouchFling._c:Disconnect()
+		conn:Disconnect()
 		self.isSelectingKey = false
 		self:UpdateKeybindButton()
 	end)
-end
-
--- WORKING: The spin fling method that actually works
--- This is used by ALL fling features (Touch Fling, Fling All, Lock Fling)
-function TouchFling:DoSpinFling()
-	local char = client.Character
-	if not char then return end
-	local root = char:FindFirstChild("HumanoidRootPart")
-	if not root then return end
-
-	local vel = root.Velocity
-	root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
-	RunService.RenderStepped:Wait()
-	if root.Parent then root.Velocity = vel end
-	RunService.Stepped:Wait()
-	if root.Parent then root.Velocity = vel + Vector3.new(0, 0.1, 0) end
-end
-
--- FIXED: Start the fling loop as a separate thread that can be stopped
-function TouchFling:StartFlingLoop()
-	-- Kill any existing thread
-	if self.flingThread then
-		self.stopFling = true
-		task.wait(0.1)
-		self.flingThread = nil
-	end
-
-	self.stopFling = false
-	self.flingThread = task.spawn(function()
-		while not self.stopFling do
-			self:DoSpinFling()
-			RunService.Heartbeat:Wait()
-		end
-		-- When stopped, make sure velocity is normal
-		local char = client.Character
-		if char then
-			local root = char:FindFirstChild("HumanoidRootPart")
-			if root then
-				root.Velocity = Vector3.new(0, 0, 0)
-			end
-		end
-	end)
-end
-
-function TouchFling:StopFlingLoop()
-	self.stopFling = true
-	if self.flingThread then
-		self.flingThread = nil
-	end
-	-- Reset velocity immediately
-	local char = client.Character
-	if char then
-		local root = char:FindFirstChild("HumanoidRootPart")
-		if root then
-			root.Velocity = Vector3.new(0, 0, 0)
-		end
-	end
-end
-
--- NEW: Check if a player has been flung (moved far or falling fast)
-function TouchFling:IsPlayerFlung(player)
-	if not player or not player.Character then return true end
-	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-	local hum = player.Character:FindFirstChildOfClass("Humanoid")
-	if not hrp or not hum then return true end
-	if hum.Health <= 0 then return true end
-
-	local vel = hrp.Velocity
-	if vel.Magnitude > 100 then return true end
-	if hrp.Position.Y < -50 then return true end
-
-	return false
-end
-
--- NEW: Get valid fling targets
-function TouchFling:GetValidTargets()
-	TouchFling._l = {}
-	for _, plr in ipairs(Players:GetPlayers()) do
-		if plr ~= client and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-			if hum and hum.Health > 0 then
-				table.insert(TouchFling._l, plr)
-			end
-		end
-	end
-	return TouchFling._l
 end
 
 function TouchFling:CreateGUI()
@@ -10479,153 +10391,140 @@ function TouchFling:CreateGUI()
 		return 
 	end
 
-	TouchFling._s = Instance.new("ScreenGui")
-	TouchFling._s.Name = "LunarTouchFling"
-	TouchFling._s.ResetOnSpawn = false
-	TouchFling._s.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "LunarTouchFling"
+	screenGui.ResetOnSpawn = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local success = pcall(function()
-		TouchFling._s.Parent = game:GetService("CoreGui")
+		screenGui.Parent = game:GetService("CoreGui")
 	end)
 	if not success then
-		TouchFling._s.Parent = client:WaitForChild("PlayerGui")
+		screenGui.Parent = client:WaitForChild("PlayerGui")
 	end
 
-	self.gui = TouchFling._s
+	self.gui = screenGui
 
-	TouchFling._m = self.isMobile
-	TouchFling._w = TouchFling._m and 260 or 300
-	TouchFling._h = TouchFling._m and 420 or 540
-	TouchFling._b = TouchFling._m and 32 or 38
-	TouchFling._t = TouchFling._m and 11 or 13
-	TouchFling._u = TouchFling._m and 18 or 22
+	local isMob = self.isMobile
+	local guiW = isMob and 260 or 300
+	local guiH = isMob and 420 or 540
+	local btnH = isMob and 32 or 38
+	local txtSize = isMob and 11 or 13
+	local titleSize = isMob and 18 or 22
 
-	TouchFling._f = Instance.new("Frame")
-	TouchFling._f.Name = "Main"
-	TouchFling._f.Parent = TouchFling._s
-	TouchFling._f.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-	TouchFling._f.BorderSizePixel = 0
-	TouchFling._f.Position = UDim2.new(0.35, 0, 0.3, 0)
-	TouchFling._f.Size = UDim2.new(0, TouchFling._w, 0, TouchFling._h)
-	TouchFling._f.Active = true
-	TouchFling._f.ClipsDescendants = true
-	self.mainFrame = TouchFling._f
+	local main = Instance.new("Frame")
+	main.Name = "Main"
+	main.Parent = screenGui
+	main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+	main.BorderSizePixel = 0
+	main.Position = UDim2.new(0.35, 0, 0.3, 0)
+	main.Size = UDim2.new(0, guiW, 0, guiH)
+	main.Active = true
+	main.ClipsDescendants = true
+	self.mainFrame = main
 
-	self.dragActive = false
-	self.dragStartPos = nil
-	self.dragFrameStart = nil
+	self.dragging = false
+	self.dragStartInputPos = nil
+	self.dragStartFramePos = nil
 
-	TouchFling._c = Instance.new("UICorner")
-	TouchFling._c.CornerRadius = UDim.new(0, 12)
-	TouchFling._c.Parent = TouchFling._f
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = main
 
-	TouchFling._r = Instance.new("UIGradient")
-	TouchFling._r.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(30,30,50)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,20))}
-	TouchFling._r.Rotation = 90
-	TouchFling._r.Parent = TouchFling._f
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(30,30,50)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,20))}
+	grad.Rotation = 90
+	grad.Parent = main
 
-	TouchFling._o = Instance.new("Frame")
-	TouchFling._o.Name = "TopBar"
-	TouchFling._o.Parent = TouchFling._f
-	TouchFling._o.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-	TouchFling._o.BorderSizePixel = 0
-	TouchFling._o.Size = UDim2.new(1, 0, 0, 36)
-	TouchFling._o.Active = true
-	TouchFling._o.ZIndex = 10
+	local topBar = Instance.new("Frame")
+	topBar.Name = "TopBar"
+	topBar.Parent = main
+	topBar.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+	topBar.BorderSizePixel = 0
+	topBar.Size = UDim2.new(1, 0, 0, 36)
+	topBar.Active = true
+	topBar.ZIndex = 10
 
-	TouchFling._o.InputBegan:Connect(function(input)
+	topBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			self.dragActive = true
-			self.dragStartPos = input.Position
-			self.dragFrameStart = TouchFling._f.Position
+			self.dragging = true
+			self.dragStartInputPos = input.Position
+			self.dragStartFramePos = main.Position
 			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then 
-					self.dragActive = false 
-				end
+				if input.UserInputState == Enum.UserInputState.End then self.dragging = false end
 			end)
 		end
 	end)
 
-	TouchFling._o.InputChanged:Connect(function(input)
-		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and self.dragActive then
-			TouchFling._i = input.Position - self.dragStartPos
-			TouchFling._f.Position = UDim2.new(
-				self.dragFrameStart.X.Scale, self.dragFrameStart.X.Offset + TouchFling._i.X,
-				self.dragFrameStart.Y.Scale, self.dragFrameStart.Y.Offset + TouchFling._i.Y
+	topBar.InputChanged:Connect(function(input)
+		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and self.dragging then
+			local delta = input.Position - self.dragStartInputPos
+			main.Position = UDim2.new(
+				self.dragStartFramePos.X.Scale, self.dragStartFramePos.X.Offset + delta.X,
+				self.dragStartFramePos.Y.Scale, self.dragStartFramePos.Y.Offset + delta.Y
 			)
 		end
 	end)
 
 	UserInputService.InputChanged:Connect(function(input)
-		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and self.dragActive then
-			TouchFling._i = input.Position - self.dragStartPos
-			TouchFling._f.Position = UDim2.new(
-				self.dragFrameStart.X.Scale, self.dragFrameStart.X.Offset + TouchFling._i.X,
-				self.dragFrameStart.Y.Scale, self.dragFrameStart.Y.Offset + TouchFling._i.Y
+		if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and self.dragging then
+			local delta = input.Position - self.dragStartInputPos
+			main.Position = UDim2.new(
+				self.dragStartFramePos.X.Scale, self.dragStartFramePos.X.Offset + delta.X,
+				self.dragStartFramePos.Y.Scale, self.dragStartFramePos.Y.Offset + delta.Y
 			)
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			self.dragActive = false
-		end
-	end)
+	local topCorner = Instance.new("UICorner")
+	topCorner.CornerRadius = UDim.new(0, 12)
+	topCorner.Parent = topBar
 
-	TouchFling._c = Instance.new("UICorner")
-	TouchFling._c.CornerRadius = UDim.new(0, 12)
-	TouchFling._c.Parent = TouchFling._o
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.Parent = topBar
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.new(0, 10, 0, 0)
+	title.Size = UDim2.new(0.5, 0, 1, 0)
+	title.Font = Enum.Font.GothamBold
+	title.Text = "Touch Fling"
+	title.TextColor3 = Color3.fromRGB(180, 220, 255)
+	title.TextSize = titleSize
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 11
 
-	TouchFling._l = Instance.new("TextLabel")
-	TouchFling._l.Name = "Title"
-	TouchFling._l.Parent = TouchFling._o
-	TouchFling._l.BackgroundTransparency = 1
-	TouchFling._l.Position = UDim2.new(0, 10, 0, 0)
-	TouchFling._l.Size = UDim2.new(0.5, 0, 1, 0)
-	TouchFling._l.Font = Enum.Font.Code
-	TouchFling._l.Text = "Touch Fling"
-	TouchFling._l.TextColor3 = Color3.fromRGB(180, 220, 255)
-	TouchFling._l.TextSize = TouchFling._u
-	TouchFling._l.TextXAlignment = Enum.TextXAlignment.Left
-	TouchFling._l.ZIndex = 11
+	local minBtn = Instance.new("TextButton")
+	minBtn.Name = "MinimizeBtn"
+	minBtn.Parent = topBar
+	minBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+	minBtn.Position = UDim2.new(1, -65, 0.5, -12)
+	minBtn.Size = UDim2.new(0, 26, 0, 26)
+	minBtn.Font = Enum.Font.GothamBold
+	minBtn.Text = "-"
+	minBtn.TextColor3 = Color3.new(1, 1, 1)
+	minBtn.TextSize = 18
+	minBtn.ZIndex = 11
+	local minCorner = Instance.new("UICorner")
+	minCorner.CornerRadius = UDim.new(0, 8)
+	minCorner.Parent = minBtn
 
-	TouchFling._b = Instance.new("TextButton")
-	TouchFling._b.Name = "MinimizeBtn"
-	TouchFling._b.Parent = TouchFling._o
-	TouchFling._b.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-	TouchFling._b.Position = UDim2.new(1, -65, 0.5, -12)
-	TouchFling._b.Size = UDim2.new(0, 26, 0, 26)
-	TouchFling._b.Font = Enum.Font.Code
-	TouchFling._b.Text = "-"
-	TouchFling._b.TextColor3 = Color3.new(1, 1, 1)
-	TouchFling._b.TextSize = 18
-	TouchFling._b.ZIndex = 11
-	TouchFling._c = Instance.new("UICorner")
-	TouchFling._c.CornerRadius = UDim.new(0, 8)
-	TouchFling._c.Parent = TouchFling._b
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseBtn"
+	closeBtn.Parent = topBar
+	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+	closeBtn.Position = UDim2.new(1, -34, 0.5, -12)
+	closeBtn.Size = UDim2.new(0, 26, 0, 26)
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = Color3.new(1, 1, 1)
+	closeBtn.TextSize = 16
+	closeBtn.ZIndex = 11
+	local closeCorner = Instance.new("UICorner")
+	closeCorner.CornerRadius = UDim.new(0, 8)
+	closeCorner.Parent = closeBtn
 
-	TouchFling._n = Instance.new("TextButton")
-	TouchFling._n.Name = "CloseBtn"
-	TouchFling._n.Parent = TouchFling._o
-	TouchFling._n.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-	TouchFling._n.Position = UDim2.new(1, -34, 0.5, -12)
-	TouchFling._n.Size = UDim2.new(0, 26, 0, 26)
-	TouchFling._n.Font = Enum.Font.Code
-	TouchFling._n.Text = "X"
-	TouchFling._n.TextColor3 = Color3.new(1, 1, 1)
-	TouchFling._n.TextSize = 16
-	TouchFling._n.ZIndex = 11
-	TouchFling._c = Instance.new("UICorner")
-	TouchFling._c.CornerRadius = UDim.new(0, 8)
-	TouchFling._c.Parent = TouchFling._n
-
-	TouchFling._n.MouseButton1Click:Connect(function()
-		self:StopFlingLoop()
-		self.gui:Destroy()
-		self.gui = nil
-		self.mainFrame = nil
-		self.toggles = {}
-		self.buttons = {}
+	closeBtn.MouseButton1Click:Connect(function()
+		-- Reset all states before destroying
 		self.enabled = false
 		self.flingAll = false
 		self.lockFling = false
@@ -10633,27 +10532,34 @@ function TouchFling:CreateGUI()
 		self.oneTimeTP = false
 		self.selectedPlayer = nil
 		self.isMinimized = false
+		self.isSelectingKey = false
+		
+		self.gui:Destroy()
+		self.gui = nil
+		self.mainFrame = nil
+		self.toggles = {}
+		self.buttons = {}
 	end)
 
-	TouchFling._b.MouseButton1Click:Connect(function()
+	minBtn.MouseButton1Click:Connect(function()
 		self:ToggleMinimize()
 	end)
 
 	local function makeToggle(y, text, name)
-		TouchFling._b = Instance.new("TextButton")
-		TouchFling._b.Name = name
-		TouchFling._b.Parent = TouchFling._f
-		TouchFling._b.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-		TouchFling._b.Position = UDim2.new(0.1, 0, y, 0)
-		TouchFling._b.Size = UDim2.new(0.8, 0, 0, (TouchFling._m and 32 or 38))
-		TouchFling._b.Font = Enum.Font.Code
-		TouchFling._b.Text = text .. ": OFF"
-		TouchFling._b.TextColor3 = Color3.fromRGB(255, 80, 80)
-		TouchFling._b.TextSize = (TouchFling._m and 11 or 13)
-		TouchFling._c = Instance.new("UICorner")
-		TouchFling._c.CornerRadius = UDim.new(0, 10)
-		TouchFling._c.Parent = TouchFling._b
-		return TouchFling._b
+		local btn = Instance.new("TextButton")
+		btn.Name = name
+		btn.Parent = main
+		btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+		btn.Position = UDim2.new(0.1, 0, y, 0)
+		btn.Size = UDim2.new(0.8, 0, 0, btnH)
+		btn.Font = Enum.Font.GothamSemibold
+		btn.Text = text .. ": OFF"
+		btn.TextColor3 = Color3.fromRGB(255, 80, 80)
+		btn.TextSize = txtSize
+		local c = Instance.new("UICorner")
+		c.CornerRadius = UDim.new(0, 10)
+		c.Parent = btn
+		return btn
 	end
 
 	self.toggles.enabled = makeToggle(0.10, "Touch Fling", "TouchFling")
@@ -10664,25 +10570,20 @@ function TouchFling:CreateGUI()
 
 	self.toggles.keybindBtn = Instance.new("TextButton")
 	self.toggles.keybindBtn.Name = "KeybindBtn"
-	self.toggles.keybindBtn.Parent = TouchFling._f
+	self.toggles.keybindBtn.Parent = main
 	self.toggles.keybindBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
 	self.toggles.keybindBtn.Position = UDim2.new(0.1, 0, 0.60, 0)
-	self.toggles.keybindBtn.Size = UDim2.new(0.8, 0, 0, (TouchFling._m and 32 or 38))
-	self.toggles.keybindBtn.Font = Enum.Font.Code
+	self.toggles.keybindBtn.Size = UDim2.new(0.8, 0, 0, btnH)
+	self.toggles.keybindBtn.Font = Enum.Font.GothamSemibold
 	self.toggles.keybindBtn.Text = "Click TP Key: E"
 	self.toggles.keybindBtn.TextColor3 = Color3.fromRGB(100, 200, 255)
-	self.toggles.keybindBtn.TextSize = (TouchFling._m and 11 or 13)
-	TouchFling._c = Instance.new("UICorner")
-	TouchFling._c.CornerRadius = UDim.new(0, 10)
-	TouchFling._c.Parent = self.toggles.keybindBtn
+	self.toggles.keybindBtn.TextSize = txtSize
+	local kc = Instance.new("UICorner")
+	kc.CornerRadius = UDim.new(0, 10)
+	kc.Parent = self.toggles.keybindBtn
 
 	self.toggles.enabled.MouseButton1Click:Connect(function()
 		self.enabled = not self.enabled
-		if self.enabled then
-			self:StartFlingLoop()
-		else
-			self:StopFlingLoop()
-		end
 		self:UpdateToggle("enabled", "Touch Fling")
 	end)
 
@@ -10690,8 +10591,6 @@ function TouchFling:CreateGUI()
 		self.flingAll = not self.flingAll
 		self.flingAllIndex = 1
 		self.flingAllTimer = 0
-		self.flingAllCurrentTarget = nil
-		self.flingAllStuckTimer = 0
 		self:UpdateToggle("flingAll", "Fling All")
 	end)
 
@@ -10714,43 +10613,43 @@ function TouchFling:CreateGUI()
 		self:StartKeySelection()
 	end)
 
-	TouchFling._l = Instance.new("TextLabel")
-	TouchFling._l.Name = "ListLabel"
-	TouchFling._l.Parent = TouchFling._f
-	TouchFling._l.BackgroundTransparency = 1
-	TouchFling._l.Position = UDim2.new(0.1, 0, 0.70, 0)
-	TouchFling._l.Size = UDim2.new(0.8, 0, 0, 18)
-	TouchFling._l.Font = Enum.Font.Code
-	TouchFling._l.Text = "Select Player"
-	TouchFling._l.TextColor3 = Color3.fromRGB(200, 200, 255)
-	TouchFling._l.TextSize = (TouchFling._m and 11 or 13) + 1
+	local listLabel = Instance.new("TextLabel")
+	listLabel.Name = "ListLabel"
+	listLabel.Parent = main
+	listLabel.BackgroundTransparency = 1
+	listLabel.Position = UDim2.new(0.1, 0, 0.70, 0)
+	listLabel.Size = UDim2.new(0.8, 0, 0, 18)
+	listLabel.Font = Enum.Font.GothamSemibold
+	listLabel.Text = "Select Player"
+	listLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
+	listLabel.TextSize = txtSize + 1
 
-	TouchFling._s = Instance.new("ScrollingFrame")
-	TouchFling._s.Name = "PlayerScroll"
-	TouchFling._s.Parent = TouchFling._f
-	TouchFling._s.Position = UDim2.new(0.1, 0, 0.75, 0)
-	TouchFling._s.Size = UDim2.new(0.8, 0, 0, (TouchFling._m and 80 or 100))
-	TouchFling._s.BackgroundTransparency = 0.7
-	TouchFling._s.ScrollBarThickness = 4
-	TouchFling._c = Instance.new("UICorner")
-	TouchFling._c.CornerRadius = UDim.new(0, 8)
-	TouchFling._c.Parent = TouchFling._s
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name = "PlayerScroll"
+	scroll.Parent = main
+	scroll.Position = UDim2.new(0.1, 0, 0.75, 0)
+	scroll.Size = UDim2.new(0.8, 0, 0, isMob and 80 or 100)
+	scroll.BackgroundTransparency = 0.7
+	scroll.ScrollBarThickness = 4
+	local sc = Instance.new("UICorner")
+	sc.CornerRadius = UDim.new(0, 8)
+	sc.Parent = scroll
 
-	TouchFling._u = Instance.new("UIListLayout")
-	TouchFling._u.Parent = TouchFling._s
-	TouchFling._u.Padding = UDim.new(0, 4)
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Parent = scroll
+	listLayout.Padding = UDim.new(0, 4)
 
-	TouchFling._l = Instance.new("TextLabel")
-	TouchFling._l.Name = "Watermark"
-	TouchFling._l.Parent = TouchFling._f
-	TouchFling._l.BackgroundTransparency = 1
-	TouchFling._l.Position = UDim2.new(0.05, 0, 0.93, 0)
-	TouchFling._l.Size = UDim2.new(0.9, 0, 0, 16)
-	TouchFling._l.Font = Enum.Font.Code
-	TouchFling._l.Text = "https://discord.gg/ydNKRbFmUd"
-	TouchFling._l.TextColor3 = Color3.fromRGB(120, 180, 255)
-	TouchFling._l.TextSize = 11
-	TouchFling._l.TextTransparency = 0.5
+	local watermark = Instance.new("TextLabel")
+	watermark.Name = "Watermark"
+	watermark.Parent = main
+	watermark.BackgroundTransparency = 1
+	watermark.Position = UDim2.new(0.05, 0, 0.93, 0)
+	watermark.Size = UDim2.new(0.9, 0, 0, 16)
+	watermark.Font = Enum.Font.Gotham
+	watermark.Text = "https://discord.gg/ydNKRbFmUd"
+	watermark.TextColor3 = Color3.fromRGB(120, 180, 255)
+	watermark.TextSize = 11
+	watermark.TextTransparency = 0.5
 
 	local function refreshList()
 		for plr, btn in pairs(self.buttons) do
@@ -10761,24 +10660,24 @@ function TouchFling:CreateGUI()
 		end
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if plr ~= client and not self.buttons[plr] then
-				TouchFling._b = Instance.new("TextButton")
-				TouchFling._b.Size = UDim2.new(1, -8, 0, 28)
-				TouchFling._b.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-				TouchFling._b.Text = plr.Name
-				TouchFling._b.TextColor3 = Color3.new(1, 1, 1)
-				TouchFling._b.Font = Enum.Font.Code
-				TouchFling._b.TextSize = 14
-				TouchFling._b.Parent = TouchFling._s
-				TouchFling._c = Instance.new("UICorner")
-				TouchFling._c.CornerRadius = UDim.new(0, 8)
-				TouchFling._c.Parent = TouchFling._b
-				TouchFling._b.MouseButton1Click:Connect(function()
+				local pBtn = Instance.new("TextButton")
+				pBtn.Size = UDim2.new(1, -8, 0, 28)
+				pBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+				pBtn.Text = plr.Name
+				pBtn.TextColor3 = Color3.new(1, 1, 1)
+				pBtn.Font = Enum.Font.GothamSemibold
+				pBtn.TextSize = 14
+				pBtn.Parent = scroll
+				local pc = Instance.new("UICorner")
+				pc.CornerRadius = UDim.new(0, 8)
+				pc.Parent = pBtn
+				pBtn.MouseButton1Click:Connect(function()
 					self:SelectPlayer(plr)
 				end)
-				self.buttons[plr] = TouchFling._b
+				self.buttons[plr] = pBtn
 			end
 		end
-		TouchFling._s.CanvasSize = UDim2.new(0, 0, 0, TouchFling._u.AbsoluteContentSize.Y + 10)
+		scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
 	end
 
 	Players.PlayerAdded:Connect(refreshList)
@@ -10789,12 +10688,10 @@ end
 
 -- Click TP with Keybind
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if TouchFling.dragActive then return end
 	if gameProcessed then return end
 	if not TouchFling.clickTP then return end
 
 	local shouldTP = false
-
 	if TouchFling.clickTPKey == "MouseButton1" and input.UserInputType == Enum.UserInputType.MouseButton1 then
 		shouldTP = true
 	elseif TouchFling.clickTPKey == "MouseButton2" and input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -10804,81 +10701,110 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 
 	if shouldTP and Mouse.Target then
-		TouchFling._t = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
-		if TouchFling._t then
-			TouchFling._t.CFrame = CFrame.new(Mouse.Hit.Position + Vector3.new(0, 3, 0))
+		local hrp = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.CFrame = CFrame.new(Mouse.Hit.Position + Vector3.new(0, 3, 0))
 		end
 	end
 end)
 
--- FIXED: Main Loop - ALL flings use DoSpinFling
+-- Main Loop
 RunService.Heartbeat:Connect(function(deltaTime)
-	-- FIXED: Fling All - teleport into person, stick until flung, then move to next
+	-- Touch Fling self - KEPT EXACTLY THE SAME
+	if TouchFling.enabled then
+		local char = client.Character
+		if char then
+			local hrp = char:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				local vel = hrp.Velocity
+				hrp.Velocity = vel * 12000 + Vector3.new(0, 14000, 0)
+				RunService.RenderStepped:Wait()
+				if hrp.Parent then hrp.Velocity = vel end
+				RunService.Stepped:Wait()
+				if hrp.Parent then 
+					hrp.Velocity = vel + Vector3.new(0, TouchFling.movel * 2, 0)
+					TouchFling.movel = -TouchFling.movel 
+				end
+			end
+		end
+	end
+
+	-- Fling All - FIXED: teleports into target and uses SAME self-fling mechanic
 	if TouchFling.flingAll then
-		local targets = TouchFling:GetValidTargets()
+		local myChar = client.Character
+		local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+		if not myHRP then return end
+
+		local targets = {}
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= client and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+				local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health > 0 then
+					table.insert(targets, plr)
+				end
+			end
+		end
 		if #targets == 0 then return end
 
-		-- If no current target or current target is flung/dead, pick next
-		if not TouchFling.flingAllCurrentTarget or TouchFling:IsPlayerFlung(TouchFling.flingAllCurrentTarget) then
-			local targetIndex = TouchFling.flingAllIndex
-			if targetIndex > #targets then
-				targetIndex = 1
+		TouchFling.flingAllTimer = TouchFling.flingAllTimer + deltaTime
+		if TouchFling.flingAllTimer >= 0.5 then
+			TouchFling.flingAllTimer = 0
+
+			local idx = TouchFling.flingAllIndex
+			if idx > #targets then
+				idx = 1
 				TouchFling.flingAllIndex = 1
 			end
 
-			TouchFling.flingAllCurrentTarget = targets[targetIndex]
-			TouchFling.flingAllStuckTimer = 0
-			TouchFling.flingAllIndex = targetIndex + 1
+			local target = targets[idx]
+			if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+				local targetHRP = target.Character.HumanoidRootPart
+				myHRP.CFrame = targetHRP.CFrame
+				local vel = myHRP.Velocity
+				myHRP.Velocity = vel * 12000 + Vector3.new(0, 14000, 0)
+				RunService.RenderStepped:Wait()
+				if myHRP.Parent then myHRP.Velocity = vel end
+				RunService.Stepped:Wait()
+				if myHRP.Parent then
+					myHRP.Velocity = vel + Vector3.new(0, TouchFling.movel * 2, 0)
+					TouchFling.movel = -TouchFling.movel
+				end
+			end
+
+			TouchFling.flingAllIndex = idx + 1
 			if TouchFling.flingAllIndex > #targets then
 				TouchFling.flingAllIndex = 1
 			end
 		end
-
-		-- Stick to current target and fling them using the SAME spin method
-		if TouchFling.flingAllCurrentTarget and TouchFling.flingAllCurrentTarget.Character then
-			local targetRoot = TouchFling.flingAllCurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-			local myRoot = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
-
-			if targetRoot and myRoot then
-				-- Teleport directly into them
-				myRoot.CFrame = targetRoot.CFrame
-
-				-- Use the SAME working spin fling method
-				TouchFling:DoSpinFling()
-
-				-- Safety: if stuck too long (3 sec), force move to next
-				TouchFling.flingAllStuckTimer = TouchFling.flingAllStuckTimer + deltaTime
-				if TouchFling.flingAllStuckTimer >= 3 then
-					TouchFling.flingAllCurrentTarget = nil
-					TouchFling.flingAllStuckTimer = 0
-				end
-			end
-		end
 	else
-		-- Reset when disabled
-		TouchFling.flingAllCurrentTarget = nil
-		TouchFling.flingAllStuckTimer = 0
 		TouchFling.flingAllTimer = 0
 	end
 
-	-- FIXED: Lock Fling - uses the SAME DoSpinFling method
+	-- Lock Fling - FIXED: teleports into target and uses SAME spin mechanic on yourself
 	if TouchFling.lockFling and TouchFling.selectedPlayer and TouchFling.selectedPlayer.Character then
-		TouchFling._t = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
-		TouchFling._v = TouchFling.selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
-		if TouchFling._t and TouchFling._v then
-			-- Stay on top of them
-			TouchFling._t.CFrame = TouchFling._v.CFrame
-			-- Use the SAME working spin fling method
-			TouchFling:DoSpinFling()
+		local myChar = client.Character
+		local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+		local targetHRP = TouchFling.selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if myHRP and targetHRP then
+			myHRP.CFrame = targetHRP.CFrame
+			local vel = myHRP.Velocity
+			myHRP.Velocity = vel * 12000 + Vector3.new(0, 16000, 0)
+			RunService.RenderStepped:Wait()
+			if myHRP.Parent then myHRP.Velocity = vel end
+			RunService.Stepped:Wait()
+			if myHRP.Parent then
+				myHRP.Velocity = vel + Vector3.new(0, TouchFling.movel * 3, 0)
+				TouchFling.movel = -TouchFling.movel
+			end
 		end
 	end
 
-	-- One-Time TP
+	-- One-Time TP - KEPT EXACTLY THE SAME
 	if TouchFling.oneTimeTP and TouchFling.selectedPlayer and TouchFling.selectedPlayer.Character then
-		TouchFling._t = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
-		TouchFling._v = TouchFling.selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
-		if TouchFling._t and TouchFling._v then
-			TouchFling._t.CFrame = TouchFling._v.CFrame
+		local myHRP = client.Character and client.Character:FindFirstChild("HumanoidRootPart")
+		local targetHRP = TouchFling.selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if myHRP and targetHRP then
+			myHRP.CFrame = targetHRP.CFrame
 		end
 	end
 end)
