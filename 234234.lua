@@ -1846,7 +1846,7 @@ task.spawn(function()
 	local visible = true
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if gp then return end
-		if input.KeyCode == Enum.KeyCode.P then
+		if input.KeyCode == Enum.KeyCode.L then
 			visible = not visible
 			frame.Visible = visible
 		end
@@ -8986,7 +8986,316 @@ local function unload()
 		notify("💥 Script fully destroyed", Color3.fromRGB(255, 80, 80))
 	end)
 end
+-- ============================================
+-- Freecam
+-- ============================================
+local FC = {
+	enabled = false,
 
+	render = nil,
+	input = nil,
+	toggleInput = nil,
+
+	camera = nil,
+	character = nil,
+
+	position = Vector3.zero,
+	targetPosition = Vector3.zero,
+	positionVelocity = Vector3.zero,
+
+	pitch = 0,
+	targetPitch = 0,
+	pitchVelocity = 0,
+
+	yaw = 0,
+	targetYaw = 0,
+	yawVelocity = 0,
+
+	fov = 70,
+	targetFov = 70,
+	fovVelocity = 0,
+
+	oldCameraType = nil,
+	oldCameraSubject = nil,
+	oldMouseBehavior = nil,
+	oldMouseIconEnabled = nil,
+	oldFov = nil,
+
+	oldWalkSpeed = nil,
+	oldJumpPower = nil,
+	oldJumpHeight = nil,
+	oldAutoRotate = nil,
+	oldPlatformStand = nil
+}
+
+function enableFreecam()
+	if FC.enabled then
+		return
+	end
+
+	FC.camera = workspace.CurrentCamera
+
+	if not FC.camera then
+		return
+	end
+
+	FC.enabled = true
+
+	FC.oldCameraType = FC.camera.CameraType
+	FC.oldCameraSubject = FC.camera.CameraSubject
+	FC.oldMouseBehavior = UserInputService.MouseBehavior
+	FC.oldMouseIconEnabled = UserInputService.MouseIconEnabled
+	FC.oldFov = FC.camera.FieldOfView
+
+	FC.position = FC.camera.CFrame.Position
+	FC.targetPosition = FC.position
+	FC.positionVelocity = Vector3.zero
+
+	FC.fov = FC.camera.FieldOfView
+	FC.targetFov = FC.fov
+	FC.fovVelocity = 0
+
+	local look = FC.camera.CFrame.LookVector
+
+	FC.targetPitch = math.asin(math.clamp(look.Y, -1, 1))
+	FC.targetYaw = math.atan2(-look.Z, -look.X) + math.pi / 2
+
+	FC.pitch = FC.targetPitch
+	FC.yaw = FC.targetYaw
+
+	FC.pitchVelocity = 0
+	FC.yawVelocity = 0
+
+	FC.character = client.Character
+
+	if FC.character then
+		FC.character = FC.character:FindFirstChildOfClass("Humanoid")
+
+		if FC.character then
+			FC.oldWalkSpeed = FC.character.WalkSpeed
+			FC.oldJumpPower = FC.character.JumpPower
+			FC.oldJumpHeight = FC.character.JumpHeight
+			FC.oldAutoRotate = FC.character.AutoRotate
+			FC.oldPlatformStand = FC.character.PlatformStand
+
+			FC.character.WalkSpeed = 0
+			FC.character.JumpPower = 0
+			FC.character.JumpHeight = 0
+			FC.character.AutoRotate = false
+			FC.character.Jump = false
+		end
+	end
+
+	FC.camera.CameraType = Enum.CameraType.Scriptable
+
+	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	UserInputService.MouseIconEnabled = false
+
+	FC.input = UserInputService.InputChanged:Connect(function(input)
+		if not FC.enabled then
+			return
+		end
+
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			FC.targetYaw -= input.Delta.X * 0.0025
+			FC.targetPitch -= input.Delta.Y * 0.0025
+
+			FC.targetPitch = math.clamp(
+				FC.targetPitch,
+				math.rad(-89),
+				math.rad(89)
+			)
+
+		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
+			FC.targetFov -= input.Position.Z * 4
+
+			FC.targetFov = math.clamp(
+				FC.targetFov,
+				5,
+				120
+			)
+		end
+	end)
+
+	FC.render = RunService.RenderStepped:Connect(function(dt)
+		if not FC.enabled then
+			return
+		end
+
+		FC.camera = workspace.CurrentCamera
+
+		if not FC.camera then
+			return
+		end
+
+		dt = math.min(dt, 1 / 30)
+
+		local rotation =
+			CFrame.Angles(0, FC.yaw, 0)
+			* CFrame.Angles(FC.pitch, 0, 0)
+
+		local movement = Vector3.zero
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			movement += rotation.LookVector
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			movement -= rotation.LookVector
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			movement += rotation.RightVector
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			movement -= rotation.RightVector
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.E) then
+			movement += Vector3.yAxis
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+			movement -= Vector3.yAxis
+		end
+
+		if movement.Magnitude > 0 then
+			movement = movement.Unit
+
+			local speed = 35
+
+			if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+				or UserInputService:IsKeyDown(Enum.KeyCode.RightShift) then
+
+				speed = 10
+			end
+
+			if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+				or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) then
+
+				speed = 90
+			end
+
+			FC.targetPosition += movement * speed * dt
+		end
+
+		local positionAcceleration =
+			(FC.targetPosition - FC.position) * 16
+			- FC.positionVelocity * 8
+
+		FC.positionVelocity += positionAcceleration * dt
+		FC.position += FC.positionVelocity * dt
+
+		local pitchAcceleration =
+			(FC.targetPitch - FC.pitch) * 25
+			- FC.pitchVelocity * 10
+
+		FC.pitchVelocity += pitchAcceleration * dt
+		FC.pitch += FC.pitchVelocity * dt
+
+		local yawDifference = math.atan2(
+			math.sin(FC.targetYaw - FC.yaw),
+			math.cos(FC.targetYaw - FC.yaw)
+		)
+
+		local yawAcceleration =
+			yawDifference * 25
+			- FC.yawVelocity * 10
+
+		FC.yawVelocity += yawAcceleration * dt
+		FC.yaw += FC.yawVelocity * dt
+
+		local fovAcceleration =
+			(FC.targetFov - FC.fov) * 25
+			- FC.fovVelocity * 10
+
+		FC.fovVelocity += fovAcceleration * dt
+		FC.fov += FC.fovVelocity * dt
+
+		FC.fov = math.clamp(FC.fov, 5, 120)
+
+		local final =
+			CFrame.new(FC.position)
+			* CFrame.Angles(0, FC.yaw, 0)
+			* CFrame.Angles(FC.pitch, 0, 0)
+
+		FC.camera.CFrame = final
+		FC.camera.Focus = final * CFrame.new(0, 0, -16)
+		FC.camera.FieldOfView = FC.fov
+	end)
+
+	notify("Freecam enabled", Color3.fromRGB(120, 220, 255))
+end
+
+function disableFreecam()
+	if not FC.enabled then
+		return
+	end
+
+	FC.enabled = false
+
+	if FC.render then
+		FC.render:Disconnect()
+		FC.render = nil
+	end
+
+	if FC.input then
+		FC.input:Disconnect()
+		FC.input = nil
+	end
+
+	UserInputService.MouseBehavior =
+		FC.oldMouseBehavior or Enum.MouseBehavior.Default
+
+	UserInputService.MouseIconEnabled =
+		FC.oldMouseIconEnabled ~= false
+
+	local camera = workspace.CurrentCamera
+
+	if camera then
+		camera.CameraType =
+			FC.oldCameraType or Enum.CameraType.Custom
+
+		camera.CameraSubject = FC.oldCameraSubject
+		camera.FieldOfView = FC.oldFov or 70
+	end
+
+	if FC.character and FC.character.Parent then
+		FC.character.WalkSpeed = FC.oldWalkSpeed or 16
+		FC.character.JumpPower = FC.oldJumpPower or 50
+		FC.character.JumpHeight = FC.oldJumpHeight or 7.2
+		FC.character.AutoRotate = FC.oldAutoRotate ~= false
+		FC.character.PlatformStand = FC.oldPlatformStand or false
+	end
+
+	FC.character = nil
+
+	FC.positionVelocity = Vector3.zero
+	FC.pitchVelocity = 0
+	FC.yawVelocity = 0
+	FC.fovVelocity = 0
+
+	notify("Freecam disabled", Color3.fromRGB(255, 160, 100))
+end
+
+FC.toggleInput = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.P then
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+			or UserInputService:IsKeyDown(Enum.KeyCode.RightShift) then
+
+			if FC.enabled then
+				disableFreecam()
+			else
+				enableFreecam()
+			end
+		end
+	end
+end)
 -- ============================================
 -- INFINITE JUMP 
 -- ============================================
