@@ -11140,333 +11140,253 @@ end
 ------------------------------------------------
 -- advanced tracers
 ------------------------------------------------
-
 local tracerSystem = {
 	enabled = false,
-	players = {},
-	beams = {} -- Track all beams for cleanup
+	connections = {},
+	lines = {},
+	playerLines = {},
+	settings = {
+		thickness = 1.5,
+		transparency = 1,
+		bottomOffset = 8
+	}
 }
 
--- Thinner, better looking tracers
-local TRACER_SETTINGS = {
-	width0 = 0.05,        -- Much thinner (was 0.2)
-	width1 = 0.02,        -- Taper to point
-	transparency = 0.15,   -- More visible (was 0.3)
-	brightness = 2,      -- Neon glow effect
-	texture = "rbxassetid://7151778302", -- Optional: thin line texture
-	textureLength = 1,
-	textureMode = Enum.TextureMode.Stretch
-}
-
-local function getMyHRP()
-	if client.Character then
-		return client.Character:FindFirstChild("HumanoidRootPart")
-	end
-	return nil
+function tracerSystem:GetPlayer()
+	return client or game:GetService("Players").LocalPlayer
 end
 
-local function getTracerColor(plr)
-	if not client.Team or not plr.Team then
-		return Color3.fromRGB(200, 200, 255) -- Soft white/blue if no team
+function tracerSystem:GetPlayers()
+	return game:GetService("Players")
+end
+
+function tracerSystem:CreateLine()
+	local line = Drawing.new("Line")
+
+	line.Thickness = self.settings.thickness
+	line.Transparency = self.settings.transparency
+	line.Visible = false
+
+	return line
+end
+
+function tracerSystem:GetColor(player)
+	local me = self:GetPlayer()
+
+	if not me.Team or not player.Team then
+		return Color3.fromRGB(200, 200, 255)
 	end
 
-	if plr.Team == client.Team then
-		return Color3.fromRGB(0, 255, 150)   -- Bright green for friendly
-	else
-		return Color3.fromRGB(255, 50, 50)   -- Bright red for enemy
+	if player.Team == me.Team then
+		return Color3.fromRGB(0, 255, 150)
+	end
+
+	return Color3.fromRGB(255, 50, 50)
+end
+
+function tracerSystem:RemoveLine(line)
+	if not line then
+		return
+	end
+
+	pcall(function()
+		line.Visible = false
+	end)
+
+	pcall(function()
+		line:Remove()
+	end)
+end
+
+function tracerSystem:RemovePlayer(player)
+	local line = self.playerLines[player]
+
+	if line then
+		self:RemoveLine(line)
+		self.playerLines[player] = nil
 	end
 end
 
-local function clearPlayer(plr)
-	local data = tracerSystem.players[plr]
-	if not data then return end
-
-	if data.beam then 
-		data.beam:Destroy() 
-	end
-	if data.att0 then 
-		data.att0:Destroy() 
-	end
-	if data.att1 then 
-		data.att1:Destroy() 
+function tracerSystem:Clear()
+	for player, line in pairs(self.playerLines) do
+		self:RemoveLine(line)
+		self.playerLines[player] = nil
 	end
 
-	for _, conn in ipairs(data.connections or {}) do
-		conn:Disconnect()
+	for index, line in pairs(self.lines) do
+		self:RemoveLine(line)
+		self.lines[index] = nil
 	end
-
-	tracerSystem.players[plr] = nil
 end
 
-local function clearAllTracers()
-	for plr, _ in pairs(tracerSystem.players) do
-		clearPlayer(plr)
+function tracerSystem:GetLine(player)
+	if self.playerLines[player] then
+		return self.playerLines[player]
 	end
-	tracerSystem.players = {}
-	tracerSystem.enabled = false
+
+	local line = self:CreateLine()
+
+	self.playerLines[player] = line
+	table.insert(self.lines, line)
+
+	return line
 end
 
-local function createBeam(att0, att1, color)
-	local beam = Instance.new("Beam")
-	beam.Width0 = TRACER_SETTINGS.width0
-	beam.Width1 = TRACER_SETTINGS.width1
-	beam.Transparency = NumberSequence.new(TRACER_SETTINGS.transparency)
-	beam.FaceCamera = true
-	beam.Color = ColorSequence.new(color)
-	beam.LightEmission = TRACER_SETTINGS.brightness
-	beam.LightInfluence = 0
-	beam.Segments = 1
-	beam.ZOffset = 0
-
-	beam.Attachment0 = att0
-	beam.Attachment1 = att1
-	beam.Parent = workspace.Terrain -- Use Terrain instead of workspace for cleaner hierarchy
-
-	return beam
+function tracerSystem:Hide()
+	for _, line in pairs(self.lines) do
+		if line then
+			line.Visible = false
+		end
+	end
 end
 
-local function attachTracer(plr, char)
-	if not tracerSystem.enabled then return end
-	if plr == client then return end
+function tracerSystem:Update()
+	if not self.enabled then
+		return
+	end
 
-	local myHRP = getMyHRP()
-	if not myHRP then return end
+	local camera = workspace.CurrentCamera
 
-	local enemyHRP = char:WaitForChild("HumanoidRootPart", 10)
-	if not enemyHRP then return end
+	if not camera then
+		self:Hide()
+		return
+	end
 
-	-- Clear existing first
-	clearPlayer(plr)
+	local me = self:GetPlayer()
+	local players = self:GetPlayers()
 
-	local data = { connections = {} }
-	tracerSystem.players[plr] = data
+	local size = camera.ViewportSize
 
-	-- Create attachments
-	local att0 = Instance.new("Attachment")
-	att0.Name = "TracerAtt0_" .. plr.Name
-	att0.Parent = myHRP
-	att0.WorldPosition = myHRP.Position
+	local bottom = Vector2.new(
+		size.X / 2,
+		size.Y - self.settings.bottomOffset
+	)
 
-	local att1 = Instance.new("Attachment")
-	att1.Name = "TracerAtt1_" .. plr.Name
-	att1.Parent = enemyHRP
-	att1.WorldPosition = enemyHRP.Position
+	local active = {}
 
-	-- Create beam with improved visuals
-	local beam = createBeam(att0, att1, getTracerColor(plr))
+	for _, player in ipairs(players:GetPlayers()) do
+		if player ~= me then
+			active[player] = true
 
-	data.beam = beam
-	data.att0 = att0
-	data.att1 = att1
+			local character = player.Character
 
-	-- Update color if THEY change team
-	table.insert(data.connections,
-		plr:GetPropertyChangedSignal("Team"):Connect(function()
-			if data.beam then
-				data.beam.Color = ColorSequence.new(getTracerColor(plr))
+			if character then
+				local humanoid = character:FindFirstChildOfClass("Humanoid")
+				local root = character:FindFirstChild("HumanoidRootPart")
+
+				if humanoid and humanoid.Health > 0 and root then
+					local position, visible =
+						camera:WorldToViewportPoint(root.Position)
+
+					local line = self:GetLine(player)
+
+					line.Thickness = self.settings.thickness
+					line.Transparency = self.settings.transparency
+					line.Color = self:GetColor(player)
+
+					if visible and position.Z > 0 then
+						line.From = bottom
+
+						line.To = Vector2.new(
+							position.X,
+							position.Y
+						)
+
+						line.Visible = true
+					else
+						line.Visible = false
+					end
+				else
+					self:RemovePlayer(player)
+				end
+			else
+				self:RemovePlayer(player)
 			end
-		end)
-	)
+		end
+	end
 
-	-- Update color if YOU change team
-	table.insert(data.connections,
-		client:GetPropertyChangedSignal("Team"):Connect(function()
-			if data.beam then
-				data.beam.Color = ColorSequence.new(getTracerColor(plr))
-			end
-		end)
-	)
-
-	-- Handle THEIR respawn
-	table.insert(data.connections,
-		plr.CharacterAdded:Connect(function(newChar)
-			task.wait(0.3)
-			attachTracer(plr, newChar)
-		end)
-	)
-
-	-- Handle THEIR death (remove beam until respawn)
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		table.insert(data.connections,
-			humanoid.Died:Connect(function()
-				clearPlayer(plr)
-			end)
-		)
+	for player, line in pairs(self.playerLines) do
+		if not active[player] then
+			self:RemoveLine(line)
+			self.playerLines[player] = nil
+		end
 	end
 end
 
--- Main enable/disable functions
 function tracerSystem:Enable()
-	if self.enabled then return end
+	if self.enabled then
+		return
+	end
+
 	self.enabled = true
 
-	-- Attach to all existing players
-	for _, plr in ipairs(Players:GetPlayers()) do
-		if plr ~= client and plr.Character then
-			task.spawn(function()
-				attachTracer(plr, plr.Character)
-			end)
-		end
+	self:Update()
+
+	if notify then
+		notify("Tracers enabled", currentTheme.accent)
 	end
-
-	-- Listen for new players
-	self.playerAddedConn = Players.PlayerAdded:Connect(function(plr)
-		plr.CharacterAdded:Connect(function(char)
-			task.wait(0.2)
-			if self.enabled then
-				attachTracer(plr, char)
-			end
-		end)
-	end)
-
-	-- Clean up when players leave
-	self.playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
-		clearPlayer(plr)
-	end)
-
-	-- Update our position when we respawn
-	self.charAddedConn = client.CharacterAdded:Connect(function(char)
-		task.wait(0.3)
-		if not self.enabled then return end
-
-		-- Reattach all tracers to new character
-		for _, plr in ipairs(Players:GetPlayers()) do
-			if plr ~= client and plr.Character then
-				task.spawn(function()
-					attachTracer(plr, plr.Character)
-				end)
-			end
-		end
-	end)
-
-	-- Constant update loop for smooth positioning
-	self.updateLoop = RunService.Heartbeat:Connect(function()
-		if not self.enabled then return end
-
-		local myHRP = getMyHRP()
-		if not myHRP then return end
-
-		for plr, data in pairs(self.players) do
-			if data.att0 and data.att0.Parent then
-				data.att0.WorldPosition = myHRP.Position
-			end
-		end
-	end)
 end
 
 function tracerSystem:Disable()
-	if not self.enabled then return end
+	if not self.enabled then
+		return
+	end
+
 	self.enabled = false
 
-	-- Disconnect all connections
-	if self.playerAddedConn then self.playerAddedConn:Disconnect() end
-	if self.playerRemovingConn then self.playerRemovingConn:Disconnect() end
-	if self.charAddedConn then self.charAddedConn:Disconnect() end
-	if self.updateLoop then self.updateLoop:Disconnect() end
+	self:Clear()
 
-	-- Clear all tracers
-	clearAllTracers()
+	if notify then
+		notify("❌ Tracers disabled", currentTheme.accent)
+	end
 end
 
 function tracerSystem:Toggle()
 	if self.enabled then
 		self:Disable()
 		return false
-	else
-		self:Enable()
-		return true
 	end
+
+	self:Enable()
+	return true
 end
 
-----------------------------------------------------
--- CREATE FOR PLAYER
-----------------------------------------------------
-local function createForPlayer(plr)
-	if plr == client then return end
-	if tracerSystem.players[plr] then return end
-
-	if plr.Character then
-		attachTracer(plr, plr.Character)
-	end
-end
-
-----------------------------------------------------
--- ENABLE
-----------------------------------------------------
 function enableTracers()
-
-	if tracerSystem.enabled then return end
-	tracerSystem.enabled = true
-
-	-- existing players
-	for _,plr in ipairs(Players:GetPlayers()) do
-		createForPlayer(plr)
-	end
-
-	-- new players
-	table.insert(tracerSystem.connections,
-		Players.PlayerAdded:Connect(function(plr)
-			if tracerSystem.enabled then
-				createForPlayer(plr)
-			end
-		end)
-	)
-
-	-- cleanup on leave
-	table.insert(tracerSystem.connections,
-		Players.PlayerRemoving:Connect(function(plr)
-			clearPlayer(plr)
-		end)
-	)
-
-	-- YOU respawn → rebuild all
-	table.insert(tracerSystem.connections,
-		client.CharacterAdded:Connect(function()
-			task.wait(0.3)
-
-			for plr,_ in pairs(tracerSystem.players) do
-				clearPlayer(plr)
-			end
-
-			for _,plr in ipairs(Players:GetPlayers()) do
-				createForPlayer(plr)
-			end
-		end)
-	)
-
-	notify("Tracers enabled", currentTheme.accent)
+	tracerSystem:Enable()
 end
 
-----------------------------------------------------
--- DISABLE
-----------------------------------------------------
 function disableTracers()
-
-	if not tracerSystem.enabled then return end
-	tracerSystem.enabled = false
-
-	for _,conn in ipairs(tracerSystem.connections) do
-		conn:Disconnect()
-	end
-	tracerSystem.connections = {}
-
-	for plr,_ in pairs(tracerSystem.players) do
-		clearPlayer(plr)
-	end
-
-	tracerSystem.players = {}
-
-	notify("❌ Tracers disabled", currentTheme.accent)
+	tracerSystem:Disable()
 end
-----------------------------------------------------
--- advanced Disable tracers
-------------------------------------------------
-local function disableTracers()
-	tracersEnabled = false
-	clearTracers()
-	notify("❌ Tracers disabled", currentTheme.accent)
-end
+
+table.insert(
+	tracerSystem.connections,
+	game:GetService("RunService").RenderStepped:Connect(function()
+		if tracerSystem.enabled then
+			tracerSystem:Update()
+		else
+			tracerSystem:Hide()
+		end
+	end)
+)
+
+table.insert(
+	tracerSystem.connections,
+	game:GetService("Players").PlayerRemoving:Connect(function(player)
+		tracerSystem:RemovePlayer(player)
+	end)
+)
+
+table.insert(
+	tracerSystem.connections,
+	tracerSystem:GetPlayer().CharacterAdded:Connect(function()
+		task.wait(0.2)
+
+		if tracerSystem.enabled then
+			tracerSystem:Update()
+		end
+	end)
+)
 
 -- =============================================================
 -- COMMAND PROCESSOR
@@ -11999,36 +11919,63 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- Tabs
+-- Tabs
 tabBar = Instance.new("Frame", mainFrame)
-tabBar.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(40 * scale))
+tabBar.Name = "TabBar"
+tabBar.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(42 * scale))
 tabBar.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(60 * scale))
 tabBar.BackgroundTransparency = 1
 tabBar.ZIndex = 2147483647
+tabBar.Parent = mainFrame
+
+local tabLayout = Instance.new("UIListLayout", tabBar)
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+tabLayout.Padding = UDim.new(0, math.floor(6 * scale))
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 cmdTab = Instance.new("TextButton", tabBar)
 cmdTab.Name = "CmdTab"
-cmdTab.Size = UDim2.new(0.333, -5, 1, 0)
+cmdTab.LayoutOrder = 1
+cmdTab.Size = UDim2.new(0.333, -4, 1, 0)
 cmdTab.BackgroundColor3 = currentTheme.accent
 cmdTab.Text = "Commands"
 cmdTab.Font = Enum.Font.Code
-cmdTab.TextSize = math.floor(16 * fontScale)
-cmdTab.TextColor3 = Color3.new(0,0,0)
+cmdTab.TextSize = math.floor(14 * fontScale)
+cmdTab.TextColor3 = Color3.new(0, 0, 0)
 cmdTab.BorderSizePixel = 0
+cmdTab.AutoButtonColor = false
 cmdTab.ZIndex = 2147483647
-Instance.new("UICorner", cmdTab).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", cmdTab).CornerRadius = UDim.new(0, 8)
 
 setTab = Instance.new("TextButton", tabBar)
 setTab.Name = "SetTab"
-setTab.Size = UDim2.new(0.333, -5, 1, 0)
-setTab.Position = UDim2.new(0.333, 2.5, 0, 0)
-setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+setTab.LayoutOrder = 2
+setTab.Size = UDim2.new(0.333, -4, 1, 0)
+setTab.BackgroundColor3 = currentTheme.tabInactive or Color3.fromRGB(50, 50, 60)
 setTab.Text = "Settings"
 setTab.Font = Enum.Font.Code
-setTab.TextSize = math.floor(16 * fontScale)
-setTab.TextColor3 = globalConfig.textColor
+setTab.TextSize = math.floor(14 * fontScale)
+setTab.TextColor3 = currentTheme.tabTextInactive or globalConfig.textColor
 setTab.BorderSizePixel = 0
+setTab.AutoButtonColor = false
 setTab.ZIndex = 2147483647
-Instance.new("UICorner", setTab).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", setTab).CornerRadius = UDim.new(0, 8)
+
+uniTab = Instance.new("TextButton", tabBar)
+uniTab.Name = "UniTab"
+uniTab.LayoutOrder = 3
+uniTab.Size = UDim2.new(0.333, -4, 1, 0)
+uniTab.BackgroundColor3 = currentTheme.tabInactive or Color3.fromRGB(50, 50, 60)
+uniTab.Text = "Universal"
+uniTab.Font = Enum.Font.Code
+uniTab.TextSize = math.floor(14 * fontScale)
+uniTab.TextColor3 = currentTheme.tabTextInactive or globalConfig.textColor
+uniTab.BorderSizePixel = 0
+uniTab.AutoButtonColor = false
+uniTab.ZIndex = 2147483647
+Instance.new("UICorner", uniTab).CornerRadius = UDim.new(0, 8)
 
 -- Content Container
 contentFrame = Instance.new("Frame", mainFrame)
@@ -12055,6 +12002,170 @@ cmdBarFrame.BorderSizePixel = 0
 cmdBarFrame.ZIndex = 2147483647
 Instance.new("UICorner", cmdBarFrame).CornerRadius = UDim.new(0, 6)
 
+uniFrame = Instance.new("Frame", contentFrame)
+uniFrame.Name = "UniversalFrame"
+uniFrame.Size = UDim2.new(1, 0, 1, 0)
+uniFrame.BackgroundTransparency = 1
+uniFrame.Visible = false
+uniFrame.ZIndex = 2147483647
+uniFrame.Parent = contentFrame
+
+uniHeader = Instance.new("Frame", uniFrame)
+uniHeader.Size = UDim2.new(1, 0, 0, math.floor(52 * scale))
+uniHeader.BackgroundColor3 = currentTheme.glass or Color3.fromRGB(30, 30, 38)
+uniHeader.BorderSizePixel = 0
+uniHeader.ZIndex = 2147483647
+uniHeader.Parent = uniFrame
+
+Instance.new("UICorner", uniHeader).CornerRadius = UDim.new(0, 9)
+
+uniTitle = Instance.new("TextLabel", uniHeader)
+uniTitle.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(24 * scale))
+uniTitle.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(5 * scale))
+uniTitle.BackgroundTransparency = 1
+uniTitle.Text = "UNIVERSAL"
+uniTitle.Font = Enum.Font.Code
+uniTitle.TextSize = math.floor(15 * fontScale)
+uniTitle.TextColor3 = currentTheme.accent
+uniTitle.TextXAlignment = Enum.TextXAlignment.Left
+uniTitle.ZIndex = 2147483647
+uniTitle.Parent = uniHeader
+
+uniSubtitle = Instance.new("TextLabel", uniHeader)
+uniSubtitle.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(18 * scale))
+uniSubtitle.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(28 * scale))
+uniSubtitle.BackgroundTransparency = 1
+uniSubtitle.Text = "Client-side tools and utilities"
+uniSubtitle.Font = Enum.Font.Code
+uniSubtitle.TextSize = math.floor(9 * fontScale)
+uniSubtitle.TextColor3 = Color3.fromRGB(125, 125, 140)
+uniSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+uniSubtitle.ZIndex = 2147483647
+uniSubtitle.Parent = uniHeader
+
+uniScroll = Instance.new("ScrollingFrame", uniFrame)
+uniScroll.Name = "UniversalScroll"
+uniScroll.Size = UDim2.new(1, 0, 1, math.floor(-62 * scale))
+uniScroll.Position = UDim2.new(0, 0, 0, math.floor(62 * scale))
+uniScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+uniScroll.BorderSizePixel = 0
+uniScroll.ScrollBarThickness = math.floor(5 * scale)
+uniScroll.ScrollBarImageColor3 = currentTheme.accent
+uniScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+uniScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+uniScroll.ZIndex = 2147483647
+uniScroll.Parent = uniFrame
+
+Instance.new("UICorner", uniScroll).CornerRadius = UDim.new(0, 9)
+
+uniPadding = Instance.new("UIPadding", uniScroll)
+uniPadding.PaddingTop = UDim.new(0, math.floor(10 * scale))
+uniPadding.PaddingBottom = UDim.new(0, math.floor(10 * scale))
+uniPadding.PaddingLeft = UDim.new(0, math.floor(8 * scale))
+uniPadding.PaddingRight = UDim.new(0, math.floor(8 * scale))
+
+uniGrid = Instance.new("UIGridLayout", uniScroll)
+uniGrid.CellSize = UDim2.new(0.48, 0, 0, math.floor(48 * scale))
+uniGrid.CellPadding = UDim2.new(0.02, 0, 0, math.floor(8 * scale))
+uniGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+uniGrid.VerticalAlignment = Enum.VerticalAlignment.Top
+uniGrid.SortOrder = Enum.SortOrder.LayoutOrder
+local universalCommands = {
+	{"!fly", "Open fly controls"},
+	{"!freecam", "Free camera"},
+	{"!firstp", "First person"},
+	{"!thirdp", "Third person"},
+	{"!noclip", "Walk through walls"},
+	{"!unnoclip", "Turn noclip off"},
+	{"!infjump", "Infinite jump"},
+	{"!uninfjump", "Turn infinite jump off"},
+	{"!crosshair", "Enable crosshair"},
+	{"!uncrosshair", "Remove crosshair"},
+	{"!flashlight", "Enable flashlight"},
+	{"!unflashlight", "Disable flashlight"},
+	{"!clicktp", "Click teleport"},
+	{"!tracers", "Enable player tracers"},
+	{"!untracers", "Disable player tracers"},
+	{"!fov [1-120]", "Change camera FOV"},
+	{"!resettime", "Reset time"},
+	{"!waypoint", "Create waypoint"},
+	{"!removewaypoint", "Remove waypoint"},
+	{"!ping", "Show ping"},
+	{"!cmdbar", "Toggle command bar"},
+	{"!unlockmouse", "Toggle mouse lock"},
+	{"!unzoom", "Reset zoom"}
+}
+
+for index, data in ipairs(universalCommands) do
+
+	local button = Instance.new("TextButton")
+	button.Name = "Universal_" .. tostring(index)
+	button.LayoutOrder = index
+	button.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+	button.Text = ""
+	button.BorderSizePixel = 0
+	button.AutoButtonColor = false
+	button.ZIndex = 2147483647
+	button.Parent = uniScroll
+
+	Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
+
+	local accent = Instance.new("Frame")
+	accent.Size = UDim2.new(0, math.floor(4 * scale), 1, 0)
+	accent.BackgroundColor3 = currentTheme.accent
+	accent.BorderSizePixel = 0
+	accent.ZIndex = 2147483647
+	accent.Parent = button
+
+	Instance.new("UICorner", accent).CornerRadius = UDim.new(0, 8)
+
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, math.floor(-18 * scale), 0, math.floor(21 * scale))
+	name.Position = UDim2.new(0, math.floor(13 * scale), 0, math.floor(5 * scale))
+	name.BackgroundTransparency = 1
+	name.Text = data[1]
+	name.Font = Enum.Font.Code
+	name.TextSize = math.floor(11 * fontScale)
+	name.TextColor3 = globalConfig.textColor
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.ZIndex = 2147483647
+	name.Parent = button
+
+	local description = Instance.new("TextLabel")
+	description.Size = UDim2.new(1, math.floor(-18 * scale), 0, math.floor(17 * scale))
+	description.Position = UDim2.new(0, math.floor(13 * scale), 0, math.floor(26 * scale))
+	description.BackgroundTransparency = 1
+	description.Text = data[2]
+	description.Font = Enum.Font.Code
+	description.TextSize = math.floor(8 * fontScale)
+	description.TextColor3 = Color3.fromRGB(125, 125, 140)
+	description.TextXAlignment = Enum.TextXAlignment.Left
+	description.ZIndex = 2147483647
+	description.Parent = button
+
+	button.MouseEnter:Connect(function()
+		button.BackgroundColor3 = currentTheme.btnHover or Color3.fromRGB(60, 60, 72)
+		name.TextColor3 = currentTheme.accent
+	end)
+
+	button.MouseLeave:Connect(function()
+		button.BackgroundColor3 = currentTheme.list or Color3.fromRGB(40, 40, 48)
+		name.TextColor3 = globalConfig.textColor
+	end)
+
+	button.MouseButton1Click:Connect(function()
+
+		local command = data[1]
+
+		if processCmd then
+			pcall(function()
+				processCmd(command)
+			end)
+		end
+
+	end)
+
+end
 -- Icon
 local a = Instance.new("TextLabel", cmdBarFrame)
 a.Name = "CmdIcon"
@@ -12657,960 +12768,992 @@ for i, cmdStr in ipairs(cmds) do
 	end)
 end
 
--- ========== SETTINGS TAB ==========
-setFrame = Instance.new("Frame", contentFrame)
-setFrame.Name = "SetFrame"
-setFrame.Size = UDim2.new(1, 0, 1, 0)
-setFrame.BackgroundTransparency = 1
-setFrame.Visible = false
+-- -- ========== SETTINGS TAB ==========
+setFrame = Instance.new("Frame",
+contentFrame) setFrame.Name = "SetFrame" setFrame.Size = UDim2.new(1, 0,
+1, 0) setFrame.BackgroundTransparency = 1 setFrame.Visible = false
 setFrame.ZIndex = 2147483647
 
-setScroll = Instance.new("ScrollingFrame", setFrame)
-setScroll.Size = UDim2.new(1, 0, 1, 0)
-setScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-setScroll.BorderSizePixel = 0
-setScroll.ScrollBarThickness = math.floor(6 * scale)
-setScroll.ScrollBarImageColor3 = currentTheme.accent
-setScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-setScroll.ZIndex = 2147483647
-Instance.new("UICorner", setScroll).CornerRadius = UDim.new(0, 6)
+settingsUI = settingsUI or {} settingsUI.connections =
+settingsUI.connections or {} sliders = sliders or {} settingsUI.state =
+settingsUI.state or {}
 
-setList = Instance.new("UIListLayout", setScroll)
-setList.Padding = UDim.new(0, math.floor(12 * scale))
-setList.SortOrder = Enum.SortOrder.LayoutOrder
+function settingsUI.round(object, radius) local corner =
+Instance.new("UICorner") corner.CornerRadius = UDim.new(0, radius or 8)
+corner.Parent = object return corner end
 
--- Section creator
-function makeSection(parent, titleText, h)
-	local s = Instance.new("Frame", parent)
-	s.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(h * scale))
-	s.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-	s.BorderSizePixel = 0
-	s.LayoutOrder = #parent:GetChildren()
-	s.ZIndex = 2147483647
-	Instance.new("UICorner", s).CornerRadius = UDim.new(0, 8)
-
-	local t = Instance.new("TextLabel", s)
-	t.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(28 * scale))
-	t.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(8 * scale))
-	t.BackgroundTransparency = 1
-	t.Text = titleText
-	t.Font = Enum.Font.Code
-	t.TextSize = math.floor(16 * fontScale)
-	t.TextColor3 = currentTheme.accent
-	t.TextStrokeTransparency = 0.5
-	t.TextStrokeColor3 = Color3.new(0,0,0)
-	t.TextXAlignment = Enum.TextXAlignment.Left
-	t.ZIndex = 2147483647
-
-	return s
+function settingsUI.stroke(object, color, transparency, thickness) local
+stroke = Instance.new("UIStroke") stroke.Color = color or
+currentTheme.accent stroke.Transparency = transparency or 0
+stroke.Thickness = thickness or 1 stroke.Parent = object return stroke
 end
 
--- Text Color Section
-cSection = makeSection(setScroll, "TEXT COLOR", 170)
+function settingsUI.tween(object, info, properties) if not object then
+return end local tween = TweenService:Create(object, info, properties)
+tween:Play() return tween end
 
-cDisplay = Instance.new("TextLabel", cSection)
-cDisplay.Size = UDim2.new(0.8, 0, 0, math.floor(32 * scale))
-cDisplay.Position = UDim2.new(0.1, 0, 0, math.floor(38 * scale))
-cDisplay.BackgroundColor3 = globalConfig.textColor
-cDisplay.Text = "Preview"
-cDisplay.Font = Enum.Font.Code
-cDisplay.TextSize = math.floor(15 * fontScale)
-cDisplay.TextColor3 = Color3.new(0,0,0)
-cDisplay.ZIndex = 2147483647
-Instance.new("UICorner", cDisplay).CornerRadius = UDim.new(0, 6)
+function settingsUI.button(parent, text, callback, width) local button =
+Instance.new("TextButton") button.Size = UDim2.new(0, math.floor((width
+or 140) * scale), 0, math.floor(36 * scale)) button.BackgroundColor3 =
+currentTheme.btn or Color3.fromRGB(48, 48, 58) button.Text = text
+button.Font = Enum.Font.Code button.TextSize = math.floor(10 *
+fontScale) button.TextColor3 = currentTheme.text or
+globalConfig.textColor button.BorderSizePixel = 0 button.AutoButtonColor
+= false button.ZIndex = 2147483647 button.Parent = parent
+settingsUI.round(button, 8) settingsUI.stroke(button,
+currentTheme.accent, 0.72, 1)
 
--- FIXED SLIDER SYSTEM
-sliders = {}
-activeSliderComp = nil
+    button.MouseEnter:Connect(function()
+        settingsUI.tween(button, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = currentTheme.btnHover or currentTheme.accent
+        })
+    end)
 
-function makeSlider(parent, y, color, label, comp)
-	local cont = Instance.new("Frame", parent)
-	cont.Size = UDim2.new(0.8, 0, 0, math.floor(24 * scale))
-	cont.Position = UDim2.new(0.1, 0, 0, math.floor(y * scale))
-	cont.BackgroundTransparency = 1
-	cont.ZIndex = 2147483647
+    button.MouseLeave:Connect(function()
+        settingsUI.tween(button, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+            BackgroundColor3 = currentTheme.btn or Color3.fromRGB(48, 48, 58)
+        })
+    end)
 
-	local lab = Instance.new("TextLabel", cont)
-	lab.Size = UDim2.new(0, math.floor(30 * scale), 1, 0)
-	lab.BackgroundTransparency = 1
-	lab.Text = label
-	lab.Font = Enum.Font.Code
-	lab.TextSize = math.floor(12 * fontScale)
-	lab.TextColor3 = color
-	lab.TextXAlignment = Enum.TextXAlignment.Left
-	lab.ZIndex = 2147483647
+    button.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
 
-	local track = Instance.new("Frame", cont)
-	track.Size = UDim2.new(1, math.floor(-40 * scale), 0, math.floor(8 * scale))
-	track.Position = UDim2.new(0, math.floor(35 * scale), 0.5, math.floor(-4 * scale))
-	track.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	track.BorderSizePixel = 0
-	track.ZIndex = 2147483647
-	Instance.new("UICorner", track).CornerRadius = UDim.new(0, 4)
+    return button
 
-	local fill = Instance.new("Frame", track)
-	local val = comp == "R" and globalConfig.textColor.R or comp == "G" and globalConfig.textColor.G or globalConfig.textColor.B
-	fill.Size = UDim2.new(val, 0, 1, 0)
-	fill.BackgroundColor3 = color
-	fill.BorderSizePixel = 0
-	fill.ZIndex = 2147483647
-	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 4)
-
-	local knob = Instance.new("Frame", track)
-	knob.Size = UDim2.new(0, math.floor(14 * scale), 0, math.floor(14 * scale))
-	knob.Position = UDim2.new(val, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
-	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	knob.BorderSizePixel = 0
-	knob.ZIndex = 2147483647
-	Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-	sliders[comp] = {
-		track = track,
-		fill = fill,
-		knob = knob
-	}
-
-	track.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			activeSliderComp = comp
-			local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-			fill.Size = UDim2.new(pos, 0, 1, 0)
-			knob.Position = UDim2.new(pos, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
-			updateAllColors()
-		end
-	end)
 end
 
-function updateAllColors()
-	local r = sliders.R and sliders.R.fill.Size.X.Scale or globalConfig.textColor.R
-	local g = sliders.G and sliders.G.fill.Size.X.Scale or globalConfig.textColor.G
-	local b = sliders.B and sliders.B.fill.Size.X.Scale or globalConfig.textColor.B
+function settingsUI.card(parent, title, description) local card =
+Instance.new("Frame") card.Name = "Settings_" .. title:gsub("%s+", "")
+card.Size = UDim2.new(1, 0, 0, 0) card.AutomaticSize =
+Enum.AutomaticSize.Y card.BackgroundColor3 = currentTheme.list or
+Color3.fromRGB(40, 40, 48) card.BorderSizePixel = 0 card.ZIndex =
+2147483647 card.Parent = parent settingsUI.round(card, 10)
+settingsUI.stroke(card, currentTheme.accent, 0.72, 1)
 
-	local newC = Color3.new(r, g, b)
-	globalConfig.textColor = newC
-	cDisplay.BackgroundColor3 = newC
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, math.floor(10 * scale))
+    padding.PaddingBottom = UDim.new(0, math.floor(12 * scale))
+    padding.PaddingLeft = UDim.new(0, math.floor(11 * scale))
+    padding.PaddingRight = UDim.new(0, math.floor(11 * scale))
+    padding.Parent = card
 
-	if lunarGui then
-		for _, obj in ipairs(lunarGui:GetDescendants()) do
-			if (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) and obj.TextColor3 ~= currentTheme.accent then
-				obj.TextColor3 = newC
-			end
-		end
-	end
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, math.floor(7 * scale))
+    layout.Parent = card
+
+    local heading = Instance.new("TextLabel")
+    heading.LayoutOrder = 1
+    heading.Size = UDim2.new(1, 0, 0, math.floor(19 * scale))
+    heading.BackgroundTransparency = 1
+    heading.Text = string.upper(title)
+    heading.Font = Enum.Font.Code
+    heading.TextSize = math.floor(14 * fontScale)
+    heading.TextColor3 = currentTheme.accent
+    heading.TextXAlignment = Enum.TextXAlignment.Left
+    heading.ZIndex = 2147483647
+    heading.Parent = card
+
+    local desc = Instance.new("TextLabel")
+    desc.LayoutOrder = 2
+    desc.Size = UDim2.new(1, 0, 0, math.floor(17 * scale))
+    desc.BackgroundTransparency = 1
+    desc.Text = description or ""
+    desc.Font = Enum.Font.Code
+    desc.TextSize = math.floor(9 * fontScale)
+    desc.TextColor3 = Color3.fromRGB(135, 135, 150)
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.ZIndex = 2147483647
+    desc.Parent = card
+
+    return card
+
 end
 
-makeSlider(cSection, 78, Color3.fromRGB(255, 80, 80), "R", "R")
-makeSlider(cSection, 106, Color3.fromRGB(80, 255, 80), "G", "G")
-makeSlider(cSection, 134, Color3.fromRGB(80, 140, 255), "B", "B")
+function settingsUI.row(parent, height) local row =
+Instance.new("Frame") local nextOrder =
+(parent:GetAttribute("LunarRowOrder") or 2) + 1
+parent:SetAttribute("LunarRowOrder", nextOrder) row.LayoutOrder =
+nextOrder row.Size = UDim2.new(1, 0, 0, math.floor(height * scale))
+row.BackgroundTransparency = 1 row.BorderSizePixel = 0 row.ZIndex =
+2147483647 row.Parent = parent return row end
 
--- Global slider input handlers
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		activeSliderComp = nil
-	end
-end)
+function settingsUI.label(parent, text, size) local label =
+Instance.new("TextLabel") label.Size = size or UDim2.new(1, 0, 0,
+math.floor(18 * scale)) label.BackgroundTransparency = 1 label.Text =
+text label.Font = Enum.Font.Code label.TextSize = math.floor(9 *
+fontScale) label.TextColor3 = globalConfig.textColor
+label.TextXAlignment = Enum.TextXAlignment.Left label.ZIndex =
+2147483647 label.Parent = parent return label end
 
-UserInputService.InputChanged:Connect(function(input)
-	if not activeSliderComp then return end
-	if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
+function settingsUI.hex(color) return string.format( "#%02X%02X%02X",
+math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5),
+math.floor(color.B * 255 + 0.5) ) end
 
-	local s = sliders[activeSliderComp]
-	if not s then return end
+function settingsUI.applyTracerColor(color) if not color then return end
 
-	local pos = math.clamp((input.Position.X - s.track.AbsolutePosition.X) / s.track.AbsoluteSize.X, 0, 1)
-	s.fill.Size = UDim2.new(pos, 0, 1, 0)
-	s.knob.Position = UDim2.new(pos, math.floor(-7 * scale), 0.5, math.floor(-7 * scale))
-	updateAllColors()
-end)
+    settingsUI.state.tracerColor = color
+    _G.LunarTracerColor = color
 
--- UI Transparency Section
-tSection = makeSection(setScroll, "UI TRANSPARENCY", 110)
+    if tracerSystem then
+        pcall(function()
+            tracerSystem.customColor = color
+        end)
+        pcall(function()
+            tracerSystem.settings.color = color
+        end)
+        pcall(function()
+            tracerSystem:Update()
+        end)
+    end
 
-tLabel = Instance.new("TextLabel", tSection)
-tLabel.Size = UDim2.new(1, 0, 0, math.floor(22 * scale))
-tLabel.Position = UDim2.new(0, 0, 0, math.floor(36 * scale))
-tLabel.BackgroundTransparency = 1
-tLabel.Text = "Transparency: " .. math.round(globalConfig.uiTransparency * 100) .. "%"
-tLabel.Font = Enum.Font.Code
-tLabel.TextSize = math.floor(14 * fontScale)
-tLabel.TextColor3 = globalConfig.textColor
-tLabel.ZIndex = 2147483647
+    if settingsUI.tracerPreview then
+        settingsUI.tracerPreview.BackgroundColor3 = color
+    end
+    if settingsUI.tracerHex then
+        settingsUI.tracerHex.Text = "Current color  " .. settingsUI.hex(color)
+    end
 
-tTrack = Instance.new("Frame", tSection)
-tTrack.Size = UDim2.new(0.8, 0, 0, math.floor(10 * scale))
-tTrack.Position = UDim2.new(0.1, 0, 0, math.floor(68 * scale))
-tTrack.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-tTrack.BorderSizePixel = 0
-tTrack.ZIndex = 2147483647
-Instance.new("UICorner", tTrack).CornerRadius = UDim.new(0, 5)
-
-tFill = Instance.new("Frame", tTrack)
-tFill.Size = UDim2.new(globalConfig.uiTransparency, 0, 1, 0)
-tFill.BackgroundColor3 = currentTheme.accent
-tFill.BorderSizePixel = 0
-tFill.ZIndex = 2147483647
-Instance.new("UICorner", tFill).CornerRadius = UDim.new(0, 5)
-
-tKnob = Instance.new("Frame", tTrack)
-tKnob.Size = UDim2.new(0, math.floor(16 * scale), 0, math.floor(16 * scale))
-tKnob.Position = UDim2.new(globalConfig.uiTransparency, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
-tKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-tKnob.BorderSizePixel = 0
-tKnob.ZIndex = 2147483647
-Instance.new("UICorner", tKnob).CornerRadius = UDim.new(1, 0)
-
-local tDragging = false
-
-function updateTrans(x)
-	local pos = math.clamp((x - tTrack.AbsolutePosition.X) / tTrack.AbsoluteSize.X, 0, 1)
-	tFill.Size = UDim2.new(pos, 0, 1, 0)
-	tKnob.Position = UDim2.new(pos, math.floor(-8 * scale), 0.5, math.floor(-8 * scale))
-	globalConfig.uiTransparency = pos
-	tLabel.Text = "Transparency: " .. math.round(pos * 100) .. "%"
-	if mainFrame then
-		mainFrame.BackgroundTransparency = pos
-	end
 end
 
-tTrack.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		tDragging = true
-		updateTrans(input.Position.X)
-	end
-end)
+function settingsUI.applyTextColor(color) if not color then return end
 
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		tDragging = false
-	end
-end)
+    globalConfig.textColor = color
 
-UserInputService.InputChanged:Connect(function(input)
-	if tDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		updateTrans(input.Position.X)
-	end
-end)
+    if cDisplay then
+        cDisplay.BackgroundColor3 = color
+    end
 
--- ========== SOUND SETTINGS SECTION ==========
-do
-	local mSection = makeSection(setScroll, "SOUND SETTINGS", 320)
+    if settingsUI.textPreview then
+        settingsUI.textPreview.TextColor3 = color
+    end
 
-	_G.uiSoundVol = 1
-	_G.notifSoundVol = 0.55
-	_G.customNotifId = "rbxassetid://97643101798871"
+    if lunarGui then
+        for _, object in ipairs(lunarGui:GetDescendants()) do
+            if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
+                if not object:GetAttribute("LunarKeepTextColor") then
+                    local role = object:GetAttribute("LunarTxtRole")
+                    if role == "text" or role == "normal" then
+                        object.TextColor3 = color
+                    end
+                end
+            end
+        end
+    end
 
-	local activeSlider = nil
-
-	local function mkSlider(parent, y, lbl, def, key)
-		local c = Instance.new("Frame", parent)
-		c.Size = UDim2.new(0.9, 0, 0, math.floor(50*scale))
-		c.Position = UDim2.new(0.05, 0, 0, math.floor(y*scale))
-		c.BackgroundTransparency = 1
-		c.ZIndex = 2147483647
-
-		local lab = Instance.new("TextLabel", c)
-		lab.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
-		lab.BackgroundTransparency = 1
-		lab.Text = lbl..": "..math.round(def*100).."%"
-		lab.Font = Enum.Font.Code
-		lab.TextSize = math.floor(13*fontScale)
-		lab.TextColor3 = globalConfig.textColor
-		lab.TextXAlignment = Enum.TextXAlignment.Left
-		lab.ZIndex = 2147483647
-
-		local track = Instance.new("Frame", c)
-		track.Size = UDim2.new(1, 0, 0, math.floor(10*scale))
-		track.Position = UDim2.new(0, 0, 0, math.floor(26*scale))
-		track.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-		track.BorderSizePixel = 0
-		track.ZIndex = 2147483647
-		Instance.new("UICorner", track).CornerRadius = UDim.new(0, 5)
-
-		local fill = Instance.new("Frame", track)
-		fill.Size = UDim2.new(def, 0, 1, 0)
-		fill.BackgroundColor3 = currentTheme.accent
-		fill.BorderSizePixel = 0
-		fill.ZIndex = 2147483647
-		Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 5)
-
-		local knob = Instance.new("Frame", track)
-		knob.Size = UDim2.new(0, math.floor(16*scale), 0, math.floor(16*scale))
-		knob.Position = UDim2.new(def, math.floor(-8*scale), 0.5, math.floor(-8*scale))
-		knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		knob.BorderSizePixel = 0
-		knob.ZIndex = 2147483647
-		Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-		local function setVol(x)
-			local v = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-			fill.Size = UDim2.new(v, 0, 1, 0)
-			knob.Position = UDim2.new(v, math.floor(-8*scale), 0.5, math.floor(-8*scale))
-			lab.Text = lbl..": "..math.round(v*100).."%"
-			_G[key] = v
-		end
-
-		track.InputBegan:Connect(function(inp)
-			if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-				activeSlider = key
-				setVol(inp.Position.X)
-			end
-		end)
-
-		track.InputEnded:Connect(function(inp)
-			if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-				if activeSlider == key then activeSlider = nil end
-			end
-		end)
-
-		return setVol
-	end
-
-	local uiSetVol = mkSlider(mSection, 38, "UI Vol", 1, "uiSoundVol")
-	local nfSetVol = mkSlider(mSection, 96, "Notif Vol", 0.55, "notifSoundVol")
-
-	UserInputService.InputChanged:Connect(function(inp)
-		if not activeSlider then return end
-		if inp.UserInputType ~= Enum.UserInputType.MouseMovement and inp.UserInputType ~= Enum.UserInputType.Touch then return end
-		if activeSlider == "uiSoundVol" then
-			uiSetVol(inp.Position.X)
-		else
-			nfSetVol(inp.Position.X)
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-			activeSlider = nil
-		end
-	end)
-
-	local c = Instance.new("Frame", mSection)
-	c.Size = UDim2.new(0.9, 0, 0, math.floor(70*scale))
-	c.Position = UDim2.new(0.05, 0, 0, math.floor(154*scale))
-	c.BackgroundTransparency = 1
-	c.ZIndex = 2147483647
-
-	local l = Instance.new("TextLabel", c)
-	l.Size = UDim2.new(1, 0, 0, math.floor(18*scale))
-	l.BackgroundTransparency = 1
-	l.Text = "Custom Notif Sound ID"
-	l.Font = Enum.Font.Code
-	l.TextSize = math.floor(13*fontScale)
-	l.TextColor3 = globalConfig.textColor
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.ZIndex = 2147483647
-
-	local b = Instance.new("TextBox", c)
-	b.Size = UDim2.new(1, math.floor(-70*scale), 0, math.floor(36*scale))
-	b.Position = UDim2.new(0, 0, 0, math.floor(24*scale))
-	b.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-	b.BorderSizePixel = 0
-	b.Text = "rbxassetid://97643101798871"
-	b.PlaceholderText = "rbxassetid://..."
-	b.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
-	b.Font = Enum.Font.Code
-	b.TextSize = math.floor(13*fontScale)
-	b.TextColor3 = globalConfig.textColor
-	b.ClearTextOnFocus = false
-	b.ZIndex = 2147483647
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-
-	b.TextEditable = true
-	b.ClearTextOnFocus = false
-
-	local btn = Instance.new("TextButton", c)
-	btn.Size = UDim2.new(0, math.floor(60*scale), 0, math.floor(28*scale))
-	btn.Position = UDim2.new(1, math.floor(-65*scale), 0, math.floor(28*scale))
-	btn.BackgroundColor3 = currentTheme.accent
-	btn.Text = "Set"
-	btn.Font = Enum.Font.Code
-	btn.TextSize = math.floor(12*fontScale)
-	btn.TextColor3 = Color3.new(0, 0, 0)
-	btn.BorderSizePixel = 0
-	btn.ZIndex = 2147483647
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-
-	btn.MouseButton1Click:Connect(function()
-		local t = b.Text:gsub("%s+", "")
-		if t ~= "" then
-			if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
-			_G.customNotifId = t
-			notify("Sound ID set!", Color3.fromRGB(100, 255, 100))
-		end
-	end)
-
-	b.FocusLost:Connect(function(enterPressed)
-		if enterPressed then
-			local t = b.Text:gsub("%s+", "")
-			if t ~= "" then
-				if not t:find("rbxassetid://") and tonumber(t) then t = "rbxassetid://"..t end
-				_G.customNotifId = t
-				notify("Sound ID set!", Color3.fromRGB(100, 255, 100))
-			end
-		end
-	end)
-
-	local test = Instance.new("TextButton", mSection)
-	test.Size = UDim2.new(0.9, 0, 0, math.floor(32*scale))
-	test.Position = UDim2.new(0.05, 0, 0, math.floor(232*scale))
-	test.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
-	test.Text = "▶ Test Sound"
-	test.Font = Enum.Font.Code
-	test.TextSize = math.floor(13*fontScale)
-	test.TextColor3 = Color3.new(1, 1, 1)
-	test.BorderSizePixel = 0
-	test.ZIndex = 2147483647
-	Instance.new("UICorner", test).CornerRadius = UDim.new(0, 6)
-
-	test.MouseButton1Click:Connect(function()
-		if notifSoundMuted then notify("Notif sounds muted!", Color3.fromRGB(255, 100, 100)); return end
-		local s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
-		s.Parent = SoundService; s:Play(); Debris:AddItem(s, 4)
-	end)
-
-	local mc = Instance.new("Frame", mSection)
-	mc.Size = UDim2.new(0.9, 0, 0, math.floor(36*scale))
-	mc.Position = UDim2.new(0.05, 0, 0, math.floor(272*scale))
-	mc.BackgroundTransparency = 1
-	mc.ZIndex = 2147483647
-
-	local function mkMute(parent, x, w, st, on, off, isUi)
-		local btn = Instance.new("TextButton", parent)
-		btn.Size = UDim2.new(w, 0, 1, 0)
-		btn.Position = UDim2.new(x, 0, 0, 0)
-		btn.BackgroundColor3 = st and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
-		btn.Text = st and off or on
-		btn.Font = Enum.Font.Code
-		btn.TextSize = math.floor(13*fontScale)
-		btn.TextColor3 = Color3.new(1, 1, 1)
-		btn.BorderSizePixel = 0
-		btn.ZIndex = 2147483647
-		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-		btn.MouseButton1Click:Connect(function()
-			if isUi then
-				soundMuted = not soundMuted
-				btn.BackgroundColor3 = soundMuted and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
-				btn.Text = soundMuted and off or on
-				if soundMuted then notify("UI sounds muted", Color3.fromRGB(255, 100, 100))
-				else
-					notify("UI sounds enabled", Color3.fromRGB(100, 255, 100))
-					local s = Instance.new("Sound"); s.SoundId = "rbxassetid://109439703653606"; s.Volume = _G.uiSoundVol*0.3
-					s.Parent = SoundService; s:Play(); Debris:AddItem(s, 1)
-				end
-			else
-				notifSoundMuted = not notifSoundMuted
-				btn.BackgroundColor3 = notifSoundMuted and Color3.fromRGB(200, 60, 60) or Color3.fromRGB(60, 180, 80)
-				btn.Text = notifSoundMuted and off or on
-				notify(notifSoundMuted and "Notif sounds muted" or "Notif sounds enabled", notifSoundMuted and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(100, 255, 100))
-			end
-		end)
-	end
-
-	mkMute(mc, 0, 0.48, soundMuted, "🔊 UI", "🔇 UI", true)
-	mkMute(mc, 0.52, 0.48, notifSoundMuted, "🔊 Notif", "🔇 Notif", false)
 end
 
--- ========== THEME SELECTOR SECTION (BEAUTIFUL) ==========
-thSection = makeSection(setScroll, "THEME SELECTOR", 0)
+function settingsUI.slider(parent, title, minimum, maximum, value,
+callback, key) local holder = Instance.new("Frame") holder.LayoutOrder =
+3 holder.Size = UDim2.new(1, 0, 0, math.floor(47 * scale))
+holder.BackgroundTransparency = 1 holder.ZIndex = 2147483647
+holder.Parent = parent
 
-thCont = Instance.new("Frame", thSection)
-thCont.Name = "ThemeContainer"
-thCont.Size = UDim2.new(1, math.floor(-20 * scale), 1, math.floor(-40 * scale))
-thCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale))
-thCont.BackgroundTransparency = 1
-thCont.ZIndex = 2147483647
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, math.floor(18 * scale))
+    label.BackgroundTransparency = 1
+    label.Text = title .. ": " .. string.format("%.1f", value)
+    label.Font = Enum.Font.Code
+    label.TextSize = math.floor(9 * fontScale)
+    label.TextColor3 = globalConfig.textColor
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 2147483647
+    label.Parent = holder
 
-local sortedThemes = {}
-for name in pairs(themes) do
-	table.insert(sortedThemes, name)
-end
-table.sort(sortedThemes)
+    local track = Instance.new("TextButton")
+    track.Size = UDim2.new(1, 0, 0, math.max(6, math.floor(8 * scale)))
+    track.Position = UDim2.new(0, 0, 0, math.floor(28 * scale))
+    track.BackgroundColor3 = currentTheme.sliderTrack or Color3.fromRGB(80, 80, 95)
+    track.Text = ""
+    track.BorderSizePixel = 0
+    track.AutoButtonColor = false
+    track.ZIndex = 2147483647
+    track.Parent = holder
+    settingsUI.round(track, 8)
 
-local thCount = #sortedThemes
-local cols = 2
-local rows = math.ceil(thCount / cols)
+    local fill = Instance.new("Frame")
+    local initial = math.clamp((value - minimum) / math.max(maximum - minimum, 0.0001), 0, 1)
+    fill.Size = UDim2.new(initial, 0, 1, 0)
+    fill.BackgroundColor3 = currentTheme.sliderFill or currentTheme.accent
+    fill.BorderSizePixel = 0
+    fill.ZIndex = 2147483647
+    fill.Parent = track
+    settingsUI.round(fill, 8)
 
-local sectionHeight = math.floor(36 * scale) + math.floor(rows * 70 * scale) + math.floor(10 * scale)
-thSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, sectionHeight)
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, math.max(10, math.floor(12 * scale)), 0, math.max(10, math.floor(12 * scale)))
+    knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    knob.Position = UDim2.new(initial, 0, 0.5, 0)
+    knob.BackgroundColor3 = currentTheme.sliderKnob or Color3.new(1, 1, 1)
+    knob.BorderSizePixel = 0
+    knob.ZIndex = 2147483647
+    knob.Parent = track
+    settingsUI.round(knob, 8)
 
-thGrid = Instance.new("UIGridLayout", thCont)
-thGrid.CellSize = UDim2.new(0.48, 0, 0, math.floor(60 * scale))
-thGrid.CellPadding = UDim2.new(0, math.floor(10 * scale), 0, math.floor(10 * scale))
-thGrid.SortOrder = Enum.SortOrder.LayoutOrder
-thGrid.FillDirection = Enum.FillDirection.Horizontal
-thGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-thGrid.VerticalAlignment = Enum.VerticalAlignment.Top
+    local state = {dragging = false, value = value, track = track, fill = fill, knob = knob}
 
-for i, name in ipairs(sortedThemes) do
-	local th = themes[name]
-	
-	-- Card frame
-	local card = Instance.new("TextButton", thCont)
-	card.Name = name .. "ThemeCard"
-	card.Text = ""
-	card.Size = UDim2.new(1, 0, 1, 0)
-	card.BackgroundColor3 = th.glass
-	card.BorderSizePixel = 0
-	card.LayoutOrder = i
-	card.ZIndex = 2147483647
-	card.AutoButtonColor = false
-	card:SetAttribute("LunarBgRole", "glass")
-	
-	local cardCorner = Instance.new("UICorner", card)
-	cardCorner.CornerRadius = UDim.new(0, 8)
-	
-	local cardStroke = Instance.new("UIStroke", card)
-	cardStroke.Color = th.accent
-	cardStroke.Transparency = 0.7
-	cardStroke.Thickness = 1.5
-	cardStroke:SetAttribute("LunarStrokeRole", "accent")
-	
-	-- Color preview strip
-	local preview = Instance.new("Frame", card)
-	preview.Name = "Preview"
-	preview.Size = UDim2.new(1, 0, 0, math.floor(18 * scale))
-	preview.Position = UDim2.new(0, 0, 0, 0)
-	preview.BorderSizePixel = 0
-	preview.ZIndex = 2147483647
-	preview:SetAttribute("LunarBgRole", "accent")
-	
-	local pCorner = Instance.new("UICorner", preview)
-	pCorner.CornerRadius = UDim.new(0, 8)
-	
-	-- Gradient overlay on preview
-	local grad = Instance.new("UIGradient", preview)
-	grad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, th.accent),
-		ColorSequenceKeypoint.new(0.5, th.btn),
-		ColorSequenceKeypoint.new(1, th.list),
-	})
-	grad.Rotation = 90
-	
-	-- Theme name
-	local nameLabel = Instance.new("TextLabel", card)
-	nameLabel.Name = "Name"
-	nameLabel.Size = UDim2.new(1, 0, 0, math.floor(20 * scale))
-	nameLabel.Position = UDim2.new(0, 0, 0, math.floor(20 * scale))
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Text = name
-	nameLabel.Font = Enum.Font.Code
-	nameLabel.TextSize = math.floor(13 * fontScale)
-	nameLabel.TextColor3 = th.text
-	nameLabel.TextScaled = false
-	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-	nameLabel.ZIndex = 2147483647
-	nameLabel:SetAttribute("LunarTxtRole", "text")
-	
-	-- Subtle "Active" indicator dot
-	local dot = Instance.new("Frame", card)
-	dot.Name = "ActiveDot"
-	dot.Size = UDim2.new(0, 6, 0, 6)
-	dot.Position = UDim2.new(1, -12, 0, 6)
-	dot.BackgroundColor3 = th.accent
-	dot.BorderSizePixel = 0
-	dot.ZIndex = 2147483647
-	dot.Visible = (currentTheme == th)
-	dot:SetAttribute("LunarBgRole", "accent")
-	local dotCorner = Instance.new("UICorner", dot)
-	dotCorner.CornerRadius = UDim.new(1, 0)
-	
-	-- Hover effect
-	local hoverConn
-	hoverConn = card.MouseEnter:Connect(function()
-		cardStroke.Transparency = 0.3
-		cardStroke.Thickness = 2
-	end)
-	local leaveConn
-	leaveConn = card.MouseLeave:Connect(function()
-		cardStroke.Transparency = 0.7
-		cardStroke.Thickness = 1.5
-	end)
-	
-	-- Click to apply
-	card.MouseButton1Click:Connect(function()
-		applyTheme(name)
-		-- Update all dots
-		for _, child in ipairs(thCont:GetChildren()) do
-			if child:IsA("TextButton") and child:FindFirstChild("ActiveDot") then
-				child.ActiveDot.Visible = (child.Name == name .. "ThemeCard")
-			end
-		end
-	end)
+    local function update(x)
+        local position = math.clamp(
+            (x - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1),
+            0,
+            1
+        )
+        state.value = minimum + ((maximum - minimum) * position)
+        fill.Size = UDim2.new(position, 0, 1, 0)
+        knob.Position = UDim2.new(position, 0, 0.5, 0)
+        label.Text = title .. ": " .. string.format("%.1f", state.value)
+        if key then
+            _G[key] = state.value
+        end
+        if callback then
+            callback(state.value)
+        end
+    end
+
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            state.dragging = true
+            update(input.Position.X)
+        end
+    end)
+
+    table.insert(settingsUI.connections, UserInputService.InputChanged:Connect(function(input)
+        if not state.dragging then
+            return
+        end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            update(input.Position.X)
+        end
+    end))
+
+    table.insert(settingsUI.connections, UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            state.dragging = false
+        end
+    end))
+
+    state.label = label
+    if key then
+        _G[key] = value
+    end
+    if key then
+        sliders[key] = state
+    end
+    return state
+
 end
 
--- ========== LAYOUT PRESET SELECTOR ==========
-layoutSection = makeSection(setScroll, "UI LAYOUT", 0)
+function settingsUI.openColorPicker(initialColor, callback) local picker
+= settingsUI.colorPicker
 
-layoutCont = Instance.new("Frame", layoutSection)
-layoutCont.Name = "LayoutContainer"
-layoutCont.Size = UDim2.new(1, math.floor(-20 * scale), 0, math.floor(50 * scale))
-layoutCont.Position = UDim2.new(0, math.floor(10 * scale), 0, math.floor(36 * scale))
-layoutCont.BackgroundTransparency = 1
-layoutCont.ZIndex = 2147483647
+    if not picker then
+        picker = {}
+        settingsUI.colorPicker = picker
 
-layoutSection.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(90 * scale))
+        picker.gui = Instance.new("Frame")
+        picker.gui.Name = "ColorPicker"
+        picker.gui.Size = UDim2.new(0, math.floor(330 * scale), 0, math.floor(385 * scale))
+        picker.gui.AnchorPoint = Vector2.new(0.5, 0.5)
+        picker.gui.Position = UDim2.new(0.5, 0, 0.5, 0)
+        picker.gui.BackgroundColor3 = currentTheme.glass or Color3.fromRGB(30, 30, 38)
+        picker.gui.BorderSizePixel = 0
+        picker.gui.Visible = false
+        picker.gui.ZIndex = 2147483647
+        picker.gui.Parent = lunarGui
+        settingsUI.round(picker.gui, 12)
+        settingsUI.stroke(picker.gui, currentTheme.accent, 0.35, 1.5)
 
-local layoutList = Instance.new("UIListLayout", layoutCont)
-layoutList.FillDirection = Enum.FillDirection.Horizontal
-layoutList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-layoutList.VerticalAlignment = Enum.VerticalAlignment.Center
-layoutList.Padding = UDim.new(0, math.floor(10 * scale))
+        picker.title = Instance.new("TextLabel")
+        picker.title.Size = UDim2.new(1, math.floor(-24 * scale), 0, math.floor(28 * scale))
+        picker.title.Position = UDim2.new(0, math.floor(12 * scale), 0, math.floor(8 * scale))
+        picker.title.BackgroundTransparency = 1
+        picker.title.Text = "COLOR PICKER"
+        picker.title.Font = Enum.Font.Code
+        picker.title.TextSize = math.floor(14 * fontScale)
+        picker.title.TextColor3 = currentTheme.accent
+        picker.title.TextXAlignment = Enum.TextXAlignment.Left
+        picker.title.ZIndex = 2147483647
+        picker.title.Parent = picker.gui
 
-for key, preset in pairs(layoutPresets) do
-	local lBtn = Instance.new("TextButton", layoutCont)
-	lBtn.Name = key .. "LayoutBtn"
-	lBtn.Size = UDim2.new(0, math.floor(80 * scale), 0, math.floor(32 * scale))
-	lBtn.BackgroundColor3 = currentTheme.btn
-	lBtn.Text = preset.name
-	lBtn.Font = Enum.Font.Code
-		lBtn.TextSize = math.floor(12 * fontScale)
-	lBtn.TextColor3 = currentTheme.text
-	lBtn.BorderSizePixel = 0
-	lBtn.ZIndex = 2147483647
-	lBtn:SetAttribute("LunarBgRole", "btn")
-	lBtn:SetAttribute("LunarTxtRole", "text")
-	Instance.new("UICorner", lBtn).CornerRadius = UDim.new(0, 6)
+        picker.sv = Instance.new("TextButton")
+        picker.sv.Size = UDim2.new(0, math.floor(220 * scale), 0, math.floor(220 * scale))
+        picker.sv.Position = UDim2.new(0, math.floor(14 * scale), 0, math.floor(48 * scale))
+        picker.sv.BackgroundColor3 = Color3.new(1, 1, 1)
+        picker.sv.Text = ""
+        picker.sv.BorderSizePixel = 0
+        picker.sv.AutoButtonColor = false
+        picker.sv.ZIndex = 2147483647
+        picker.sv.Parent = picker.gui
+        settingsUI.round(picker.sv, 8)
 
-	local lStroke = Instance.new("UIStroke", lBtn)
-	lStroke.Color = currentTheme.accent
-	lStroke.Transparency = 0.85
-	lStroke.Thickness = 1
-	lStroke:SetAttribute("LunarStrokeRole", "accent")
+        picker.svWhite = Instance.new("Frame")
+        picker.svWhite.Size = UDim2.new(1, 0, 1, 0)
+        picker.svWhite.BackgroundColor3 = Color3.new(1, 1, 1)
+        picker.svWhite.BorderSizePixel = 0
+        picker.svWhite.ZIndex = 2147483647
+        picker.svWhite.Parent = picker.sv
+        settingsUI.round(picker.svWhite, 8)
 
-	-- Active indicator for layout buttons
-	local lDot = Instance.new("Frame", lBtn)
-	lDot.Name = "ActiveDot"
-	lDot.Size = UDim2.new(0, 4, 0, 4)
-	lDot.Position = UDim2.new(0.5, -2, 1, -8)
-	lDot.BackgroundColor3 = currentTheme.accent
-	lDot.BorderSizePixel = 0
-	lDot.ZIndex = 2147483647
-	lDot.Visible = (currentLayout == preset)
-	lDot:SetAttribute("LunarBgRole", "accent")
-	Instance.new("UICorner", lDot).CornerRadius = UDim.new(1, 0)
+        picker.svColor = Instance.new("Frame")
+        picker.svColor.Size = UDim2.new(1, 0, 1, 0)
+        picker.svColor.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        picker.svColor.BorderSizePixel = 0
+        picker.svColor.ZIndex = 2147483647
+        picker.svColor.Parent = picker.sv
+        settingsUI.round(picker.svColor, 8)
 
-	-- Hover
-lBtn.MouseEnter:Connect(function()
-	lStroke.Transparency = 0.4
-	lStroke.Thickness = 1.5
-end)
-lBtn.MouseLeave:Connect(function()
-	lStroke.Transparency = 0.85
-	lStroke.Thickness = 1
-end)
+        local svWhiteGradient = Instance.new("UIGradient")
+        svWhiteGradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
+        svWhiteGradient.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})
+        svWhiteGradient.Parent = picker.svWhite
 
-	-- Apply layout
-	lBtn.MouseButton1Click:Connect(function()
-		applyLayout(preset)
-		for _, child in ipairs(layoutCont:GetChildren()) do
-			if child:IsA("TextButton") and child:FindFirstChild("ActiveDot") then
-				child.ActiveDot.Visible = (child.Name == key .. "LayoutBtn")
-			end
-		end
-	end)
+        picker.svBlack = Instance.new("Frame")
+        picker.svBlack.Size = UDim2.new(1, 0, 1, 0)
+        picker.svBlack.BackgroundColor3 = Color3.new(0, 0, 0)
+        picker.svBlack.BorderSizePixel = 0
+        picker.svBlack.ZIndex = 2147483647
+        picker.svBlack.Parent = picker.sv
+        settingsUI.round(picker.svBlack, 8)
+
+        local svBlackGradient = Instance.new("UIGradient")
+        svBlackGradient.Color = ColorSequence.new(Color3.new(0, 0, 0), Color3.new(0, 0, 0))
+        svBlackGradient.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})
+        svBlackGradient.Rotation = 90
+        svBlackGradient.Parent = picker.svBlack
+
+        picker.svCursor = Instance.new("Frame")
+        picker.svCursor.Size = UDim2.new(0, math.floor(14 * scale), 0, math.floor(14 * scale))
+        picker.svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+        picker.svCursor.BackgroundTransparency = 1
+        picker.svCursor.ZIndex = 2147483647
+        picker.svCursor.Parent = picker.sv
+        settingsUI.stroke(picker.svCursor, Color3.new(1, 1, 1), 0, 2)
+        settingsUI.round(picker.svCursor, 8)
+
+        picker.hue = Instance.new("TextButton")
+        picker.hue.Size = UDim2.new(0, math.floor(28 * scale), 0, math.floor(220 * scale))
+        picker.hue.Position = UDim2.new(0, math.floor(246 * scale), 0, math.floor(48 * scale))
+        picker.hue.BackgroundColor3 = Color3.new(1, 0, 0)
+        picker.hue.Text = ""
+        picker.hue.BorderSizePixel = 0
+        picker.hue.AutoButtonColor = false
+        picker.hue.ZIndex = 2147483647
+        picker.hue.Parent = picker.gui
+        settingsUI.round(picker.hue, 8)
+
+        local hueGradient = Instance.new("UIGradient")
+        hueGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 1, 1)),
+            ColorSequenceKeypoint.new(0.166, Color3.fromHSV(0.166, 1, 1)),
+            ColorSequenceKeypoint.new(0.333, Color3.fromHSV(0.333, 1, 1)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromHSV(0.5, 1, 1)),
+            ColorSequenceKeypoint.new(0.666, Color3.fromHSV(0.666, 1, 1)),
+            ColorSequenceKeypoint.new(0.833, Color3.fromHSV(0.833, 1, 1)),
+            ColorSequenceKeypoint.new(1, Color3.fromHSV(1, 1, 1))
+        })
+        hueGradient.Rotation = 90
+        hueGradient.Parent = picker.hue
+
+        picker.hueCursor = Instance.new("Frame")
+        picker.hueCursor.Size = UDim2.new(1, math.floor(4 * scale), 0, math.floor(5 * scale))
+        picker.hueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+        picker.hueCursor.Position = UDim2.new(0.5, 0, 0, 0)
+        picker.hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+        picker.hueCursor.BorderSizePixel = 0
+        picker.hueCursor.ZIndex = 2147483647
+        picker.hueCursor.Parent = picker.hue
+        settingsUI.round(picker.hueCursor, 3)
+
+        picker.preview = Instance.new("Frame")
+        picker.preview.Size = UDim2.new(0, math.floor(48 * scale), 0, math.floor(48 * scale))
+        picker.preview.Position = UDim2.new(0, math.floor(282 * scale), 0, math.floor(48 * scale))
+        picker.preview.BackgroundColor3 = Color3.new(1, 0, 0)
+        picker.preview.BorderSizePixel = 0
+        picker.preview.ZIndex = 2147483647
+        picker.preview.Parent = picker.gui
+        settingsUI.round(picker.preview, 8)
+
+        picker.hex = Instance.new("TextLabel")
+        picker.hex.Size = UDim2.new(0, math.floor(48 * scale), 0, math.floor(18 * scale))
+        picker.hex.Position = UDim2.new(0, math.floor(282 * scale), 0, math.floor(100 * scale))
+        picker.hex.BackgroundTransparency = 1
+        picker.hex.Font = Enum.Font.Code
+        picker.hex.TextSize = math.floor(8 * fontScale)
+        picker.hex.TextColor3 = globalConfig.textColor
+        picker.hex.Text = "#FFFFFF"
+        picker.hex.ZIndex = 2147483647
+        picker.hex.Parent = picker.gui
+
+        picker.cancel = settingsUI.button(picker.gui, "Cancel", function()
+            picker.gui.Visible = false
+        end, 88)
+        picker.cancel.Position = UDim2.new(0, math.floor(14 * scale), 1, math.floor(-48 * scale))
+
+        picker.reset = settingsUI.button(picker.gui, "Reset", function()
+            picker.hueValue = 0
+            picker.satValue = 0
+            picker.valValue = 1
+            picker.update()
+        end, 88)
+        picker.reset.Position = UDim2.new(0, math.floor(112 * scale), 1, math.floor(-48 * scale))
+
+        picker.apply = settingsUI.button(picker.gui, "Apply", function()
+            local color = Color3.fromHSV(picker.hueValue, picker.satValue, picker.valValue)
+            if picker.callback then
+                picker.callback(color)
+            end
+            picker.gui.Visible = false
+        end, 88)
+        picker.apply.Position = UDim2.new(1, math.floor(-102 * scale), 1, math.floor(-48 * scale))
+
+        local function updateSV(input)
+            picker.satValue = math.clamp(
+                (input.Position.X - picker.sv.AbsolutePosition.X) / math.max(picker.sv.AbsoluteSize.X, 1),
+                0,
+                1
+            )
+            picker.valValue = 1 - math.clamp(
+                (input.Position.Y - picker.sv.AbsolutePosition.Y) / math.max(picker.sv.AbsoluteSize.Y, 1),
+                0,
+                1
+            )
+            picker.update()
+        end
+
+        local function updateHue(input)
+            picker.hueValue = math.clamp(
+                (input.Position.Y - picker.hue.AbsolutePosition.Y) / math.max(picker.hue.AbsoluteSize.Y, 1),
+                0,
+                1
+            )
+            picker.update()
+        end
+
+        picker.sv.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                picker.dragSV = true
+                updateSV(input)
+            end
+        end)
+
+        picker.hue.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                picker.dragHue = true
+                updateHue(input)
+            end
+        end)
+
+        table.insert(settingsUI.connections, UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
+                return
+            end
+            if picker.dragSV then
+                updateSV(input)
+            elseif picker.dragHue then
+                updateHue(input)
+            end
+        end))
+
+        table.insert(settingsUI.connections, UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                picker.dragSV = false
+                picker.dragHue = false
+            end
+        end))
+
+        picker.update = function()
+            local color = Color3.fromHSV(picker.hueValue, picker.satValue, picker.valValue)
+            picker.svColor.BackgroundColor3 = Color3.fromHSV(picker.hueValue, 1, 1)
+            picker.preview.BackgroundColor3 = color
+            picker.hex.Text = settingsUI.hex(color)
+            picker.svCursor.Position = UDim2.new(picker.satValue, 0, 1 - picker.valValue, 0)
+            picker.hueCursor.Position = UDim2.new(0.5, 0, picker.hueValue, 0)
+        end
+    end
+
+    local hue, saturation, value = Color3.toHSV(initialColor or Color3.new(1, 1, 1))
+    picker.hueValue = hue
+    picker.satValue = saturation
+    picker.valValue = value
+    picker.callback = callback
+    picker.gui.Visible = true
+    picker.gui.ZIndex = 2147483647
+    picker.update()
+
 end
 
--- ========== LAYOUT APPLICATION ==========
-function applyLayout(preset)
-	currentLayout = preset
+function settingsUI.build() setFrame.Visible = false
 
-	-- Update global spacing vars if they exist in your script
-	if _G.LunarScale then
-		-- Optional: store layout in config for persistence
-		_G.LunarLayout = preset.name
-	end
+    setScroll = Instance.new("ScrollingFrame", setFrame)
+    setScroll.Name = "SettingsScroll"
+    setScroll.Size = UDim2.new(1, 0, 1, 0)
+    setScroll.BackgroundColor3 = currentTheme.glass or Color3.fromRGB(20, 20, 25)
+    setScroll.BackgroundTransparency = 0.05
+    setScroll.BorderSizePixel = 0
+    setScroll.ScrollBarThickness = math.max(4, math.floor(5 * scale))
+    setScroll.ScrollBarImageColor3 = currentTheme.accent
+    setScroll.ScrollBarImageTransparency = 0.2
+    setScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    setScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    setScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+    setScroll.ZIndex = 2147483647
+    setScroll.Parent = setFrame
+    settingsUI.round(setScroll, 9)
 
-	-- Recalculate section sizes based on preset
-	local newBtnHeight = preset.btnHeight
-	local newPad = preset.sectionPad
-	local newInner = preset.innerPad
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, math.floor(10 * scale))
+    padding.PaddingBottom = UDim.new(0, math.floor(14 * scale))
+    padding.PaddingLeft = UDim.new(0, math.floor(8 * scale))
+    padding.PaddingRight = UDim.new(0, math.floor(8 * scale))
+    padding.Parent = setScroll
 
-	-- Apply to all existing sections in setScroll
-	for _, section in ipairs(setScroll:GetChildren()) do
-		if section:IsA("Frame") and section.Name ~= "UIListLayout" then
-			local content = section:FindFirstChildWhichIsA("Frame")
-			if content then
-				content.Size = UDim2.new(1, math.floor(-newPad * 2 * scale), 1, math.floor(-40 * scale))
-				content.Position = UDim2.new(0, math.floor(newPad * scale), 0, math.floor(36 * scale))
-			end
-		end
-	end
+    local list = Instance.new("UIListLayout")
+    list.SortOrder = Enum.SortOrder.LayoutOrder
+    list.Padding = UDim.new(0, math.floor(9 * scale))
+    list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    list.Parent = setScroll
 
-	-- Apply to command list buttons
-	for _, btn in ipairs(cmdScroll:GetChildren()) do
-		if btn:IsA("TextButton") then
-			btn.Size = UDim2.new(1, math.floor(-newInner * 2 * scale), 0, math.floor(newBtnHeight * scale))
-		end
-	end
+    _G.LunarTracerColor = _G.LunarTracerColor or Color3.fromRGB(65, 230, 255)
+    _G.uiSoundVol = _G.uiSoundVol or 1
+    _G.notifSoundVol = _G.notifSoundVol or 0.55
+    _G.customNotifId = _G.customNotifId or "rbxassetid://97643101798871"
 
-	notify("Layout changed to " .. preset.name, currentTheme.accent)
+    settingsUI.state.tracerColor = _G.LunarTracerColor
+    settingsUI.state.tracerThickness = tracerSystem and tracerSystem.settings and tracerSystem.settings.thickness or 1.5
+
+    local textCard = settingsUI.card(setScroll, "Text Color", "Change the main text color used throughout Lunar Admin.")
+    textCard.LayoutOrder = 1
+
+    local textRow = settingsUI.row(textCard, 40)
+    local textPreview = Instance.new("TextLabel")
+    textPreview.Size = UDim2.new(0.55, 0, 1, 0)
+    textPreview.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    textPreview.Text = "LUNAR ADMIN"
+    textPreview.Font = Enum.Font.Code
+    textPreview.TextSize = math.floor(12 * fontScale)
+    textPreview.TextColor3 = globalConfig.textColor
+    textPreview.ZIndex = 2147483647
+    textPreview.Parent = textRow
+    settingsUI.round(textPreview, 8)
+    settingsUI.textPreview = textPreview
+
+    local textButton = settingsUI.button(textRow, "Change Color", function()
+        settingsUI.openColorPicker(globalConfig.textColor, function(color)
+            settingsUI.applyTextColor(color)
+        end)
+    end, 135)
+    textButton.AnchorPoint = Vector2.new(1, 0.5)
+    textButton.Position = UDim2.new(1, 0, 0.5, 0)
+
+    local espCard = settingsUI.card(setScroll, "ESP Color - BROKEN GETTING FIXED!!", "Customize tracer color and thickness without overlapping controls.")
+    espCard.LayoutOrder = 2
+
+    local espRow = settingsUI.row(espCard, 58)
+    local preview = Instance.new("Frame")
+    preview.Size = UDim2.new(0, math.floor(54 * scale), 0, math.floor(54 * scale))
+    preview.BackgroundColor3 = settingsUI.state.tracerColor
+    preview.BorderSizePixel = 0
+    preview.ZIndex = 2147483647
+    preview.Parent = espRow
+    settingsUI.round(preview, 9)
+    settingsUI.tracerPreview = preview
+
+    local hex = Instance.new("TextLabel")
+    hex.Size = UDim2.new(0.42, 0, 1, 0)
+    hex.Position = UDim2.new(0, math.floor(66 * scale), 0, 0)
+    hex.BackgroundTransparency = 1
+    hex.Text = "Current color  " .. settingsUI.hex(settingsUI.state.tracerColor)
+    hex.Font = Enum.Font.Code
+    hex.TextSize = math.floor(9 * fontScale)
+    hex.TextColor3 = globalConfig.textColor
+    hex.TextXAlignment = Enum.TextXAlignment.Left
+    hex.TextYAlignment = Enum.TextYAlignment.Center
+    hex.ZIndex = 2147483647
+    hex.Parent = espRow
+    settingsUI.tracerHex = hex
+
+    local pickerButton = settingsUI.button(espRow, "Open Color Picker", function()
+        settingsUI.openColorPicker(settingsUI.state.tracerColor, function(color)
+            settingsUI.applyTracerColor(color)
+        end)
+    end, 145)
+    pickerButton.AnchorPoint = Vector2.new(1, 0.5)
+    pickerButton.Position = UDim2.new(1, 0, 0.5, 0)
+
+    local quickLabel = settingsUI.label(espCard, "Quick Colors")
+    quickLabel.LayoutOrder = 4
+
+    local quickFrame = Instance.new("Frame")
+    quickFrame.LayoutOrder = 5
+    quickFrame.Size = UDim2.new(1, 0, 0, math.floor(34 * scale))
+    quickFrame.BackgroundTransparency = 1
+    quickFrame.ZIndex = 2147483647
+    quickFrame.Parent = espCard
+
+    local quickLayout = Instance.new("UIListLayout")
+    quickLayout.FillDirection = Enum.FillDirection.Horizontal
+    quickLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    quickLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    quickLayout.Padding = UDim.new(0, math.floor(8 * scale))
+    quickLayout.Parent = quickFrame
+
+    local quickColors = {
+        Color3.fromRGB(255, 80, 120),
+        Color3.fromRGB(255, 240, 0),
+        Color3.fromRGB(255, 255, 255),
+        Color3.fromRGB(0, 255, 255),
+        Color3.fromRGB(65, 230, 255),
+        Color3.fromRGB(120, 220, 255),
+        Color3.fromRGB(255, 150, 255),
+        Color3.fromRGB(255, 100, 230)
+    }
+
+    for index, color in ipairs(quickColors) do
+        local swatch = Instance.new("TextButton")
+        swatch.Name = "Color" .. tostring(index)
+        swatch.Size = UDim2.new(0, math.floor(31 * scale), 0, math.floor(31 * scale))
+        swatch.BackgroundColor3 = color
+        swatch.Text = ""
+        swatch.AutoButtonColor = false
+        swatch.BorderSizePixel = 0
+        swatch.ZIndex = 2147483647
+        swatch.Parent = quickFrame
+        settingsUI.round(swatch, 16)
+        swatch.MouseButton1Click:Connect(function()
+            settingsUI.applyTracerColor(color)
+        end)
+    end
+
+    settingsUI.slider(espCard, "Thickness", 0.5, 6, settingsUI.state.tracerThickness, function(value)
+        settingsUI.state.tracerThickness = value
+        if tracerSystem then
+            pcall(function()
+                tracerSystem.settings.thickness = value
+            end)
+            pcall(function()
+                tracerSystem:Update()
+            end)
+        end
+    end)
+
+    local interfaceCard = settingsUI.card(setScroll, "Interface", "Adjust transparency of the main Lunar Admin window.")
+    interfaceCard.LayoutOrder = 3
+    settingsUI.slider(interfaceCard, "Transparency", 0, 0.8, globalConfig.uiTransparency or 0, function(value)
+        globalConfig.uiTransparency = value
+        if mainFrame then
+            mainFrame.BackgroundTransparency = value
+        end
+    end)
+
+    local soundCard = settingsUI.card(setScroll, "Sound - GETTING FIXED!!!", "Control interface sounds and notification sounds.")
+    soundCard.LayoutOrder = 4
+
+    settingsUI.slider(soundCard, "UI Volume", 0, 1, _G.uiSoundVol, function(value)
+        _G.uiSoundVol = value
+    end, "uiSoundVol")
+
+    settingsUI.slider(soundCard, "Notification Volume", 0, 1, _G.notifSoundVol, function(value)
+        _G.notifSoundVol = value
+    end, "notifSoundVol")
+
+    local soundRow = settingsUI.row(soundCard, 38)
+    local soundBox = Instance.new("TextBox")
+    soundBox.Size = UDim2.new(0.66, 0, 1, 0)
+    soundBox.BackgroundColor3 = currentTheme.inputBg or Color3.fromRGB(36, 36, 44)
+    soundBox.Text = _G.customNotifId
+    soundBox.PlaceholderText = "rbxassetid://..."
+    soundBox.Font = Enum.Font.Code
+    soundBox.TextSize = math.floor(9 * fontScale)
+    soundBox.TextColor3 = currentTheme.inputText or globalConfig.textColor
+    soundBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 112)
+    soundBox.ClearTextOnFocus = false
+    soundBox.BorderSizePixel = 0
+    soundBox.ZIndex = 2147483647
+    soundBox.Parent = soundRow
+    settingsUI.round(soundBox, 7)
+
+    local setSoundButton = settingsUI.button(soundRow, "Set", function()
+        local value = soundBox.Text:gsub("%s+", "")
+        if value == "" then
+            return
+        end
+        if not value:find("rbxassetid://") and tonumber(value) then
+            value = "rbxassetid://" .. value
+        end
+        _G.customNotifId = value
+        notify("Notification sound updated", Color3.fromRGB(100, 255, 100))
+    end, 80)
+    setSoundButton.AnchorPoint = Vector2.new(1, 0.5)
+    setSoundButton.Position = UDim2.new(1, 0, 0.5, 0)
+
+    local soundButtons = settingsUI.row(soundCard, 38)
+    local muteUI = settingsUI.button(soundButtons, soundMuted and "UI Sounds: OFF" or "UI Sounds: ON", function()
+        soundMuted = not soundMuted
+        muteUI.Text = soundMuted and "UI Sounds: OFF" or "UI Sounds: ON"
+    end, 145)
+    muteUI.AnchorPoint = Vector2.new(0, 0.5)
+    muteUI.Position = UDim2.new(0, 0, 0.5, 0)
+
+    local muteNotifications = settingsUI.button(soundButtons, notifSoundMuted and "Alerts: OFF" or "Alerts: ON", function()
+        notifSoundMuted = not notifSoundMuted
+        muteNotifications.Text = notifSoundMuted and "Alerts: OFF" or "Alerts: ON"
+    end, 145)
+    muteNotifications.AnchorPoint = Vector2.new(1, 0.5)
+    muteNotifications.Position = UDim2.new(1, 0, 0.5, 0)
+
+    local testRow = settingsUI.row(soundCard, 38)
+    settingsUI.button(testRow, "Test Notification Sound", function()
+        if notifSoundMuted then
+            notify("Notification sounds are muted", Color3.fromRGB(255, 100, 100))
+            return
+        end
+        local testSound = Instance.new("Sound")
+        testSound.SoundId = _G.customNotifId
+        testSound.Volume = _G.notifSoundVol
+        testSound.Parent = SoundService
+        testSound:Play()
+        Debris:AddItem(testSound, 5)
+    end, 190).AnchorPoint = Vector2.new(1, 0.5)
+
+    local themeCard = settingsUI.card(setScroll, "Themes", "Choose a ready-made Lunar Admin color scheme.")
+    themeCard.LayoutOrder = 5
+
+    local themeGrid = Instance.new("Frame")
+    themeGrid.LayoutOrder = 3
+    themeGrid.Size = UDim2.new(1, 0, 0, math.floor(42 * scale))
+    themeGrid.BackgroundTransparency = 1
+    themeGrid.Parent = themeCard
+
+    local themeLayout = Instance.new("UIGridLayout")
+    themeLayout.CellSize = UDim2.new(0.48, 0, 0, math.floor(34 * scale))
+    themeLayout.CellPadding = UDim2.new(0.04, 0, 0, math.floor(8 * scale))
+    themeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    themeLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    themeLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    themeLayout.Parent = themeGrid
+
+    settingsUI.themeButtons = {}
+    local themeCount = 0
+    for name, theme in pairs(themes) do
+        themeCount = themeCount + 1
+        local themeButton = Instance.new("TextButton")
+        themeButton.Name = "Theme_" .. tostring(name)
+        themeButton.BackgroundColor3 = theme.btn or theme.glass or currentTheme.btn
+        themeButton.Text = tostring(name)
+        themeButton.Font = Enum.Font.Code
+        themeButton.TextSize = math.floor(9 * fontScale)
+        themeButton.TextColor3 = theme.text or Color3.new(1, 1, 1)
+        themeButton.BorderSizePixel = 0
+        themeButton.AutoButtonColor = false
+        themeButton.ZIndex = 2147483647
+        themeButton.Parent = themeGrid
+        settingsUI.round(themeButton, 8)
+        settingsUI.stroke(themeButton, theme.accent or currentTheme.accent, 0.55, 1)
+        settingsUI.themeButtons[name] = themeButton
+
+        themeButton.MouseEnter:Connect(function()
+            themeButton.BackgroundColor3 = theme.btnHover or theme.accent or currentTheme.accent
+        end)
+        themeButton.MouseLeave:Connect(function()
+            themeButton.BackgroundColor3 = theme.btn or theme.glass or currentTheme.btn
+        end)
+        themeButton.MouseButton1Click:Connect(function()
+            applyTheme(name)
+            if settingsUI.refreshTheme then
+                settingsUI.refreshTheme()
+            end
+            if activateLunarTab then
+                if setFrame.Visible then
+                    activateLunarTab("Settings")
+                elseif uniFrame.Visible then
+                    activateLunarTab("Universal")
+                else
+                    activateLunarTab("Commands")
+                end
+            end
+        end)
+    end
+    themeGrid.Size = UDim2.new(1, 0, 0, math.floor(math.max(42, math.ceil(themeCount / 2) * 42) * scale))
+
+    local layoutCard = settingsUI.card(setScroll, "UI Layout", "Change command spacing and button sizing presets.")
+    layoutCard.LayoutOrder = 6
+
+    local layoutGrid = Instance.new("Frame")
+    layoutGrid.LayoutOrder = 3
+    layoutGrid.Size = UDim2.new(1, 0, 0, math.floor(42 * scale))
+    layoutGrid.BackgroundTransparency = 1
+    layoutGrid.Parent = layoutCard
+
+    local layoutGridLayout = Instance.new("UIGridLayout")
+    layoutGridLayout.CellSize = UDim2.new(0.48, 0, 0, math.floor(34 * scale))
+    layoutGridLayout.CellPadding = UDim2.new(0.04, 0, 0, math.floor(8 * scale))
+    layoutGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layoutGridLayout.Parent = layoutGrid
+
+    local layoutCount = 0
+    for name, preset in pairs(layoutPresets) do
+        layoutCount = layoutCount + 1
+        local layoutButton = settingsUI.button(layoutGrid, preset.name or tostring(name), function()
+            currentLayout = preset
+            _G.LunarLayout = preset.name or tostring(name)
+            if cmdScroll then
+                for _, button in ipairs(cmdScroll:GetChildren()) do
+                    if button:IsA("TextButton") then
+                        button.Size = UDim2.new(
+                            1,
+                            math.floor(-(preset.innerPad or 8) * 2 * scale),
+                            0,
+                            math.floor((preset.btnHeight or 42) * scale)
+                        )
+                    end
+                end
+            end
+            notify("Layout changed to " .. tostring(preset.name or name), currentTheme.accent)
+        end, 100)
+        layoutButton.Size = UDim2.new(1, 0, 0, math.floor(34 * scale))
+        layoutButton.AnchorPoint = Vector2.new(0, 0)
+        layoutButton.Position = UDim2.new(0, 0, 0, 0)
+    end
+    layoutGrid.Size = UDim2.new(1, 0, 0, math.floor(math.max(42, math.ceil(layoutCount / 2) * 42) * scale))
+
+    local communityCard = settingsUI.card(setScroll, "Community", "Keep up with Lunar updates and announcements.")
+    communityCard.LayoutOrder = 7
+
+    local communityRow = settingsUI.row(communityCard, 48)
+    local communityIcon = Instance.new("Frame")
+    communityIcon.Size = UDim2.new(0, math.floor(44 * scale), 0, math.floor(44 * scale))
+    communityIcon.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+    communityIcon.BorderSizePixel = 0
+    communityIcon.Parent = communityRow
+    settingsUI.round(communityIcon, 10)
+
+    local communityText = Instance.new("TextLabel")
+    communityText.Size = UDim2.new(0.5, 0, 1, 0)
+    communityText.Position = UDim2.new(0, math.floor(56 * scale), 0, 0)
+    communityText.BackgroundTransparency = 1
+    communityText.Text = "Lunar Community\nUpdates and support"
+    communityText.Font = Enum.Font.Code
+    communityText.TextSize = math.floor(9 * fontScale)
+    communityText.TextColor3 = globalConfig.textColor
+    communityText.TextXAlignment = Enum.TextXAlignment.Left
+    communityText.TextYAlignment = Enum.TextYAlignment.Center
+    communityText.Parent = communityRow
+
+    local discordButton = settingsUI.button(communityRow, "Discord", function()
+        if setclipboard then
+            setclipboard("https://discord.gg/ydNKRbFmUd")
+            notify("Discord invite copied!", Color3.fromRGB(100, 150, 255))
+        else
+            notify("Clipboard is not supported", Color3.fromRGB(255, 100, 100))
+        end
+    end, 105)
+    discordButton.AnchorPoint = Vector2.new(1, 0.5)
+    discordButton.Position = UDim2.new(1, 0, 0.5, 0)
+
+    settingsUI.applyTracerColor(_G.LunarTracerColor)
+    if mainFrame then
+        mainFrame.BackgroundTransparency = globalConfig.uiTransparency or 0
+    end
+
+    settingsUI.refreshTheme = function()
+        setScroll.BackgroundColor3 = currentTheme.glass or currentTheme.main
+        setScroll.ScrollBarImageColor3 = currentTheme.accent
+        for _, object in ipairs(setScroll:GetDescendants()) do
+            if object:IsA("TextButton") then
+                object.BackgroundColor3 = currentTheme.btn or object.BackgroundColor3
+                object.TextColor3 = currentTheme.text or globalConfig.textColor
+            elseif object:IsA("TextLabel") then
+                if object.Name:find("Current") then
+                    object.TextColor3 = globalConfig.textColor
+                end
+            end
+        end
+        if settingsUI.tracerPreview then
+            settingsUI.tracerPreview.BackgroundColor3 = settingsUI.state.tracerColor
+        end
+    end
+
 end
 
--- ========== INIT CALL ==========
--- Call this ONCE at the very bottom of your script after everything is built:
--- initThemeTags()
+settingsUI.build()
 
--- Discord Section
-dSection = makeSection(setScroll, "COMMUNITY", 90)
-dSection.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+function activateLunarTab(tabName) local activeColor =
+currentTheme.tabActive or currentTheme.accent local inactiveColor =
+currentTheme.tabInactive or Color3.fromRGB(50, 50, 60) local activeText
+= currentTheme.tabTextActive or Color3.new(1, 1, 1) local inactiveText =
+currentTheme.tabTextInactive or globalConfig.textColor
 
-dBtn = Instance.new("TextButton", dSection)
-dBtn.Size = UDim2.new(0.9, 0, 0, math.floor(40 * scale))
-dBtn.Position = UDim2.new(0.05, 0, 0, math.floor(38 * scale))
-dBtn.BackgroundColor3 = Color3.fromRGB(120, 130, 255)
-dBtn.Text = "Join Discord Server"
-dBtn.Font = Enum.Font.Code
-dBtn.TextSize = math.floor(16 * fontScale)
-dBtn.TextColor3 = Color3.new(1,1,1)
-dBtn.ZIndex = 2147483647
-Instance.new("UICorner", dBtn).CornerRadius = UDim.new(0, 6)
+    cmdFrame.Visible = tabName == "Commands"
+    setFrame.Visible = tabName == "Settings"
+    uniFrame.Visible = tabName == "Universal"
 
-dBtn.MouseButton1Click:Connect(function()
-	if setclipboard then
-		setclipboard("https://discord.gg/ydNKRbFmUd")
-		notify("Discord link copied to clipboard!", Color3.fromRGB(88,101,242))
-	else
-		notify("Clipboard not supported in this executor", Color3.fromRGB(255,100,100))
-	end
-end)
+    cmdTab.BackgroundColor3 = tabName == "Commands" and activeColor or inactiveColor
+    setTab.BackgroundColor3 = tabName == "Settings" and activeColor or inactiveColor
+    uniTab.BackgroundColor3 = tabName == "Universal" and activeColor or inactiveColor
 
--- ========== UNIVERSAL TAB ==========
-uniFrame = Instance.new("Frame", contentFrame)
-uniFrame.Name = "UniFrame"
-uniFrame.Size = UDim2.new(1, 0, 1, 0)
-uniFrame.BackgroundTransparency = 1
-uniFrame.Visible = false
-uniFrame.ZIndex = 2147483647
+    cmdTab.TextColor3 = tabName == "Commands" and activeText or inactiveText
+    setTab.TextColor3 = tabName == "Settings" and activeText or inactiveText
+    uniTab.TextColor3 = tabName == "Universal" and activeText or inactiveText
 
-uniScroll = Instance.new("ScrollingFrame", uniFrame)
-uniScroll.Size = UDim2.new(1, 0, 1, 0)
-uniScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-uniScroll.BorderSizePixel = 0
-uniScroll.ScrollBarThickness = math.floor(4 * scale)
-uniScroll.ScrollBarImageColor3 = currentTheme.accent
-uniScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-uniScroll.ZIndex = 2147483647
-Instance.new("UICorner", uniScroll).CornerRadius = UDim.new(0, 6)
-
-uniList = Instance.new("UIListLayout", uniScroll)
-uniList.Padding = UDim.new(0, math.floor(8 * scale))
-uniList.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Reusable element reference
-local el
-
--- TPWalk Section
-el = makeSection(uniScroll, "TPWALK", 100)
-
-el = Instance.new("TextBox", el)
-el.Name = "TPWalkInput"
-el.Size = UDim2.new(0.5, 0, 0, math.floor(28 * scale))
-el.Position = UDim2.new(0.05, 0, 0, math.floor(36 * scale))
-el.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-el.BorderSizePixel = 0
-el.Text = "5"
-el.PlaceholderText = "Speed..."
-el.PlaceholderColor3 = Color3.fromRGB(80, 80, 90)
-el.Font = Enum.Font.Code
-el.TextSize = math.floor(12 * fontScale)
-el.TextColor3 = globalConfig.textColor
-el.ZIndex = 2147483647
-Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
-local tpwalkInput = el
-
-el = Instance.new("TextButton", tpwalkInput.Parent)
-el.Size = UDim2.new(0.35, 0, 0, math.floor(28 * scale))
-el.Position = UDim2.new(0.6, 0, 0, math.floor(36 * scale))
-el.BackgroundColor3 = Color3.fromRGB(45, 100, 70)
-el.Text = "Start"
-el.Font = Enum.Font.Code
-el.TextSize = math.floor(11 * fontScale)
-el.TextColor3 = Color3.fromRGB(220, 255, 220)
-el.BorderSizePixel = 0
-el.ZIndex = 2147483647
-Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
-el.MouseButton1Click:Connect(function()
-	local spd = tonumber(tpwalkInput.Text) or 5
-	_G.EnableTPWalk({tostring(spd)})
-end)
-
-el = Instance.new("TextButton", tpwalkInput.Parent)
-el.Size = UDim2.new(0.9, 0, 0, math.floor(24 * scale))
-el.Position = UDim2.new(0.05, 0, 0, math.floor(68 * scale))
-el.BackgroundColor3 = Color3.fromRGB(80, 45, 45)
-el.Text = "Reset / Stop"
-el.Font = Enum.Font.Code
-el.TextSize = math.floor(11 * fontScale)
-el.TextColor3 = Color3.fromRGB(255, 180, 180)
-el.BorderSizePixel = 0
-el.ZIndex = 2147483647
-Instance.new("UICorner", el).CornerRadius = UDim.new(0, 5)
-el.MouseButton1Click:Connect(function()
-	_G.DisableTPWalk()
-end)
-
--- Quick Actions Section
-el = makeSection(uniScroll, "QUICK ACTIONS", 0)
-
--- Modern muted colors
-local btnColors = {
-	fly = Color3.fromRGB(55, 75, 110),
-	fling = Color3.fromRGB(110, 55, 55),
-	aimbot = Color3.fromRGB(110, 70, 40),
-	crosshair = Color3.fromRGB(55, 110, 55),
-	sit = Color3.fromRGB(75, 55, 110),
-	noclip = Color3.fromRGB(90, 80, 40),
-	rejoin = Color3.fromRGB(55, 85, 110),
-	serverhop = Color3.fromRGB(110, 80, 45),
-	firstp = Color3.fromRGB(60, 60, 70),
-	thirdp = Color3.fromRGB(60, 60, 70)
-}
-
-local btnTextColors = {
-	fly = Color3.fromRGB(180, 200, 255),
-	fling = Color3.fromRGB(255, 180, 180),
-	aimbot = Color3.fromRGB(255, 200, 160),
-	crosshair = Color3.fromRGB(180, 255, 180),
-	sit = Color3.fromRGB(200, 180, 255),
-	noclip = Color3.fromRGB(255, 240, 180),
-	rejoin = Color3.fromRGB(180, 210, 255),
-	serverhop = Color3.fromRGB(255, 210, 160),
-	firstp = Color3.fromRGB(200, 200, 210),
-	thirdp = Color3.fromRGB(200, 200, 210)
-}
-
-local bH = math.floor(38 * scale)
-local bP = math.floor(6 * scale)
-el.Size = UDim2.new(1, math.floor(-16 * scale), 0, math.floor(32 * scale) + (5 * bH) + (6 * bP))
-
-local grid = Instance.new("UIGridLayout", el)
-grid.CellSize = UDim2.new(0.48, 0, 0, bH)
-grid.CellPadding = UDim2.new(0, bP, 0, bP)
-grid.SortOrder = Enum.SortOrder.LayoutOrder
-grid.FillDirection = Enum.FillDirection.Horizontal
-grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- Helper to make a quick button (no new locals per button)
-local function qBtn(parent, name, label, colorKey, callback)
-	local b = Instance.new("TextButton", parent)
-	b.Name = name
-	b.BackgroundColor3 = btnColors[colorKey]
-	b.Text = label
-	b.Font = Enum.Font.Code
-	b.TextSize = math.floor(11 * fontScale)
-	b.TextColor3 = btnTextColors[colorKey]
-	b.BorderSizePixel = 0
-	b.ZIndex = 2147483647
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
-	b.MouseButton1Click:Connect(callback)
-	return b
 end
 
-qBtn(el, "FlyBtn", "Fly", "fly", function()
-	if fly then fly(client, nil) end
+cmdTab.MouseButton1Click:Connect(function() activateLunarTab("Commands")
 end)
 
-qBtn(el, "FlingBtn", "Fling", "fling", function()
-	if TouchFling and TouchFling.CreateGUI then
-		TouchFling:CreateGUI()
-		StarterGui:SetCore("SendNotification", {Title = "Touch Fling", Text = "GUI Opened", Duration = 3})
-	end
-end)
-
-qBtn(el, "AimbotBtn", "Aimbot", "aimbot", function()
-	if createAimbotPanel then createAimbotPanel() end
-end)
-
-qBtn(el, "CrosshairBtn", "Crosshair", "crosshair", function()
-	if LoadLunarCrosshair then LoadLunarCrosshair() end
-end)
-
-qBtn(el, "SitBtn", "Sit", "sit", function()
-	if sit then sit(client) end
-end)
-
--- Noclip toggle (needs state tracking)
-local ncBtn = qBtn(el, "NoclipBtn", "Noclip: OFF", "noclip", function() end)
-local ncOn = false
-ncBtn.MouseButton1Click:Connect(function()
-	ncOn = not ncOn
-	if ncOn then
-		ncBtn.Text = "Noclip: ON"
-		ncBtn.BackgroundColor3 = Color3.fromRGB(55, 90, 55)
-		if noclip then noclip(client) end
-	else
-		ncBtn.Text = "Noclip: OFF"
-		ncBtn.BackgroundColor3 = btnColors.noclip
-		if unnoclip then unnoclip(client) end
-	end
-end)
-
-qBtn(el, "RejoinBtn", "Rejoin", "rejoin", function()
-	if rejoin then rejoin(LocalPlayer, {}) end
-end)
-
-qBtn(el, "ServerhopBtn", "Serverhop", "serverhop", function()
-	if serverhop then serverhop(client, {}) end
-end)
-
-qBtn(el, "FirstPBtn", "First Person", "firstp", function()
-	if firstp then firstp() end
-end)
-
-qBtn(el, "ThirdPBtn", "Third Person", "thirdp", function()
-	if thirdp then thirdp() end
-end)
-
--- Universal Tab Button
-uniTab = Instance.new("TextButton", tabBar)
-uniTab.Name = "UniTab"
-uniTab.Size = UDim2.new(0.333, -5, 1, 0)
-uniTab.Position = UDim2.new(0.667, 5, 0, 0)
-uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-uniTab.Text = "Universal"
-uniTab.Font = Enum.Font.Code
-uniTab.TextSize = math.floor(16 * fontScale)
-uniTab.TextColor3 = globalConfig.textColor
-uniTab.BorderSizePixel = 0
-uniTab.ZIndex = 2147483647
-Instance.new("UICorner", uniTab).CornerRadius = UDim.new(0, 6)
-
--- Tab switching
-cmdTab.MouseButton1Click:Connect(function()
-	cmdFrame.Visible = true
-	setFrame.Visible = false
-	uniFrame.Visible = false
-	cmdTab.BackgroundColor3 = currentTheme.accent
-	cmdTab.TextColor3 = Color3.new(0,0,0)
-	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	setTab.TextColor3 = globalConfig.textColor
-	uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	uniTab.TextColor3 = globalConfig.textColor
-end)
-
-setTab.MouseButton1Click:Connect(function()
-	cmdFrame.Visible = false
-	setFrame.Visible = true
-	uniFrame.Visible = false
-	setTab.BackgroundColor3 = currentTheme.accent
-	setTab.TextColor3 = Color3.new(0,0,0)
-	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	cmdTab.TextColor3 = globalConfig.textColor
-	uniTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	uniTab.TextColor3 = globalConfig.textColor
+setTab.MouseButton1Click:Connect(function() activateLunarTab("Settings")
 end)
 
 uniTab.MouseButton1Click:Connect(function()
-	cmdFrame.Visible = false
-	setFrame.Visible = false
-	uniFrame.Visible = true
-	uniTab.BackgroundColor3 = currentTheme.accent
-	uniTab.TextColor3 = Color3.new(0,0,0)
-	cmdTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	cmdTab.TextColor3 = globalConfig.textColor
-	setTab.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-	setTab.TextColor3 = globalConfig.textColor
+activateLunarTab("Universal") end)
+
+activateLunarTab("Commands")
+-- =============================================================
+-- STARTUP
+-- =============================================================
+lunarGui.Enabled = true
+playOpen()
+notify("Lunar Admin loaded • Enjoy :3", Color3.fromRGB(120,220,255))
+
+setupButtonSounds()
+
+task.spawn(function()
+	task.wait(0.8)
+	local wm = Instance.new("ScreenGui")
+	wm.ResetOnSpawn = false
+	wm.DisplayOrder = 999999
+	wm.Parent = client.PlayerGui
+	local label = Instance.new("TextLabel", wm)
+	label.Size = UDim2.new(0, 320, 0, 40)
+	label.Position = UDim2.new(0.5, -160, 0.94, 0)
+	label.BackgroundTransparency = 1
+	label.Text = "Created By @lun4_y • lunar_rbx discord"
+	label.Font = Enum.Font.Code
+	label.TextSize = 24
+	label.TextColor3 = globalConfig.textColor
+	label.TextTransparency = 0
+	label.TextStrokeTransparency = 0.5
+	label.TextStrokeColor3 = Color3.new(0,0,0)
+	TweenService:Create(label, TweenInfo.new(1.8, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+	task.wait(5.5)
+	TweenService:Create(label, TweenInfo.new(1.6), {TextTransparency = 1}):Play()
+	task.delay(2, function() wm:Destroy() end)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.RightShift then
+		if lunarGui then
+			lunarGui.Enabled = not lunarGui.Enabled
+			if lunarGui.Enabled then
+				playOpen()
+			else
+				playClose()
+			end
+		end
+	end
 end)
 
 -- =============================================================
