@@ -1528,7 +1528,6 @@ local notifOffscreen = 410
 local notifTargetX = -406
 local notifDuration = 4.5
 local activeNotifications = {}
-local currentNotifSound = nil
 
 if isMobile then
 	local notifViewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
@@ -1551,17 +1550,25 @@ if isMobile then
 end
 
 local function playNotifSound()
-	if notifSoundMuted then return end
-	if currentNotifSound and currentNotifSound.IsPlaying then
-		currentNotifSound:Stop()
+	if notifSoundMuted then
+		return
 	end
+
+	local volumeMultiplier = tonumber(_G.notifSoundVol) or 1
+	volumeMultiplier = math.clamp(volumeMultiplier, 0, 2)
+
 	local s = Instance.new("Sound")
+	s.Name = "LunarNotificationSound"
 	s.SoundId = "rbxassetid://97643101798871"
-	s.Volume = 0.42 * (_G.notifSoundVol or 1)
+	s.Volume = math.clamp(0.42 * volumeMultiplier, 0, 1)
+	s.PlaybackSpeed = 1
+	s.Looped = false
+	s.RollOffMode = Enum.RollOffMode.Linear
 	s.Parent = SoundService
-	s:Play()
-	currentNotifSound = s
-	Debris:AddItem(s, 4)
+
+	SoundService:PlayLocalSound(s)
+
+	Debris:AddItem(s, 5)
 end
 
 local function repositionAll()
