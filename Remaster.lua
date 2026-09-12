@@ -1578,14 +1578,14 @@ end
 local function notify(text, col)
 	col = col or currentTheme.accent or Color3.fromRGB(147,112,219)
 	text = tostring(text or "")
-	if LunarTerminal_addLine then LunarTerminal_addLine("[LUNAR] "..text,col,true) end
+	if LunarTerminal_addLine then LunarTerminal_addLine("[User] "..text,col,true) end
 	local f=Instance.new("Frame")
 	f.Name="Toast";f.Size=UDim2.fromOffset(notifWidth,notifHeight);f.Position=UDim2.new(1,notifOffscreen,0,startY);f.BackgroundColor3=Color3.fromRGB(8,8,8);f.BackgroundTransparency=0.04;f.BorderSizePixel=0;f.ClipsDescendants=true;f.ZIndex=2147483647;f.Parent=notifGui
 	local stroke=Instance.new("UIStroke",f);stroke.Color=Color3.fromRGB(70,70,70);stroke.Thickness=1;stroke.Transparency=0
 	local corner=Instance.new("UICorner",f);corner.CornerRadius=UDim.new(0,math.floor((globalConfig.cornerRadius or 2)*scale))
 	local header=Instance.new("Frame",f);header.Size=UDim2.new(1,0,0,math.floor(25*scale));header.BackgroundColor3=Color3.fromRGB(22,22,22);header.BorderSizePixel=0;header.ZIndex=2147483647
 	local bar=Instance.new("Frame",header);bar.Size=UDim2.new(0,math.floor(3*scale),1,0);bar.BackgroundColor3=col;bar.BorderSizePixel=0;bar.ZIndex=2147483647
-	local title=Instance.new("TextLabel",header);title.Size=UDim2.new(1,math.floor(-90*scale),1,0);title.Position=UDim2.fromOffset(math.floor(10*scale),0);title.BackgroundTransparency=1;title.Text="LUNAR ADMIN";title.Font=Enum.Font.Code;title.TextSize=math.floor(10*fontScale);title.TextColor3=col;title.TextXAlignment=Enum.TextXAlignment.Left;title.ZIndex=2147483647
+	local title=Instance.new("TextLabel",header);title.Size=UDim2.new(1,math.floor(-90*scale),1,0);title.Position=UDim2.fromOffset(math.floor(10*scale),0);title.BackgroundTransparency=1;title.Text="Project Lunar";title.Font=Enum.Font.Code;title.TextSize=math.floor(10*fontScale);title.TextColor3=col;title.TextXAlignment=Enum.TextXAlignment.Left;title.ZIndex=2147483647
 	local timeLabel=Instance.new("TextLabel",header);timeLabel.Size=UDim2.fromOffset(math.floor(70*scale),1);timeLabel.Position=UDim2.new(1,math.floor(-78*scale),0,0);timeLabel.BackgroundTransparency=1;timeLabel.Text=os.date("%H:%M:%S");timeLabel.Font=Enum.Font.Code;timeLabel.TextSize=math.floor(9*fontScale);timeLabel.TextColor3=Color3.fromRGB(120,120,120);timeLabel.TextXAlignment=Enum.TextXAlignment.Right;timeLabel.ZIndex=2147483647
 	local message=Instance.new("TextLabel",f);message.Size=UDim2.new(1,math.floor(-26*scale),1,math.floor(-36*scale));message.Position=UDim2.fromOffset(math.floor(12*scale),math.floor(30*scale));message.BackgroundTransparency=1;message.Text="";message.Font=Enum.Font.Code;message.TextSize=math.floor(11*fontScale);message.TextColor3=Color3.fromRGB(225,225,225);message.TextWrapped=true;message.TextXAlignment=Enum.TextXAlignment.Left;message.TextYAlignment=Enum.TextYAlignment.Top;message.ZIndex=2147483647
 	local progress=Instance.new("Frame",f);progress.Size=UDim2.new(1,0,0,math.floor(2*scale));progress.Position=UDim2.new(0,0,1,math.floor(-2*scale));progress.BackgroundColor3=col;progress.BorderSizePixel=0;progress.ZIndex=2147483647
@@ -11004,7 +11004,7 @@ end
 ------------------------------------------------
 local function kick(plr)
 	if plr == client then
-		client:Kick("Kicked via Lunar Admin")
+		client:Kick("Kicked via Projject Lunar")
 	else
 		notify("⚠️ Kick only works on yourself (client-side)", Color3.fromRGB(255, 170, 0))
 	end
@@ -12041,7 +12041,7 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingWindow=false end
 end)
-titleLabel=Instance.new("TextLabel",topBar);titleLabel.Size=UDim2.new(1,math.floor(-48*scale),1,0);titleLabel.Position=UDim2.fromOffset(math.floor(12*scale),0);titleLabel.BackgroundTransparency=1;titleLabel.Text="Administrator: Command Prompt";titleLabel.Font=Enum.Font.Code;titleLabel.TextSize=math.floor(13*fontScale);titleLabel.TextColor3=Color3.fromRGB(235,235,235);titleLabel.TextXAlignment=Enum.TextXAlignment.Left;titleLabel.ZIndex=2147483647
+titleLabel=Instance.new("TextLabel",topBar);titleLabel.Size=UDim2.new(1,math.floor(-48*scale),1,0);titleLabel.Position=UDim2.fromOffset(math.floor(12*scale),0);titleLabel.BackgroundTransparency=1;titleLabel.Text="Administrator: Executer";titleLabel.Font=Enum.Font.Code;titleLabel.TextSize=math.floor(13*fontScale);titleLabel.TextColor3=Color3.fromRGB(235,235,235);titleLabel.TextXAlignment=Enum.TextXAlignment.Left;titleLabel.ZIndex=2147483647
 minBtn=Instance.new("TextButton",topBar);minBtn.Name="MinimizeBtn";minBtn.Size=UDim2.fromOffset(math.floor(38*scale),math.floor(38*scale));minBtn.Position=UDim2.new(1,math.floor(-38*scale),0,0);minBtn.BackgroundColor3=Color3.fromRGB(32,32,32);minBtn.Text="−";minBtn.Font=Enum.Font.Code;minBtn.TextSize=math.floor(18*fontScale);minBtn.TextColor3=Color3.fromRGB(230,230,230);minBtn.BorderSizePixel=0;minBtn.AutoButtonColor=false;minBtn.ZIndex=2147483647
 minimized=false;origSize=mainFrame.Size
 minBtn.MouseEnter:Connect(function() minBtn.BackgroundColor3=Color3.fromRGB(52,52,52) end);minBtn.MouseLeave:Connect(function() minBtn.BackgroundColor3=Color3.fromRGB(32,32,32) end)
@@ -12072,10 +12072,10 @@ function LunarTerminal_addLine(text,role,muted,typeSpeed)
 	task.defer(function() if terminalOutput.Parent then terminalOutput.CanvasPosition=Vector2.new(0,math.max(0,terminalOutput.AbsoluteCanvasSize.Y-terminalOutput.AbsoluteWindowSize.Y)) end end)
 	return line
 end
-function LunarTerminal_clearOutput() for _,child in ipairs(terminalOutput:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end;terminalCommandCount=0;LunarTerminal_addLine("Microsoft Windows [Version 10.0.26100]",Color3.fromRGB(225,225,225),false,0.002);LunarTerminal_addLine("(c) Microsoft Corporation. All rights reserved.",Color3.fromRGB(190,190,190),false,0.002);LunarTerminal_addLine("Project Lunar administrator console initialized.",currentTheme.accent,false,0.002);LunarTerminal_addLine("Type HELP for the command index. TAB completes. F2 focuses. F3 opens command index. F4 clears.",Color3.fromRGB(125,125,125),true,0.001) end
+function LunarTerminal_clearOutput() for _,child in ipairs(terminalOutput:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end;terminalCommandCount=0;LunarTerminal_addLine("Lunar Script [Version 10.0.8]",Color3.fromRGB(225,225,225),false,0.002);LunarTerminal_addLine("(c) Lunar Studios. All rights reserved.",Color3.fromRGB(190,190,190),false,0.002);LunarTerminal_addLine("Welcome to Project Lunar...",currentTheme.accent,false,0.002);LunarTerminal_addLine("Type HELP for the command index. TAB completes. F2 focuses. F3 opens command index. F4 clears.",Color3.fromRGB(125,125,125),true,0.001) end
 
 cmdBarFrame=Instance.new("Frame",terminalRoot);cmdBarFrame.Name="CmdBarFrame";cmdBarFrame.Size=UDim2.new(1,math.floor(-2*scale),0,math.floor(56*scale));cmdBarFrame.Position=UDim2.new(0,1,1,math.floor(-57*scale));cmdBarFrame.BackgroundColor3=Color3.fromRGB(16,16,16);cmdBarFrame.BorderSizePixel=0;cmdBarFrame.ZIndex=2147483647
-cmdPrompt=Instance.new("TextLabel",cmdBarFrame);cmdPrompt.Size=UDim2.fromOffset(math.floor(82*scale),math.floor(56*scale));cmdPrompt.Position=UDim2.fromOffset(math.floor(8*scale),0);cmdPrompt.BackgroundTransparency=1;cmdPrompt.Text="C:\\LUNAR>";cmdPrompt.Font=Enum.Font.Code;cmdPrompt.TextSize=math.floor(12*fontScale);cmdPrompt.TextColor3=currentTheme.accent;cmdPrompt.TextXAlignment=Enum.TextXAlignment.Left;cmdPrompt.ZIndex=2147483647
+cmdPrompt=Instance.new("TextLabel",cmdBarFrame);cmdPrompt.Size=UDim2.fromOffset(math.floor(82*scale),math.floor(56*scale));cmdPrompt.Position=UDim2.fromOffset(math.floor(8*scale),0);cmdPrompt.BackgroundTransparency=1;cmdPrompt.Text="C:\\User> ";cmdPrompt.Font=Enum.Font.Code;cmdPrompt.TextSize=math.floor(12*fontScale);cmdPrompt.TextColor3=currentTheme.accent;cmdPrompt.TextXAlignment=Enum.TextXAlignment.Left;cmdPrompt.ZIndex=2147483647
 cmdInput=Instance.new("TextBox",cmdBarFrame);cmdInput.Size=UDim2.new(1,math.floor(-166*scale),0,math.floor(34*scale));cmdInput.Position=UDim2.fromOffset(math.floor(78*scale),math.floor(11*scale));cmdInput.BackgroundTransparency=1;cmdInput.Text="";cmdInput.PlaceholderText="type a command...";cmdInput.PlaceholderColor3=Color3.fromRGB(90,90,90);cmdInput.Font=Enum.Font.Code;cmdInput.TextSize=math.floor(12*fontScale);cmdInput.TextColor3=Color3.fromRGB(240,240,240);cmdInput.TextXAlignment=Enum.TextXAlignment.Left;cmdInput.ClearTextOnFocus=false;cmdInput.MultiLine=false;cmdInput.ZIndex=2147483647
 execBtn=Instance.new("TextButton",cmdBarFrame);execBtn.Size=UDim2.fromOffset(math.floor(42*scale),math.floor(32*scale));execBtn.Position=UDim2.new(1,math.floor(-94*scale),0.5,math.floor(-16*scale));execBtn.BackgroundColor3=currentTheme.accent;execBtn.Text="RUN";execBtn.Font=Enum.Font.Code;execBtn.TextSize=math.floor(10*fontScale);execBtn.TextColor3=Color3.new(0,0,0);execBtn.BorderSizePixel=0;execBtn.AutoButtonColor=false;execBtn.ZIndex=2147483647
 cmdClearBtn=Instance.new("TextButton",cmdBarFrame);cmdClearBtn.Size=UDim2.fromOffset(math.floor(42*scale),math.floor(32*scale));cmdClearBtn.Position=UDim2.new(1,math.floor(-48*scale),0.5,math.floor(-16*scale));cmdClearBtn.BackgroundColor3=Color3.fromRGB(45,45,45);cmdClearBtn.Text="CLS";cmdClearBtn.Font=Enum.Font.Code;cmdClearBtn.TextSize=math.floor(9*fontScale);cmdClearBtn.TextColor3=Color3.fromRGB(220,220,220);cmdClearBtn.BorderSizePixel=0;cmdClearBtn.AutoButtonColor=false;cmdClearBtn.ZIndex=2147483647
@@ -13302,7 +13302,7 @@ applyModernControlStyles()
 
 -- Final visual setup is intentionally lightweight so a cosmetic error cannot prevent the main GUI from appearing.
 -- Startup
-lunarGui.Enabled=true;playOpen();notify("Lunar Admin loaded • CMD edition",Color3.fromRGB(120,220,255));setupButtonSounds()
+lunarGui.Enabled=true;playOpen();notify("Project Lunar• Remastered",Color3.fromRGB(120,220,255));setupButtonSounds()
 
 -- Keep the command input alive without adding another background function.
 cmdInput.PlaceholderText = "type a command..."
