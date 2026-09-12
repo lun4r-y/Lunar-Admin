@@ -1612,59 +1612,43 @@ local function notify(text, col)
 end
 
 -- =============================================================
--- Project Lunar watermakr yea
+-- Project Lunar watermark yea
 -- =============================================================
 task.spawn(function()
-		local RunService = game:GetService("RunService")
-		local Stats = game:GetService("Stats")
+	local RunService = game:GetService("RunService")
 	local CoreGui = game:GetService("CoreGui")
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Players = game:GetService("Players")
 
-	
+	local player = Players.LocalPlayer
 	local isMobile = UserInputService.TouchEnabled
 
 	local frameWidth = 380
 	local frameHeight = 34
 	local frameX = -390
-	local textSize = 16
+	local textSize = 14
 	local moonSize = 22
 
 	if isMobile then
-		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800,600)
+		local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
 		local smallestSide = math.min(viewport.X, viewport.Y)
 
 		if smallestSide < 700 then
 			frameWidth = 300
 			frameHeight = 28
 			frameX = -310
-			textSize = 12
+			textSize = 11
 			moonSize = 16
 		else
 			frameWidth = 340
 			frameHeight = 30
 			frameX = -350
-			textSize = 14
+			textSize = 12
 			moonSize = 18
 		end
 	end
 
 	if CoreGui:FindFirstChild("LunarWatermark") then
 		CoreGui.LunarWatermark:Destroy()
-	end
-
-	local serverRunTime = workspace:FindFirstChild("ServerRunTime")
-	if not serverRunTime then
-		serverRunTime = Instance.new("NumberValue")
-		serverRunTime.Name = "ServerRunTime"
-		serverRunTime.Value = 0
-		serverRunTime.Parent = workspace
-	end
-
-	local pingEvent = ReplicatedStorage:FindFirstChild("PingEvent")
-	if not pingEvent then
-		pingEvent = Instance.new("RemoteEvent")
-		pingEvent.Name = "PingEvent"
-		pingEvent.Parent = ReplicatedStorage
 	end
 
 	local sg = Instance.new("ScreenGui")
@@ -1677,59 +1661,88 @@ task.spawn(function()
 	sg.Parent = CoreGui
 
 	local frame = Instance.new("Frame")
+	frame.Name = "WatermarkFrame"
 	frame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
 	frame.Position = UDim2.new(1, frameX, 0, 15)
 	frame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 	frame.BackgroundTransparency = 0.15
+	frame.BorderSizePixel = 0
 	frame.ZIndex = 2147483647
 	frame.Parent = sg
 
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 16)
+	frameCorner.Parent = frame
 
 	local dragTab = Instance.new("Frame")
+	dragTab.Name = "DragTab"
 	dragTab.Size = UDim2.new(0, 30, 1, 0)
 	dragTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	dragTab.BackgroundTransparency = 0.2
+	dragTab.BorderSizePixel = 0
 	dragTab.ZIndex = 2147483647
 	dragTab.Parent = frame
 
-	Instance.new("UICorner", dragTab).CornerRadius = UDim.new(0, 16)
+	local dragCorner = Instance.new("UICorner")
+	dragCorner.CornerRadius = UDim.new(0, 16)
+	dragCorner.Parent = dragTab
 
 	local tabLabel = Instance.new("TextLabel")
+	tabLabel.Name = "DragIcon"
 	tabLabel.Size = UDim2.fromScale(1, 1)
 	tabLabel.BackgroundTransparency = 1
 	tabLabel.Text = "≡"
 	tabLabel.TextSize = isMobile and 14 or 18
 	tabLabel.Font = Enum.Font.Code
 	tabLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	tabLabel.TextXAlignment = Enum.TextXAlignment.Center
+	tabLabel.TextYAlignment = Enum.TextYAlignment.Center
 	tabLabel.ZIndex = 2147483647
 	tabLabel.Parent = dragTab
 
-	local moon = Instance.new("TextLabel", frame)
+	local moon = Instance.new("TextLabel")
+	moon.Name = "Moon"
 	moon.Size = UDim2.new(0, 32, 1, 0)
-	moon.Position = UDim2.new(0, 42, 0, 0)
+	moon.Position = UDim2.new(0, 37, 0, 0)
 	moon.BackgroundTransparency = 1
 	moon.Text = "🌙"
 	moon.TextColor3 = Color3.fromRGB(255, 215, 0)
 	moon.TextSize = moonSize
 	moon.Font = Enum.Font.Code
+	moon.TextXAlignment = Enum.TextXAlignment.Center
+	moon.TextYAlignment = Enum.TextYAlignment.Center
 	moon.ZIndex = 2147483647
+	moon.Parent = frame
 
-	local label = Instance.new("TextLabel", frame)
+	local label = Instance.new("TextLabel")
+	label.Name = "Status"
 	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(1, -90, 1, 0)
-	label.Position = UDim2.new(0, 80, 0, 0)
+
+	-- Use almost the entire remaining width.
+	label.Size = UDim2.new(1, -68, 1, 0)
+	label.Position = UDim2.new(0, 67, 0, 0)
+
 	label.Font = Enum.Font.Code
 	label.TextSize = textSize
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
 	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = "Project Lunar | Loading..."
+	label.TextYAlignment = Enum.TextYAlignment.Center
+	label.Text = "Project Lunar | ♥ 100/100 | 60 FPS"
 	label.RichText = true
+
+	-- Do not let Roblox replace FPS with "..."
+	label.TextTruncate = Enum.TextTruncate.None
+
 	label.ZIndex = 2147483647
+	label.Parent = frame
 
 	local visible = true
+
 	UserInputService.InputBegan:Connect(function(input, gp)
-		if gp then return end
+		if gp then
+			return
+		end
+
 		if input.KeyCode == Enum.KeyCode.L then
 			visible = not visible
 			frame.Visible = visible
@@ -1744,6 +1757,7 @@ task.spawn(function()
 	dragTab.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch then
+
 			dragging = true
 			dragStart = input.Position
 			startPos = frame.Position
@@ -1753,15 +1767,21 @@ task.spawn(function()
 	dragTab.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1
 			or input.UserInputType == Enum.UserInputType.Touch then
+
 			dragging = false
 		end
 	end)
 
 	UserInputService.InputChanged:Connect(function(input)
-		if not dragging then return end
+		if not dragging then
+			return
+		end
+
 		if input.UserInputType == Enum.UserInputType.MouseMovement
 			or input.UserInputType == Enum.UserInputType.Touch then
+
 			local delta = input.Position - dragStart
+
 			targetPos = UDim2.new(
 				startPos.X.Scale,
 				startPos.X.Offset + delta.X,
@@ -1783,127 +1803,114 @@ task.spawn(function()
 	RunService.RenderStepped:Connect(function(dt)
 		frameCount += 1
 		fpsTimer += dt
+
 		if fpsTimer >= fpsUpdateInterval then
 			local measuredFPS = frameCount / fpsTimer
+
 			fps = fps + (measuredFPS - fps) * 0.3
+
 			frameCount = 0
 			fpsTimer = 0
 		end
 	end)
 
-	local ping = 0
-	local latestPing = 0
-	local lastPingRequest = 0
-	local pingRequestSent = false
-	local serverTimeOffset = 0
-	local serverTimeValid = false
+	local health = 100
+	local maxHealth = 100
+	local healthConnection
 
-	pingEvent.OnClientEvent:Connect(function(data)
-		if type(data) == "number" then
-			latestPing = data
-			pingRequestSent = false
-		elseif type(data) == "table" and data.serverTime then
-			local clientTime = tick()
-			local roundTrip = (clientTime - lastPingRequest) * 1000
-			latestPing = roundTrip / 2
-			serverTimeOffset = data.serverTime - clientTime
-			serverTimeValid = true
-			pingRequestSent = false
+	local function updateHealth(humanoid)
+		if healthConnection then
+			healthConnection:Disconnect()
+			healthConnection = nil
 		end
-	end)
 
-	local function measureSelfPing()
-		local startTime = tick()
-		lastPingRequest = startTime
-		pingRequestSent = true
-		local received = false
-		local connection
-		connection = RunService.Heartbeat:Connect(function()
-			if received then
-				connection:Disconnect()
-				return
-			end
-			if tick() - startTime > 5 then
-				received = true
-				connection:Disconnect()
-			end
+		if not humanoid then
+			health = 0
+			maxHealth = 100
+			return
+		end
+
+		health = humanoid.Health
+		maxHealth = humanoid.MaxHealth
+
+		healthConnection = humanoid.HealthChanged:Connect(function(newHealth)
+			health = newHealth
+			maxHealth = humanoid.MaxHealth
 		end)
-		pingEvent:FireServer({action = "ping", clientTime = startTime})
 	end
 
-	pingEvent.OnClientEvent:Connect(function(data)
-		if type(data) == "table" and data.action == "pong" and data.clientTime then
-			local roundTrip = (tick() - data.clientTime) * 1000
-			latestPing = roundTrip
-			pingRequestSent = false
+	local function setupCharacter(character)
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+		if not humanoid then
+			humanoid = character:WaitForChild("Humanoid", 10)
 		end
-	end)
+
+		if humanoid then
+			updateHealth(humanoid)
+		end
+	end
+
+	if player.Character then
+		task.spawn(setupCharacter, player.Character)
+	end
+
+	player.CharacterAdded:Connect(setupCharacter)
 
 	task.spawn(function()
-		task.wait(1)
-		measureSelfPing()
-
 		while sg.Parent do
-			if not pingRequestSent then
-				measureSelfPing()
-			end
-
-			local targetPing = latestPing
-			if targetPing <= 0 then
-				pcall(function()
-					targetPing = client:GetNetworkPing() * 1000
-				end)
-			end
-			if targetPing < 0 or targetPing ~= targetPing then
-				targetPing = 0
-			end
-
-			local diff = targetPing - ping
-			if diff > 0 then
-				ping = ping + diff * 0.9
-			else
-				ping = ping + diff * 0.15
-			end
-
 			local fpsDisplay = math.floor(fps + 0.5)
-			local pingDisplay = math.floor(ping + 0.5)
+			local healthDisplay = math.floor(math.max(0, health) + 0.5)
+			local maxHealthDisplay = math.floor(math.max(1, maxHealth) + 0.5)
 
-			local pingColor
-			if pingDisplay < 50 then
-				pingColor = Color3.fromRGB(0, 255, 100)
-			elseif pingDisplay < 150 then
-				local t = (pingDisplay - 50) / 100
-				pingColor = Color3.fromRGB(0, 255, 100):Lerp(Color3.fromRGB(255, 255, 0), t)
-			elseif pingDisplay < 300 then
-				local t = (pingDisplay - 150) / 150
-				pingColor = Color3.fromRGB(255, 255, 0):Lerp(Color3.fromRGB(255, 150, 0), t)
+			local healthPercent = math.clamp(
+				health / math.max(maxHealth, 1),
+				0,
+				1
+			)
+
+			local healthColor
+
+			if healthPercent > 0.6 then
+				healthColor = Color3.fromRGB(80, 255, 120)
+			elseif healthPercent > 0.3 then
+				healthColor = Color3.fromRGB(255, 210, 70)
 			else
-				local t = math.clamp((pingDisplay - 300) / 700, 0, 1)
-				pingColor = Color3.fromRGB(255, 150, 0):Lerp(Color3.fromRGB(255, 50, 50), t)
+				healthColor = Color3.fromRGB(255, 80, 80)
 			end
 
-			local pingText
-			if pingDisplay >= 100000 then
-				pingText = string.format("%dK", math.floor(pingDisplay / 1000))
-			elseif pingDisplay >= 10000 then
-				pingText = string.format("%.1fK", pingDisplay / 1000)
-			elseif pingDisplay >= 1000 then
-				pingText = string.format("%.1fK", pingDisplay / 1000)
-			else
-				pingText = tostring(pingDisplay)
-			end
-
-			local r = math.floor(pingColor.R * 255)
-			local g = math.floor(pingColor.G * 255)
-			local b = math.floor(pingColor.B * 255)
+			local r = math.floor(healthColor.R * 255)
+			local g = math.floor(healthColor.G * 255)
+			local b = math.floor(healthColor.B * 255)
 
 			if isMobile then
-				label.Text = string.format([[Lunar | %d FPS | <font color="rgb(%d,%d,%d)">%s ms</font>]], fpsDisplay, r, g, b, pingText)
+				label.Text = string.format(
+					[[Lunar | <font color="rgb(%d,%d,%d)">♥ %d/%d</font> | %d FPS]],
+					r,
+					g,
+					b,
+					healthDisplay,
+					maxHealthDisplay,
+					fpsDisplay
+				)
 			else
-				label.Text = string.format([[Project Lunar | %d FPS | <font color="rgb(%d,%d,%d)">%s ms</font>]], fpsDisplay, r, g, b, pingText)
+				label.Text = string.format(
+					[[Project Lunar | <font color="rgb(%d,%d,%d)">♥ %d/%d</font> | %d FPS]],
+					r,
+					g,
+					b,
+					healthDisplay,
+					maxHealthDisplay,
+					fpsDisplay
+				)
 			end
 
 			task.wait(0.1)
+		end
+
+		if healthConnection then
+			healthConnection:Disconnect()
+			healthConnection = nil
 		end
 	end)
 end)
