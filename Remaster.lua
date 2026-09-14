@@ -37,6 +37,7 @@ end
 -- Adjust this if mobile UI is still too big/small
 local MOBILE_SCALE = 0.55
 
+
 -- EXACT list of your admin UI names - add more if you create new ones
 local LUNAR_UI_NAMES = {
     ["LunarNotifs"] = true,
@@ -427,6 +428,29 @@ local globalConfig = {
 	uiBlur = 0,
 	cornerRadius = 2
 }
+
+-- User-configurable Lunar UI settings. These stay session-local so the script
+-- does not require any external persistence service.
+local lunarSettings = {
+	notificationsEnabled = true,
+	reduceNotificationAnimations = false,
+	animatedUI = true,
+	watermarkEnabled = true,
+	entityESPEnabled = false,
+	keybindNotificationsEnabled = true,
+	commandNotificationsEnabled = true,
+	commandSuccessMessagesEnabled = true,
+	commandErrorMessagesEnabled = true,
+	commandHistoryEnabled = true,
+	autoFocusCommandBar = false,
+	commandSuggestionsEnabled = true,	
+	confirmDisruptiveCommands = true,
+	uiScale = 1,
+	mobileUIScale = 1,
+}
+
+local notifSoundMuted = false
+local commandExecutionContext = false
 
 -- Store main UI references for transparency control
 local lunarGui = nil
@@ -1549,10 +1573,8 @@ if isMobile then
 	end
 end
 
-local notificationsEnabled = true
-
 local function playNotifSound()
-	if not notificationsEnabled or notifSoundMuted then
+	if not lunarSettings.notificationsEnabled or notifSoundMuted then
 		return
 	end
 
@@ -1585,12 +1607,17 @@ local function repositionAll()
 end
 
 local function notify(text, col)
-	if not notificationsEnabled then
+	col = col or currentTheme.accent or Color3.fromRGB(147,112,219)
+	text = tostring(text or "")
+
+	-- Command notifications can be disabled without disabling the terminal itself.
+	if commandExecutionContext and not lunarSettings.commandNotificationsEnabled then
+		return
+	end
+	if not lunarSettings.notificationsEnabled then
 		return
 	end
 
-	col = col or currentTheme.accent or Color3.fromRGB(147,112,219)
-	text = tostring(text or "")
 	if LunarTerminal_addLine then LunarTerminal_addLine("[User] "..text,col,true) end
 	local f=Instance.new("Frame")
 	f.Name="Toast";f.Size=UDim2.fromOffset(notifWidth,notifHeight);f.Position=UDim2.new(1,notifOffscreen,0,startY);f.BackgroundColor3=Color3.fromRGB(8,8,8);f.BackgroundTransparency=0.04;f.BorderSizePixel=0;f.ClipsDescendants=true;f.ZIndex=2147483647;f.Parent=notifGui
@@ -1615,12 +1642,19 @@ local function notify(text, col)
 	while #activeNotifications>5 do local old=table.remove(activeNotifications,1);if old and old.Parent then old:Destroy() end end
 	targetY=startY+(#activeNotifications-1)*(notifHeight+notifSpacing)
 	f.Position=UDim2.new(1,notifOffscreen,0,targetY)
-	TweenService:Create(f,TweenInfo.new(0.42,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Position=UDim2.new(1,notifTargetX,0,targetY)}):Play()
 	message.Text=text
 	message.TextTransparency=0
 	playNotifSound()
-	TweenService:Create(progress,TweenInfo.new(notifDuration,Enum.EasingStyle.Linear),{Size=UDim2.new(0,0,0,math.floor(2*scale))}):Play()
-	task.delay(notifDuration,dismiss)
+
+	if lunarSettings.reduceNotificationAnimations or not lunarSettings.animatedUI then
+		f.Position=UDim2.new(1,notifTargetX,0,targetY)
+		progress.Size=UDim2.new(0,0,0,math.floor(2*scale))
+		task.delay(notifDuration,dismiss)
+	else
+		TweenService:Create(f,TweenInfo.new(0.42,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Position=UDim2.new(1,notifTargetX,0,targetY)}):Play()
+		TweenService:Create(progress,TweenInfo.new(notifDuration,Enum.EasingStyle.Linear),{Size=UDim2.new(0,0,0,math.floor(2*scale))}):Play()
+		task.delay(notifDuration,dismiss)
+	end
 	repositionAll()
 end
 
@@ -1672,6 +1706,7 @@ task.spawn(function()
 	sg.ScreenInsets = Enum.ScreenInsets.None
 	sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
 	sg.Parent = CoreGui
+	sg.Enabled = lunarSettings.watermarkEnabled
 
 	local frame = Instance.new("Frame")
 	frame.Name = "WatermarkFrame"
@@ -8255,112 +8290,93 @@ local function createJoinLogsPanel()
 end
 
 -- =============================================================
--- ENHANCED ESP 
+-- ENHANCED ESP
 -- =============================================================
-local RunService = game:GetService("RunService")
-
-
--- ============================================
--- ESP DATA - PERSISTENT TRACKING
--- ============================================
 local espData = {
 	enabled = false,
 	playerESP = {},
+	entityESP = {},
 	globalConnections = {},
+	entityConnections = {},
 	distanceConn = nil,
 	myCharConn = nil,
 	globalEnabled = false,
 	trackedUserIds = {},
-	individualTargets = {}
+	individualTargets = {},
+	rejoinConnection = nil
 }
 
--- ============================================
--- UTILITY FUNCTIONS
--- ============================================
 local function getMyHRP()
-	local char = client.Character
-	if not char then return nil end
-	return char:FindFirstChild("HumanoidRootPart")
+	local character = client.Character
+	return character and character:FindFirstChild("HumanoidRootPart")
 end
 
-local function clearPlayerESP(plr)
-	local data = espData.playerESP[plr]
-	if not data then return end
-
-	for _, conn in ipairs(data.connections or {}) do
-		if conn then conn:Disconnect() end
-	end
-	data.connections = {}
-
-	for _, obj in ipairs(data.objects or {}) do
-		if obj and obj.Parent then
-			pcall(function() obj:Destroy() end)
+local function isPlayerCharacter(model)
+	if not model or not model:IsDescendantOf(Workspace) then return false end
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Character and (model == plr.Character or model:IsDescendantOf(plr.Character)) then
+			return true
 		end
 	end
-	data.objects = {}
-	data.distLabel = nil
+	return false
+end
 
-	espData.playerESP[plr] = nil
+local function getEntityModelFromHumanoid(humanoid)
+	if not humanoid or not humanoid.Parent then return nil end
+	local model = humanoid.Parent
+	if not model:IsA("Model") then
+		model = humanoid:FindFirstAncestorOfClass("Model")
+	end
+	if not model or not model:IsDescendantOf(Workspace) then return nil end
+	if model == client.Character or isPlayerCharacter(model) then return nil end
+	if Players:GetPlayerFromCharacter(model) then return nil end
+	local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+	local head = model:FindFirstChild("Head")
+	if not root or not head then return nil end
+	return model
+end
+
+local function clearPlayerESP(plr, keepCharacterWatcher)
+	local data = espData.playerESP[plr]
+	if not data then return end
+	for _, conn in ipairs(data.connections or {}) do
+		if conn and (not keepCharacterWatcher or conn ~= data.charConn) then pcall(function() conn:Disconnect() end) end
+	end
+	for _, obj in ipairs(data.objects or {}) do
+		if obj and obj.Parent then pcall(function() obj:Destroy() end) end
+	end
+	data.objects={}
+	data.distLabel=nil
+	if keepCharacterWatcher and data.charConn then
+		data.connections={data.charConn}
+		espData.playerESP[plr]=data
+	else
+		espData.playerESP[plr]=nil
+	end
+end
+
+local function clearEntityESP(model)
+	local data = espData.entityESP[model]
+	if not data then return end
+	for _, conn in ipairs(data.connections or {}) do
+		if conn then pcall(function() conn:Disconnect() end) end
+	end
+	for _, obj in ipairs(data.objects or {}) do
+		if obj and obj.Parent then pcall(function() obj:Destroy() end) end
+	end
+	espData.entityESP[model] = nil
 end
 
 local function clearAllESP()
-	for plr, _ in pairs(espData.playerESP) do
-		clearPlayerESP(plr)
-	end
+	for plr in pairs(espData.playerESP) do clearPlayerESP(plr) end
+	for model in pairs(espData.entityESP) do clearEntityESP(model) end
 	espData.playerESP = {}
+	espData.entityESP = {}
 end
 
--- ============================================
--- CORE ESP ATTACHMENT
--- ============================================
-local function attachESP(plr, char)
-	if plr == client then return end
-	if not char then return end
-
-	-- Always clear old first to prevent duplicates
-	clearPlayerESP(plr)
-
-	local data = {
-		connections = {},
-		objects = {},
-		distLabel = nil,
-		lastChar = char
-	}
-
-	espData.playerESP[plr] = data
-
-	-- Wait for parts with timeout
-	local head = char:WaitForChild("Head", 5)
-	local hrp = char:WaitForChild("HumanoidRootPart", 5)
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-
-	if not head or not hrp then 
-		-- Retry once after short delay
-		task.delay(1, function()
-			if plr.Character and plr.Character ~= char then
-				attachESP(plr, plr.Character)
-			end
-		end)
-		return 
-	end
-
-	local teamColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
-
-	-- HIGHLIGHT (Chams)
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "LunarESP_" .. plr.Name
-	highlight.Adornee = char
-	highlight.FillTransparency = 0.85
-	highlight.OutlineTransparency = 0
-	highlight.OutlineColor = Color3.new(1, 1, 1)
-	highlight.FillColor = teamColor
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.Parent = workspace
-	table.insert(data.objects, highlight)
-
-	-- BILLBOARD GUI
+local function makeESPBillboard(head, displayName, color, objectName)
 	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "LunarESP_Billboard_" .. plr.Name
+	billboard.Name = objectName
 	billboard.Adornee = head
 	billboard.Size = UDim2.new(0, 200, 0, 50)
 	billboard.StudsOffset = Vector3.new(0, 2.8, 0)
@@ -8368,7 +8384,6 @@ local function attachESP(plr, char)
 	billboard.MaxDistance = 10000
 	billboard.Parent = client.PlayerGui
 
-	-- Name Label
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Name"
 	nameLabel.BackgroundTransparency = 1
@@ -8377,12 +8392,11 @@ local function attachESP(plr, char)
 	nameLabel.TextSize = 14
 	nameLabel.TextStrokeTransparency = 0.3
 	nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-	nameLabel.Text = plr.DisplayName ~= plr.Name and "@" .. plr.Name .. " (" .. plr.DisplayName .. ")" or "@" .. plr.Name
-	nameLabel.TextColor3 = teamColor
+	nameLabel.Text = displayName
+	nameLabel.TextColor3 = color
 	nameLabel.TextYAlignment = Enum.TextYAlignment.Bottom
 	nameLabel.Parent = billboard
 
-	-- Distance Label
 	local distLabel = Instance.new("TextLabel")
 	distLabel.Name = "Distance"
 	distLabel.BackgroundTransparency = 1
@@ -8397,303 +8411,279 @@ local function attachESP(plr, char)
 	distLabel.TextYAlignment = Enum.TextYAlignment.Top
 	distLabel.Parent = billboard
 
+	return billboard, nameLabel, distLabel
+end
+
+local function attachESP(plr, character)
+	if plr == client or not character then return end
+	clearPlayerESP(plr, true)
+
+	local head = character:FindFirstChild("Head") or character:WaitForChild("Head", 5)
+	local hrp = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 5)
+	if not head or not hrp then return end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local teamColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
+	local data = espData.playerESP[plr] or {connections = {}, objects = {}, distLabel = nil}
+	data.objects = {}
+	data.distLabel = nil
+	data.connections = data.charConn and {data.charConn} or {}
+	espData.playerESP[plr] = data
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "LunarESP_" .. plr.Name
+	highlight.Adornee = character
+	highlight.FillTransparency = 0.85
+	highlight.OutlineTransparency = 0
+	highlight.OutlineColor = Color3.new(1, 1, 1)
+	highlight.FillColor = teamColor
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = Workspace
+	table.insert(data.objects, highlight)
+
+	local billboard, nameLabel, distLabel = makeESPBillboard(
+		head,
+		plr.DisplayName ~= plr.Name and "@" .. plr.Name .. " (" .. plr.DisplayName .. ")" or "@" .. plr.Name,
+		teamColor,
+		"LunarESP_Billboard_" .. plr.Name
+	)
 	table.insert(data.objects, billboard)
 	data.distLabel = distLabel
 
-	-- Health tracking
 	if humanoid then
-		local healthConn = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-			local healthPercent = humanoid.Health / humanoid.MaxHealth
-			if healthPercent <= 0 then
-				for _, obj in ipairs(data.objects) do
-					if obj:IsA("Highlight") then
-						obj.FillTransparency = 1
-						obj.OutlineTransparency = 0.8
-					end
-				end
-				if nameLabel then
-					nameLabel.TextColor3 = Color3.fromRGB(100, 100, 100)
-				end
-			else
-				for _, obj in ipairs(data.objects) do
-					if obj:IsA("Highlight") then
-						obj.FillTransparency = 0.85
-						obj.OutlineTransparency = 0
-					end
-				end
-				if nameLabel then
-					nameLabel.TextColor3 = teamColor
-				end
-			end
-		end)
-		table.insert(data.connections, healthConn)
-
-		-- Death handler - IMMEDIATELY reattach on respawn (NO DELAY)
-		local diedConn = humanoid.Died:Connect(function()
-			-- Clear current ESP immediately
-			clearPlayerESP(plr)
-
-			-- Wait for new character and reattach if ESP is still enabled for this player
-			local newCharConn
-			newCharConn = plr.CharacterAdded:Connect(function(newChar)
-				if newCharConn then
-					newCharConn:Disconnect()
-				end
-				-- Check if this player should still have ESP (global or individual)
-				local shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
-				if shouldTrack then
-					task.wait(0.3)
-					attachESP(plr, newChar)
-				end
-			end)
-		end)
-		table.insert(data.connections, diedConn)
+		table.insert(data.connections, humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+			local dead = humanoid.Health <= 0
+			highlight.FillTransparency = dead and 1 or 0.85
+			highlight.OutlineTransparency = dead and 0.8 or 0
+			nameLabel.TextColor3 = dead and Color3.fromRGB(100, 100, 100) or teamColor
+		end))
+		table.insert(data.connections, humanoid.Died:Connect(function()
+			clearPlayerESP(plr, true)
+		end))
 	end
 
-	-- Team change handler
-	local teamConn = plr:GetPropertyChangedSignal("Team"):Connect(function()
-		local newColor = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
-		for _, obj in ipairs(data.objects) do
-			if obj:IsA("Highlight") then
-				obj.FillColor = newColor
-			end
-		end
-		if nameLabel then
-			nameLabel.TextColor3 = newColor
-		end
-	end)
-	table.insert(data.connections, teamConn)
+	table.insert(data.connections, plr:GetPropertyChangedSignal("Team"):Connect(function()
+			local color = plr.Team and plr.Team.TeamColor.Color or Color3.fromRGB(255, 80, 80)
+			highlight.FillColor = color
+			nameLabel.TextColor3 = color
+		end))
 
-	-- Character removing handler (for when they reset without dying)
-	local charRemovingConn = char.AncestryChanged:Connect(function()
-		if not char.Parent then
-			-- Character was destroyed, clear ESP
-			task.delay(0.1, function()
-				if not plr.Character or plr.Character ~= char then
-					clearPlayerESP(plr)
-				end
-			end)
-		end
-	end)
-	table.insert(data.connections, charRemovingConn)
+	table.insert(data.connections, character.AncestryChanged:Connect(function(_, parent)
+		if not parent then clearPlayerESP(plr, true) end
+	end))
 end
 
--- ============================================
--- SETUP ESP FOR SINGLE PLAYER
--- ============================================
 local function createPlayerESP(plr)
-	if plr == client then return end
-
-	-- Apply immediately if they have character
+	if plr == client or not plr or not plr.Parent then return end
+	local data=espData.playerESP[plr]
+	if not data then
+		data={connections={},objects={},distLabel=nil}
+		espData.playerESP[plr]=data
+	end
+	if not data.charConn then
+		data.charConn=plr.CharacterAdded:Connect(function(character)
+			if espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId] then
+				task.wait(0.2)
+				if plr.Parent then attachESP(plr,character) end
+			end
+		end)
+		table.insert(data.connections,data.charConn)
+	end
 	if plr.Character then
 		task.spawn(function()
-			attachESP(plr, plr.Character)
+			if plr.Parent and (espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]) then
+				attachESP(plr,plr.Character)
+			end
 		end)
 	end
+end
 
-	-- Handle their respawns
-	local charConn = plr.CharacterAdded:Connect(function(char)
-		-- Check if this player should still have ESP
-		local shouldTrack = espData.globalEnabled or espData.trackedUserIds[plr.UserId] or espData.individualTargets[plr.UserId]
-		if shouldTrack then
-			task.wait(0.3)
-			clearPlayerESP(plr)
-			attachESP(plr, char)
+local function attachEntityESP(model)
+	if not lunarSettings.entityESPEnabled or not espData.globalEnabled then return end
+	if not model or not model.Parent or isPlayerCharacter(model) then return end
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	local head = model:FindFirstChild("Head")
+	local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+	if not humanoid or not head or not root then return end
+	if espData.entityESP[model] then return end
+
+	local data = {connections = {}, objects = {}, distLabel = nil}
+	espData.entityESP[model] = data
+	local color = Color3.fromRGB(255, 170, 200)
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "LunarEntityESP"
+	highlight.Adornee = model
+	highlight.FillTransparency = 0.82
+	highlight.OutlineTransparency = 0
+	highlight.FillColor = color
+	highlight.OutlineColor = Color3.new(1, 1, 1)
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = Workspace
+	table.insert(data.objects, highlight)
+
+	local billboard, nameLabel, distLabel = makeESPBillboard(head, "[Entity] " .. model.Name, color, "LunarEntityESP_Billboard")
+	table.insert(data.objects, billboard)
+	data.distLabel = distLabel
+
+	table.insert(data.connections, humanoid.Died:Connect(function()
+		clearEntityESP(model)
+	end))
+	table.insert(data.connections, model.AncestryChanged:Connect(function(_, parent)
+		if not parent then clearEntityESP(model) end
+	end))
+	table.insert(data.connections, humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+		local dead = humanoid.Health <= 0
+		highlight.FillTransparency = dead and 1 or 0.82
+		highlight.OutlineTransparency = dead and 0.8 or 0
+		nameLabel.TextColor3 = dead and Color3.fromRGB(100, 100, 100) or color
+	end))
+end
+
+local function scanEntities()
+	if not lunarSettings.entityESPEnabled or not espData.globalEnabled then return end
+	for _, descendant in ipairs(Workspace:GetDescendants()) do
+		if descendant:IsA("Humanoid") then
+			local model = getEntityModelFromHumanoid(descendant)
+			if model then attachEntityESP(model) end
 		end
-	end)
-
-	if not espData.playerESP[plr] then
-		espData.playerESP[plr] = { connections = { charConn }, objects = {}, distLabel = nil }
-	else
-		table.insert(espData.playerESP[plr].connections, charConn)
 	end
 end
 
--- ============================================
--- DISTANCE UPDATER (ROBUST)
--- ============================================
+local function setEntityESPEnabled(enabled)
+	lunarSettings.entityESPEnabled = enabled and true or false
+	if lunarSettings.entityESPEnabled and espData.globalEnabled then
+		scanEntities()
+	else
+		for model in pairs(espData.entityESP) do clearEntityESP(model) end
+	end
+end
+
 local function startDistanceUpdater()
 	if espData.distanceConn then return end
-
-	espData.distanceConn = RunService.RenderStepped:Connect(function()
+	local entityScanClock = 0
+	espData.distanceConn = RunService.RenderStepped:Connect(function(dt)
 		local myHRP = getMyHRP()
-
+		entityScanClock += dt
 		for plr, data in pairs(espData.playerESP) do
-			-- Skip if player left
 			if not plr or not plr.Parent then
 				clearPlayerESP(plr)
-			else
-				-- Update distance if possible
-				if data.distLabel and data.distLabel.Parent then
-					if myHRP and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-						local targetHRP = plr.Character.HumanoidRootPart
-						local dist = (targetHRP.Position - myHRP.Position).Magnitude
-						data.distLabel.Text = math.floor(dist) .. " studs"
-					else
-						data.distLabel.Text = "..."
-					end
-				end
+			elseif data.distLabel and data.distLabel.Parent then
+				local targetRoot = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+				data.distLabel.Text = (myHRP and targetRoot) and (math.floor((targetRoot.Position - myHRP.Position).Magnitude) .. " studs") or "..."
 			end
+		end
+		for model, data in pairs(espData.entityESP) do
+			if not model or not model.Parent then
+				clearEntityESP(model)
+			elseif data.distLabel and data.distLabel.Parent then
+				local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+				data.distLabel.Text = (myHRP and root) and (math.floor((root.Position - myHRP.Position).Magnitude) .. " studs") or "..."
+			end
+		end
+		if entityScanClock >= 1 and espData.globalEnabled and lunarSettings.entityESPEnabled then
+			entityScanClock = 0
+			scanEntities()
 		end
 	end)
 end
 
--- ============================================
--- ENABLE ESP FOR SPECIFIC PLAYER
--- ============================================
+if not espData.rejoinConnection then
+	espData.rejoinConnection = Players.PlayerAdded:Connect(function(plr)
+		if espData.globalEnabled then
+			espData.trackedUserIds[plr.UserId] = true
+			createPlayerESP(plr)
+		elseif espData.individualTargets[plr.UserId] then
+			espData.trackedUserIds[plr.UserId] = true
+			createPlayerESP(plr)
+		end
+	end)
+end
+
 function enableESPPlayer(targetPlr)
-	if not targetPlr then
-		notify("Player not found", Color3.fromRGB(255, 100, 100))
-		return
-	end
-
-	if targetPlr == client then
-		notify("Can't ESP yourself", Color3.fromRGB(255, 200, 100))
-		return
-	end
-
-	-- NEW: Add to persistent tracking
+	if not targetPlr then notify("Player not found", Color3.fromRGB(255, 100, 100)); return end
+	if targetPlr == client then notify("Can't ESP yourself", Color3.fromRGB(255, 200, 100)); return end
 	espData.individualTargets[targetPlr.UserId] = true
-	-- Also track by UserId for rejoin persistence
 	espData.trackedUserIds[targetPlr.UserId] = true
-
 	startDistanceUpdater()
 	createPlayerESP(targetPlr)
 	notify("ESP enabled for " .. targetPlr.Name, Color3.fromRGB(0, 255, 100))
 end
 
--- ============================================
--- DISABLE ESP FOR SPECIFIC PLAYER
--- ============================================
 function disableESPPlayer(targetPlr)
-	if not targetPlr then
-		notify("Player not found", Color3.fromRGB(255, 100, 100))
-		return
-	end
-
-	-- NEW: Remove from persistent tracking
+	if not targetPlr then notify("Player not found", Color3.fromRGB(255, 100, 100)); return end
 	espData.individualTargets[targetPlr.UserId] = nil
 	espData.trackedUserIds[targetPlr.UserId] = nil
-
 	clearPlayerESP(targetPlr)
 	notify("ESP disabled for " .. targetPlr.Name, Color3.fromRGB(255, 180, 0))
 end
 
--- ============================================
--- ENABLE ESP FOR ALL (GLOBAL)
--- ============================================
 function enableESPAll()
-	if espData.globalEnabled then return end
+	if espData.globalEnabled then
+		if lunarSettings.entityESPEnabled then scanEntities() end
+		return
+	end
 	espData.globalEnabled = true
 	espData.enabled = true
-
-	-- NEW: Track all current players by UserId
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr ~= client then
 			espData.trackedUserIds[plr.UserId] = true
-		end
-	end
-
-	-- Apply to ALL current players
-	for _, plr in ipairs(Players:GetPlayers()) do
-		createPlayerESP(plr)
-	end
-
-	-- Auto-apply to NEW players joining
-	local newPlayerConn = Players.PlayerAdded:Connect(function(plr)
-		if espData.globalEnabled then
-			-- NEW: Automatically track new players
-			espData.trackedUserIds[plr.UserId] = true
-			task.wait(0.5)
 			createPlayerESP(plr)
 		end
-	end)
-	table.insert(espData.globalConnections, newPlayerConn)
-
-	-- Handle players LEAVING
-	local playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
-		clearPlayerESP(plr)
-		-- NEW: Keep them tracked so ESP reapplies if they rejoin
-		-- (don't remove from trackedUserIds - they stay tracked)
-	end)
-	table.insert(espData.globalConnections, playerRemovingConn)
-
-	-- Handle MY respawn - reapply all ESP
-	if espData.myCharConn then
-		espData.myCharConn:Disconnect()
 	end
 
+	local playerRemoving = Players.PlayerRemoving:Connect(function(plr)
+		-- The UserId remains tracked while !esp all is active, so a rejoin is picked up automatically.
+		clearPlayerESP(plr, false)
+	end)
+	table.insert(espData.globalConnections, playerRemoving)
+
+	if espData.myCharConn then espData.myCharConn:Disconnect() end
 	espData.myCharConn = client.CharacterAdded:Connect(function()
-		task.wait(0.8)
+		task.wait(0.5)
 		if not espData.globalEnabled then return end
-
-		-- Clear and reapply all
-		for plr, _ in pairs(espData.playerESP) do
-			clearPlayerESP(plr)
-		end
-
+		for plr in pairs(espData.playerESP) do clearPlayerESP(plr) end
 		for _, plr in ipairs(Players:GetPlayers()) do
-			if plr ~= client then
-				createPlayerESP(plr)
-			end
+			if plr ~= client then createPlayerESP(plr) end
 		end
+		if lunarSettings.entityESPEnabled then scanEntities() end
 	end)
 
-	-- NEW: Handle rejoins - when a tracked player rejoins, reapply ESP
-	local rejoinConn = Players.PlayerAdded:Connect(function(plr)
-		if espData.trackedUserIds[plr.UserId] then
-			-- This player was previously tracked, reapply ESP
-			task.wait(0.5)
-			if plr.Character then
-				attachESP(plr, plr.Character)
-			end
-			createPlayerESP(plr)
+	local entityAdded = Workspace.DescendantAdded:Connect(function(descendant)
+		if not lunarSettings.entityESPEnabled or not espData.globalEnabled then return end
+		if descendant:IsA("Humanoid") then
+			task.defer(function()
+				local model = getEntityModelFromHumanoid(descendant)
+				if model then attachEntityESP(model) end
+			end)
 		end
 	end)
-	table.insert(espData.globalConnections, rejoinConn)
+	table.insert(espData.entityConnections, entityAdded)
 
 	startDistanceUpdater()
-	notify("ESP enabled for all players", Color3.fromRGB(0, 255, 100))
+	if lunarSettings.entityESPEnabled then scanEntities() end
+	notify("ESP enabled for all players" .. (lunarSettings.entityESPEnabled and " + entities" or ""), Color3.fromRGB(0, 255, 100))
 end
 
--- ============================================
--- DISABLE ESP FOR ALL (GLOBAL)
--- ============================================
 function disableESPAll()
-	if not espData.globalEnabled and not next(espData.playerESP) then
+	if not espData.globalEnabled and not next(espData.playerESP) and not next(espData.entityESP) then
 		notify("ESP not active", Color3.fromRGB(255, 200, 100))
 		return
 	end
-
 	espData.globalEnabled = false
 	espData.enabled = false
-
-	-- NEW: Clear ALL tracking
 	espData.trackedUserIds = {}
 	espData.individualTargets = {}
-
-	-- Disconnect global connections
-	if espData.myCharConn then
-		espData.myCharConn:Disconnect()
-		espData.myCharConn = nil
-	end
-
-	for _, conn in ipairs(espData.globalConnections) do
-		if conn then conn:Disconnect() end
-	end
+	if espData.myCharConn then espData.myCharConn:Disconnect(); espData.myCharConn = nil end
+	for _, conn in ipairs(espData.globalConnections) do if conn then conn:Disconnect() end end
 	espData.globalConnections = {}
-
-	-- Clear all player ESP
+	for _, conn in ipairs(espData.entityConnections) do if conn then conn:Disconnect() end end
+	espData.entityConnections = {}
 	clearAllESP()
-
-	-- Clean up distance conn
-	if espData.distanceConn then
-		espData.distanceConn:Disconnect()
-		espData.distanceConn = nil
-	end
-
+	if espData.distanceConn then espData.distanceConn:Disconnect(); espData.distanceConn = nil end
 	notify("ESP disabled for ALL", Color3.fromRGB(255, 180, 0))
 end
+
 -- =============================================================
 -- SPIN SYSTEM
 -- =============================================================
@@ -11669,6 +11659,54 @@ end
 -- =============================================================
 -- COMMAND PROCESSOR
 -- =============================================================
+local disruptiveCommands = {
+	explode = true,
+	kill = true,
+	fling = true,
+	freeze = true,
+	unfreeze = true,
+	gravity = true,
+	resetgravity = true,
+	to = true,
+	trip = true,
+	fire = true,
+	unfire = true,
+	leave = true,
+	serverhop = true,
+	rejoin = true,
+	unload = true,
+}
+
+local function confirmDisruptiveCommand(commandText)
+	if not lunarSettings.confirmDisruptiveCommands then return true end
+	local commandName = tostring(commandText):sub(2):match("^(%S+)")
+	if not commandName or not disruptiveCommands[commandName:lower()] then return true end
+	if not lunarGui or not mainFrame then return true end
+
+	local old = game:GetService("CoreGui"):FindFirstChild("LunarConfirmDialog")
+	if old then old:Destroy() end
+	local dialog = Instance.new("ScreenGui")
+	dialog.Name = "LunarConfirmDialog"
+	dialog.IgnoreGuiInset = true
+	dialog.DisplayOrder = 2147483647
+	dialog.ZIndexBehavior = Enum.ZIndexBehavior.Global
+	dialog.Parent = game:GetService("CoreGui")
+	local box = Instance.new("Frame",dialog)
+	box.AnchorPoint=Vector2.new(0.5,0.5);box.Position=UDim2.fromScale(0.5,0.5);box.Size=UDim2.fromOffset(360,160)
+	box.BackgroundColor3=currentTheme.glass;box.BorderSizePixel=0;box.ZIndex=2147483647
+	Instance.new("UICorner",box).CornerRadius=UDim.new(0,math.floor((globalConfig.cornerRadius or 8)*scale))
+	local title=Instance.new("TextLabel",box);title.Size=UDim2.new(1,-24,0,30);title.Position=UDim2.fromOffset(12,10);title.BackgroundTransparency=1;title.Text="Confirm command";title.Font=Enum.Font.Code;title.TextSize=15;title.TextColor3=currentTheme.accent;title.ZIndex=2147483647
+	local body=Instance.new("TextLabel",box);body.Size=UDim2.new(1,-24,0,55);body.Position=UDim2.fromOffset(12,42);body.BackgroundTransparency=1;body.Text="Run "..tostring(commandText).."?\nThis command can significantly affect the session.";body.Font=Enum.Font.Code;body.TextSize=12;body.TextWrapped=true;body.TextColor3=currentTheme.text;body.ZIndex=2147483647
+	local yes=Instance.new("TextButton",box);yes.Size=UDim2.fromOffset(145,34);yes.Position=UDim2.fromOffset(18,112);yes.Text="CONFIRM";yes.Font=Enum.Font.Code;yes.TextSize=12;yes.BackgroundColor3=currentTheme.accent;yes.TextColor3=Color3.new(0,0,0);yes.BorderSizePixel=0;yes.ZIndex=2147483647;Instance.new("UICorner",yes).CornerRadius=UDim.new(0,6)
+	local no=Instance.new("TextButton",box);no.Size=UDim2.fromOffset(145,34);no.Position=UDim2.fromOffset(197,112);no.Text="CANCEL";no.Font=Enum.Font.Code;no.TextSize=12;no.BackgroundColor3=currentTheme.btn;no.TextColor3=currentTheme.text;no.BorderSizePixel=0;no.ZIndex=2147483647;Instance.new("UICorner",no).CornerRadius=UDim.new(0,6)
+	local result=nil
+	yes.MouseButton1Click:Connect(function() result=true;dialog:Destroy() end)
+	no.MouseButton1Click:Connect(function() result=false;dialog:Destroy() end)
+	task.wait()
+	while dialog.Parent and result==nil do task.wait() end
+	return result == true
+end
+
 function processCmd(msg)
 	if not msg or msg:sub(1,1) ~= prefix then return end
 	
@@ -11680,6 +11718,14 @@ function processCmd(msg)
 	local cmd = table.remove(args, 1):lower()
 	local target = getPlr(args[1] or "me")
 
+	if not confirmDisruptiveCommand(prefix .. cmd .. (#args > 0 and " " .. table.concat(args, " ") or "")) then
+		if lunarSettings.commandErrorMessagesEnabled and LunarTerminal_addLine then
+			LunarTerminal_addLine("[CANCELLED] command cancelled by user", currentTheme.warning, true, 0.001)
+		end
+		return
+	end
+
+	commandExecutionContext = true
 	notify(prefix .. cmd, Color3.fromRGB(180, 180, 255))
 
 	if cmd == "aimbot" then
@@ -12023,6 +12069,7 @@ elseif cmd == "cmdbar" then
 		setFov(args[1])
 		
 	end
+	commandExecutionContext = false
 end
 
 -- Main Gui :3
@@ -12035,8 +12082,45 @@ else scale=1;fontScale=1 end
 
 lunarGui=Instance.new("ScreenGui")
 lunarGui.Name="LunarGui";lunarGui.ResetOnSpawn=false;lunarGui.Enabled=true;lunarGui.DisplayOrder=2147483646;lunarGui.ZIndexBehavior=Enum.ZIndexBehavior.Global;lunarGui.ScreenInsets=Enum.ScreenInsets.None;lunarGui.IgnoreGuiInset=true;lunarGui.Parent=game:GetService("CoreGui")
+
 mainFrame=Instance.new("Frame",lunarGui)
-mainFrame.Name="Main";mainFrame.Size=UDim2.new(0,math.floor(640*scale),0,math.floor(660*scale));mainFrame.Position=UDim2.new(0.5,math.floor(-320*scale),0.5,math.floor(-330*scale));mainFrame.BackgroundColor3=Color3.fromRGB(10,10,10);mainFrame.BorderSizePixel=0;mainFrame.Active=true;mainFrame.Draggable=false;mainFrame.ClipsDescendants=true;mainFrame.ZIndex=2147483647
+mainFrame.Name="Main";mainFrame.Size=UDim2.new(0,math.floor(640*scale),0,math.floor(660*scale));mainFrame.AnchorPoint=Vector2.new(0.5,0.5);mainFrame.Position=UDim2.new(0.5,0,0.5,0);mainFrame.BackgroundColor3=Color3.fromRGB(10,10,10);mainFrame.BorderSizePixel=0;mainFrame.Active=true;mainFrame.Draggable=false;mainFrame.ClipsDescendants=true;mainFrame.ZIndex=2147483647
+local lunarUIScale = Instance.new("UIScale")
+lunarUIScale.Name = "LunarUserScale"
+lunarUIScale.Scale = 1
+lunarUIScale.Parent = mainFrame
+
+local function getLunarCenter()
+	if not mainFrame then return nil end
+	local pos=mainFrame.AbsolutePosition
+	local size=mainFrame.AbsoluteSize
+	return Vector2.new(pos.X+size.X/2,pos.Y+size.Y/2)
+end
+
+local function setLunarCenter(center)
+	if not mainFrame or not lunarUIScale or not center then return end
+	local parentSize=lunarGui.AbsoluteSize
+	if parentSize.X<=0 or parentSize.Y<=0 then return end
+	local s=math.max(lunarUIScale.Scale,0.001)
+	local offsetX=(center.X-parentSize.X*0.5)/s
+	local offsetY=(center.Y-parentSize.Y*0.5)/s
+	mainFrame.Position=UDim2.new(0.5,math.floor(offsetX+0.5),0.5,math.floor(offsetY+0.5))
+end
+
+local function centerScaledLunarUI()
+	if not mainFrame or not lunarUIScale then return end
+	setLunarCenter(Vector2.new(lunarGui.AbsoluteSize.X/2,lunarGui.AbsoluteSize.Y/2))
+end
+
+local function updateLunarUIScale()
+	if not lunarUIScale then return end
+	local oldCenter=getLunarCenter() or Vector2.new(lunarGui.AbsoluteSize.X/2,lunarGui.AbsoluteSize.Y/2)
+	local mobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+	local mobileFactor = mobile and math.clamp(lunarSettings.mobileUIScale or 1, 0.65, 1.35) or 1
+	local newScale=math.clamp((lunarSettings.uiScale or 1) * mobileFactor, 0.5, 1.75)
+	lunarUIScale.Scale=newScale
+	setLunarCenter(oldCenter)
+end
 mainCorner=Instance.new("UICorner",mainFrame);mainCorner.CornerRadius=UDim.new(0,math.floor(globalConfig.cornerRadius*scale))
 mainStroke=Instance.new("UIStroke",mainFrame);mainStroke.Color=Color3.fromRGB(65,65,65);mainStroke.Thickness=1
 
@@ -12097,6 +12181,13 @@ function LunarTerminal_clearOutput() for _,child in ipairs(terminalOutput:GetChi
 cmdBarFrame=Instance.new("Frame",terminalRoot);cmdBarFrame.Name="CmdBarFrame";cmdBarFrame.Size=UDim2.new(1,math.floor(-2*scale),0,math.floor(56*scale));cmdBarFrame.Position=UDim2.new(0,1,1,math.floor(-57*scale));cmdBarFrame.BackgroundColor3=Color3.fromRGB(16,16,16);cmdBarFrame.BorderSizePixel=0;cmdBarFrame.ZIndex=2147483647
 cmdPrompt=Instance.new("TextLabel",cmdBarFrame);cmdPrompt.Size=UDim2.fromOffset(math.floor(82*scale),math.floor(56*scale));cmdPrompt.Position=UDim2.fromOffset(math.floor(8*scale),0);cmdPrompt.BackgroundTransparency=1;cmdPrompt.Text="C:\\User> ";cmdPrompt.Font=Enum.Font.Code;cmdPrompt.TextSize=math.floor(12*fontScale);cmdPrompt.TextColor3=currentTheme.accent;cmdPrompt.TextXAlignment=Enum.TextXAlignment.Left;cmdPrompt.ZIndex=2147483647
 cmdInput=Instance.new("TextBox",cmdBarFrame);cmdInput.Size=UDim2.new(1,math.floor(-166*scale),0,math.floor(34*scale));cmdInput.Position=UDim2.fromOffset(math.floor(78*scale),math.floor(11*scale));cmdInput.BackgroundTransparency=1;cmdInput.Text="";cmdInput.PlaceholderText="type a command...";cmdInput.PlaceholderColor3=Color3.fromRGB(90,90,90);cmdInput.Font=Enum.Font.Code;cmdInput.TextSize=math.floor(12*fontScale);cmdInput.TextColor3=Color3.fromRGB(240,240,240);cmdInput.TextXAlignment=Enum.TextXAlignment.Left;cmdInput.ClearTextOnFocus=false;cmdInput.MultiLine=false;cmdInput.ZIndex=2147483647
+function toggleCmdBar()
+	if not cmdBarFrame then return end
+	cmdBarFrame.Visible = not cmdBarFrame.Visible
+	if cmdBarFrame.Visible and lunarSettings.autoFocusCommandBar and cmdInput then
+		task.defer(function() if cmdInput and cmdInput.Parent then cmdInput:CaptureFocus() end end)
+	end
+end
 execBtn=Instance.new("TextButton",cmdBarFrame);execBtn.Size=UDim2.fromOffset(math.floor(42*scale),math.floor(32*scale));execBtn.Position=UDim2.new(1,math.floor(-94*scale),0.5,math.floor(-16*scale));execBtn.BackgroundColor3=currentTheme.accent;execBtn.Text="RUN";execBtn.Font=Enum.Font.Code;execBtn.TextSize=math.floor(10*fontScale);execBtn.TextColor3=Color3.new(0,0,0);execBtn.BorderSizePixel=0;execBtn.AutoButtonColor=false;execBtn.ZIndex=2147483647
 cmdClearBtn=Instance.new("TextButton",cmdBarFrame);cmdClearBtn.Size=UDim2.fromOffset(math.floor(42*scale),math.floor(32*scale));cmdClearBtn.Position=UDim2.new(1,math.floor(-48*scale),0.5,math.floor(-16*scale));cmdClearBtn.BackgroundColor3=Color3.fromRGB(45,45,45);cmdClearBtn.Text="CLS";cmdClearBtn.Font=Enum.Font.Code;cmdClearBtn.TextSize=math.floor(9*fontScale);cmdClearBtn.TextColor3=Color3.fromRGB(220,220,220);cmdClearBtn.BorderSizePixel=0;cmdClearBtn.AutoButtonColor=false;cmdClearBtn.ZIndex=2147483647
 
@@ -12115,7 +12206,9 @@ function fuzzyScore(query,candidate) local q=string.lower(query or "");local c=s
 suggestionMatches={};suggestionIndex=1
 function clearSuggestionRows() for _,child in ipairs(suggestionScroll:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end end
 function updateDropdown()
-	clearSuggestionRows();q=cmdInput.Text or "";if q:sub(1,1)~="!" and q~="" then q="!"..q end;if q=="" then suggestionFrame.Visible=false;return end
+	clearSuggestionRows()
+	if not lunarSettings.commandSuggestionsEnabled then suggestionFrame.Visible=false; return end
+	q=cmdInput.Text or "";if q:sub(1,1)~="!" and q~="" then q="!"..q end;if q=="" then suggestionFrame.Visible=false;return end
 	suggestionMatches={};for _,command in ipairs(allCommands) do s=fuzzyScore(q,command);if s>=0 then table.insert(suggestionMatches,{command=command,score=s}) end end;table.sort(suggestionMatches,function(a,b) return a.score>b.score end)
 	if #suggestionMatches==0 then suggestionFrame.Visible=false;return end
 	for i=1,math.min(6,#suggestionMatches) do row=Instance.new("TextButton");row.Size=UDim2.new(1,math.floor(-2*scale),0,math.floor(27*scale));row.BackgroundColor3=Color3.fromRGB(18,18,18);row.Text="  "..suggestionMatches[i].command.."   "..(cmdDesc[suggestionMatches[i].command] or "");row.Font=Enum.Font.Code;row.TextSize=math.floor(10*fontScale);row.TextColor3=Color3.fromRGB(205,205,205);row.TextXAlignment=Enum.TextXAlignment.Left;row.BorderSizePixel=0;row.AutoButtonColor=false;row.ZIndex=2147483647;row.Parent=suggestionScroll;row.MouseEnter:Connect(function() row.BackgroundColor3=Color3.fromRGB(38,38,38) end);row.MouseLeave:Connect(function() row.BackgroundColor3=Color3.fromRGB(18,18,18) end);row.MouseButton1Click:Connect(function() cmdInput.Text=suggestionMatches[i].command;suggestionFrame.Visible=false;cmdInput:CaptureFocus() end) end;suggestionFrame.Visible=true
@@ -12124,7 +12217,18 @@ function executeTerminalCommand(command)
 	command=tostring(command or ""):gsub("^%s+",""):gsub("%s+$","");if command=="" then return end
 	if command:lower()=="cls" or command:lower()=="clear" then LunarTerminal_clearOutput();cmdInput.Text="";return end
 	if command:lower()=="help" or command:lower()=="list" then cmdListPanel.Visible=true;cmdListPanel.Position=UDim2.new(1,0,0,0);TweenService:Create(cmdListPanel,TweenInfo.new(0.2,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Position=UDim2.new(1,math.floor(-290*scale),0,0)}):Play();cmdInput.Text="";return end
-	if command:sub(1,1)~="!" then command="!"..command end;table.insert(terminalHistory,command);terminalHistoryIndex=#terminalHistory+1;terminalCommandCount+=1;LunarTerminal_addLine("C:\\LUNAR> "..command,currentTheme.accent,false,0.002);local ok,err=pcall(processCmd,command);if ok then LunarTerminal_addLine("[OK] command dispatched",currentTheme.success,true,0.001) else LunarTerminal_addLine("[ERROR] "..tostring(err),currentTheme.danger,false,0.001) end;cmdInput.Text="";suggestionFrame.Visible=false
+	if command:sub(1,1)~="!" then command="!"..command end
+	if lunarSettings.commandHistoryEnabled then table.insert(terminalHistory,command);terminalHistoryIndex=#terminalHistory+1 end
+	terminalCommandCount+=1
+	LunarTerminal_addLine("C:\\LUNAR> "..command,currentTheme.accent,false,0.002)
+	local ok,err=pcall(processCmd,command)
+	commandExecutionContext=false
+	if ok then
+		if lunarSettings.commandSuccessMessagesEnabled then LunarTerminal_addLine("[OK] command dispatched",currentTheme.success,true,0.001) end
+	else
+		if lunarSettings.commandErrorMessagesEnabled then LunarTerminal_addLine("[ERROR] "..tostring(err),currentTheme.danger,false,0.001) end
+	end
+	cmdInput.Text="";suggestionFrame.Visible=false
 end
 LunarTerminal_clearOutput()
 cmdInput:GetPropertyChangedSignal("Text"):Connect(updateDropdown);execBtn.MouseButton1Click:Connect(function() executeTerminalCommand(cmdInput.Text) end);cmdClearBtn.MouseButton1Click:Connect(LunarTerminal_clearOutput)
@@ -12173,8 +12277,10 @@ function makeSection(parent, titleText, h)
 	corner.CornerRadius = UDim.new(0, math.floor((globalConfig.cornerRadius or 2) * scale))
 	local t = Instance.new("TextLabel", s)
 	t.Size = UDim2.new(1, math.floor(-18 * scale), 0, math.floor(30 * scale))
-	t.Position = UDim2.fromOffset(math.floor(9 * scale), 0)
+	t.Position = UDim2.fromOffset(math.floor(9 * scale), math.floor(2 * scale))
 	t.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+	t.BackgroundTransparency = 0
+	t.Active = false
 	t.Text = titleText
 	t.Font = Enum.Font.Code
 	t.TextSize = math.floor(11 * fontScale)
@@ -12304,11 +12410,20 @@ end)
 
 -- Visual effects and corner controls
 visualSection = makeSection(setScroll, "VISUAL EFFECTS", 270)
+visualSection.ClipsDescendants = false
+local visualTitle = visualSection:FindFirstChildOfClass("TextLabel")
+if visualTitle then
+	visualTitle.Size = UDim2.new(1, math.floor(-18 * scale), 0, math.floor(28 * scale))
+	visualTitle.Position = UDim2.fromOffset(math.floor(9 * scale), math.floor(2 * scale))
+	visualTitle.BackgroundTransparency = 0
+	visualTitle.ZIndex = 2147483647
+end
+
 visualInfo = Instance.new("TextLabel", visualSection)
 visualInfo.Size = UDim2.new(0.9, 0, 0, math.floor(34 * scale))
-visualInfo.Position = UDim2.new(0.05, 0, 0, math.floor(34 * scale))
+visualInfo.Position = UDim2.new(0.05, 0, 0, math.floor(38 * scale))
 visualInfo.BackgroundTransparency = 1
-visualInfo.Text = "Adjust the scene blur and the shape of Lunar's UI. Roblox UI layers themselves cannot be natively blurred, so the blur targets the 3D background."
+visualInfo.Text = "Higher values make Lunar background panels more transparent for a glass-like look. Text, buttons, controls, sliders, and theme cards stay solid. The game world is never blurred."
 visualInfo.Font = Enum.Font.Code
 visualInfo.TextSize = math.floor(10 * fontScale)
 visualInfo.TextColor3 = Color3.fromRGB(145,145,145)
@@ -12317,8 +12432,9 @@ visualInfo.TextXAlignment = Enum.TextXAlignment.Left
 visualInfo.ZIndex = 2147483647
 
 blurLabel = Instance.new("TextLabel", visualSection)
+blurLabel.Name = "BlurLabel"
 blurLabel.Size = UDim2.new(0.9,0,0,math.floor(20*scale))
-blurLabel.Position = UDim2.new(0.05,0,0,math.floor(75*scale))
+blurLabel.Position = UDim2.new(0.05,0,0,math.floor(78*scale))
 blurLabel.BackgroundTransparency = 1
 blurLabel.Text = "Background blur: " .. tostring(globalConfig.uiBlur or 0)
 blurLabel.Font = Enum.Font.Code
@@ -12327,45 +12443,123 @@ blurLabel.TextColor3 = globalConfig.textColor
 blurLabel.TextXAlignment = Enum.TextXAlignment.Left
 blurLabel.ZIndex = 2147483647
 
-blurTrack = Instance.new("Frame", visualSection)
-blurTrack.Size = UDim2.new(0.9,0,0,math.floor(8*scale))
-blurTrack.Position = UDim2.new(0.05,0,0,math.floor(105*scale))
-blurTrack.BackgroundColor3 = Color3.fromRGB(45,45,45)
-blurTrack.BorderSizePixel = 0
-blurTrack.ZIndex = 2147483647
-blurFill = Instance.new("Frame",blurTrack)
-blurFill.Size = UDim2.new((globalConfig.uiBlur or 0)/24,0,1,0)
-blurFill.BackgroundColor3 = currentTheme.accent
-blurFill.BorderSizePixel = 0
-blurFill.ZIndex = 2147483647
-blurKnob = Instance.new("Frame",blurTrack)
-blurKnob.Size = UDim2.fromOffset(math.floor(14*scale),math.floor(14*scale))
-blurKnob.Position = UDim2.new((globalConfig.uiBlur or 0)/24,math.floor(-7*scale),0.5,math.floor(-7*scale))
-blurKnob.BackgroundColor3 = Color3.fromRGB(245,245,245)
-blurKnob.BorderSizePixel = 0
-blurKnob.ZIndex = 2147483647
-Instance.new("UICorner",blurKnob).CornerRadius=UDim.new(1,0)
-blurDragging=false
-function setBlurFromX(x)
-	local v=math.clamp((x-blurTrack.AbsolutePosition.X)/blurTrack.AbsoluteSize.X,0,1)
-	globalConfig.uiBlur=math.floor(v*24+0.5)
-	blurFill.Size=UDim2.new(v,0,1,0)
-	blurKnob.Position=UDim2.new(v,math.floor(-7*scale),0.5,math.floor(-7*scale))
-	blurLabel.Text="Background blur: "..tostring(globalConfig.uiBlur)
-	if not lunarBlur or not lunarBlur.Parent then
-		lunarBlur=Instance.new("BlurEffect")
-		lunarBlur.Name="LunarBackgroundBlur"
-		lunarBlur.Parent=game:GetService("Lighting")
+local function createVisualSlider(name, y, maxValue, currentValue, labelText, formatter)
+	local track = Instance.new("TextButton", visualSection)
+	track.Name = name .. "SliderTrack"
+	track.Size = UDim2.new(0.9,0,0,math.max(6,math.floor(8*scale)))
+	track.Position = UDim2.new(0.05,0,0,math.floor(y*scale))
+	track.BackgroundColor3 = Color3.fromRGB(45,45,45)
+	track.BackgroundTransparency = 0
+	track.BorderSizePixel = 0
+	track.Text = ""
+	track.AutoButtonColor = false
+	track.ZIndex = 2147483647
+	track:SetAttribute("LunarBgRole", "sliderTrack")
+	Instance.new("UICorner",track).CornerRadius=UDim.new(0,math.max(3,math.floor(4*scale)))
+	local fill=Instance.new("Frame",track)
+	fill.Name="Fill"
+	fill.Size=UDim2.new(math.clamp(currentValue/maxValue,0,1),0,1,0)
+	fill.BackgroundColor3=currentTheme.accent
+	fill.BackgroundTransparency=0
+	fill.BorderSizePixel=0
+	fill.ZIndex=2147483647
+	fill:SetAttribute("LunarBgRole","sliderFill")
+	Instance.new("UICorner",fill).CornerRadius=UDim.new(0,math.max(3,math.floor(4*scale)))
+	local knob=Instance.new("Frame",track)
+	knob.Name=name.."Knob"
+	knob.Size=UDim2.fromOffset(math.floor(14*scale),math.floor(14*scale))
+	knob.Position=UDim2.new(fill.Size.X.Scale,math.floor(-7*scale),0.5,math.floor(-7*scale))
+	knob.BackgroundColor3=Color3.fromRGB(245,245,245)
+	knob.BorderSizePixel=0
+	knob.ZIndex=2147483647
+	knob:SetAttribute("LunarBgRole","sliderKnob")
+	Instance.new("UICorner",knob).CornerRadius=UDim.new(1,0)
+	local dragging=false
+	local function setFromX(x)
+		local pct=math.clamp((x-track.AbsolutePosition.X)/math.max(track.AbsoluteSize.X,1),0,1)
+		fill.Size=UDim2.new(pct,0,1,0)
+		knob.Position=UDim2.new(pct,math.floor(-7*scale),0.5,math.floor(-7*scale))
+		local value=maxValue*pct
+		return value
 	end
-	lunarBlur.Size=globalConfig.uiBlur
+	track.InputBegan:Connect(function(input)
+		if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+			dragging=true
+			local value=setFromX(input.Position.X)
+			if name=="Blur" then setSceneBlur(value) else applyCornerRadius(value) end
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if not dragging then return end
+		if input.UserInputType~=Enum.UserInputType.MouseMovement and input.UserInputType~=Enum.UserInputType.Touch then return end
+		local value=setFromX(input.Position.X)
+		if name=="Blur" then setSceneBlur(value) else applyCornerRadius(value) end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging=false end
+	end)
+	return track,fill,knob
 end
-blurTrack.InputBegan:Connect(function(input)
-	if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then blurDragging=true;setBlurFromX(input.Position.X) end
-end)
+
+local function isLunarControl(obj)
+	if not obj then return true end
+	if obj:IsA("TextButton") or obj:IsA("TextBox") or obj:IsA("ImageButton") then return true end
+	local role=obj:GetAttribute("LunarBgRole")
+	if role=="sliderTrack" or role=="sliderFill" or role=="sliderKnob" or role=="btn" or role=="accent" then return true end
+	if obj.Name:find("Slider") or obj.Name:find("Knob") then return true end
+	if thCont and (obj==thCont or obj:IsDescendantOf(thCont)) then return true end
+	if obj.Name:find("Theme") then return true end
+	return false
+end
+
+local function isLunarBackgroundFrame(obj)
+	if not obj or (not obj:IsA("Frame") and not obj:IsA("ScrollingFrame")) then return false end
+	if isLunarControl(obj) then return false end
+	if obj.BackgroundTransparency >= 1 then return false end
+	return true
+end
+
+function applyCornerRadius(value)
+	globalConfig.cornerRadius=math.clamp(math.floor(value+0.5),0,18)
+	if lunarGui then
+		for _,obj in ipairs(lunarGui:GetDescendants()) do
+			if isLunarBackgroundFrame(obj) then
+				local corner=obj:FindFirstChild("LunarGlobalCorner")
+				if not corner then
+					corner=Instance.new("UICorner")
+					corner.Name="LunarGlobalCorner"
+					corner.Parent=obj
+				end
+				local radius=math.floor(globalConfig.cornerRadius*scale)
+				local size=obj.AbsoluteSize
+				if size.X>0 and size.Y>0 then
+					radius=math.min(radius,math.floor(math.min(size.X,size.Y)/2))
+				end
+				corner.CornerRadius=UDim.new(0,radius)
+			end
+		end
+	end
+	if cornerLabel then cornerLabel.Text="Corner radius: "..tostring(globalConfig.cornerRadius) end
+end
+
+function setSceneBlur(value)
+	globalConfig.uiBlur=math.clamp(math.floor(value+0.5),0,24)
+	if blurLabel then blurLabel.Text="Background blur: "..tostring(globalConfig.uiBlur) end
+
+	-- Roblox BlurEffect blurs the entire 3D scene when parented to Lighting.
+	-- Lunar's slider is therefore a UI-only glass effect: never blur the game world.
+	if lunarBlur then
+		lunarBlur:Destroy()
+		lunarBlur=nil
+	end
+
+	applyGlassBackgrounds()
+end
 
 cornerLabel=Instance.new("TextLabel",visualSection)
+cornerLabel.Name="CornerLabel"
 cornerLabel.Size=UDim2.new(0.9,0,0,math.floor(20*scale))
-cornerLabel.Position=UDim2.new(0.05,0,0,math.floor(139*scale))
+cornerLabel.Position=UDim2.new(0.05,0,0,math.floor(142*scale))
 cornerLabel.BackgroundTransparency=1
 cornerLabel.Text="Corner radius: "..tostring(globalConfig.cornerRadius or 2)
 cornerLabel.Font=Enum.Font.Code
@@ -12373,53 +12567,59 @@ cornerLabel.TextSize=math.floor(12*fontScale)
 cornerLabel.TextColor3=globalConfig.textColor
 cornerLabel.TextXAlignment=Enum.TextXAlignment.Left
 cornerLabel.ZIndex=2147483647
-cornerTrack=Instance.new("Frame",visualSection)
-cornerTrack.Size=UDim2.new(0.9,0,0,math.floor(8*scale))
-cornerTrack.Position=UDim2.new(0.05,0,0,math.floor(169*scale))
-cornerTrack.BackgroundColor3=Color3.fromRGB(45,45,45)
-cornerTrack.BorderSizePixel=0
-cornerTrack.ZIndex=2147483647
-cornerFill=Instance.new("Frame",cornerTrack)
-cornerFill.Size=UDim2.new((globalConfig.cornerRadius or 2)/18,0,1,0)
-cornerFill.BackgroundColor3=currentTheme.accent
-cornerFill.BorderSizePixel=0
-cornerFill.ZIndex=2147483647
-cornerKnob=Instance.new("Frame",cornerTrack)
-cornerKnob.Size=UDim2.fromOffset(math.floor(14*scale),math.floor(14*scale))
-cornerKnob.Position=UDim2.new((globalConfig.cornerRadius or 2)/18,math.floor(-7*scale),0.5,math.floor(-7*scale))
-cornerKnob.BackgroundColor3=Color3.fromRGB(245,245,245)
-cornerKnob.BorderSizePixel=0
-cornerKnob.ZIndex=2147483647
-Instance.new("UICorner",cornerKnob).CornerRadius=UDim.new(1,0)
-cornerDragging=false
-function applyCornerRadius(value)
-	globalConfig.cornerRadius=math.clamp(math.floor(value+0.5),0,18)
-	if lunarGui then
-		for _,obj in ipairs(lunarGui:GetDescendants()) do
-			if obj:IsA("UICorner") and obj.Parent and obj.Parent.Name~="ActiveDot" and obj.Parent.Name~="Knob" and obj.Parent.Name~="BlurKnob" and obj.Parent.Name~="CornerKnob" then obj.CornerRadius=UDim.new(0,math.floor(globalConfig.cornerRadius*scale)) end
-		end
-	end
-	if cornerLabel then cornerLabel.Text="Corner radius: "..tostring(globalConfig.cornerRadius) end
-end
-function setCornerFromX(x)
-	local v=math.clamp((x-cornerTrack.AbsolutePosition.X)/cornerTrack.AbsoluteSize.X,0,1)
-	cornerFill.Size=UDim2.new(v,0,1,0)
-	cornerKnob.Position=UDim2.new(v,math.floor(-7*scale),0.5,math.floor(-7*scale))
-	applyCornerRadius(v*18)
-end
-cornerTrack.InputBegan:Connect(function(input)
-	if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then cornerDragging=true;setCornerFromX(input.Position.X) end
-end)
+
+-- The slider tracks are compact TextButtons so only the actual track receives input.
+blurTrack,blurFill,blurKnob=createVisualSlider("Blur",108,24,globalConfig.uiBlur or 0,"Background blur")
+cornerTrack,cornerFill,cornerKnob=createVisualSlider("Corner",172,18,globalConfig.cornerRadius or 2,"Corner radius")
+
 visualHint=Instance.new("TextLabel",visualSection)
 visualHint.Size=UDim2.new(0.9,0,0,math.floor(30*scale))
-visualHint.Position=UDim2.new(0.05,0,0,math.floor(202*scale))
+visualHint.Position=UDim2.new(0.05,0,0,math.floor(206*scale))
 visualHint.BackgroundTransparency=1
-visualHint.Text="0 = 90° / square       18 = maximum rounded"
+visualHint.Text="0 = square       18 = maximum rounded"
 visualHint.Font=Enum.Font.Code
 visualHint.TextSize=math.floor(10*fontScale)
 visualHint.TextColor3=Color3.fromRGB(110,110,110)
 visualHint.TextXAlignment=Enum.TextXAlignment.Left
 visualHint.ZIndex=2147483647
+
+local visualBackgroundBase={}
+local function isGlassBackground(obj)
+	if not obj or (not obj:IsA("Frame") and not obj:IsA("ScrollingFrame")) then return false end
+	if isLunarControl(obj) then return false end
+	if obj:IsDescendantOf(visualSection) and obj~=visualSection then return false end
+	return obj.BackgroundTransparency < 1
+end
+
+function applyGlassBackgrounds()
+	if not lunarGui then return end
+	local amount=math.clamp((globalConfig.uiBlur or 0)/24,0,1)
+	local extra=amount*0.55
+
+	for _,obj in ipairs(lunarGui:GetDescendants()) do
+		if isGlassBackground(obj) then
+			local base=visualBackgroundBase[obj]
+			if base==nil then
+				base=obj.BackgroundTransparency
+				visualBackgroundBase[obj]=base
+			end
+			obj.BackgroundTransparency=math.clamp(base+extra,0,0.94)
+		end
+	end
+
+	if mainFrame and mainFrame.Parent then
+		local base=visualBackgroundBase[mainFrame]
+		if base==nil then
+			base=mainFrame.BackgroundTransparency
+			visualBackgroundBase[mainFrame]=base
+		end
+		mainFrame.BackgroundTransparency=math.clamp(base+extra,0,0.94)
+	end
+end
+
+applyGlassBackgrounds()
+setSceneBlur(globalConfig.uiBlur or 0)
+applyCornerRadius(globalConfig.cornerRadius or 2)
 
 -- ========== SOUND SETTINGS SECTION ==========
 do
@@ -12593,65 +12793,10 @@ do
 	Instance.new("UICorner", test).CornerRadius = UDim.new(0, 6)
 
 	test.MouseButton1Click:Connect(function()
-		if not notificationsEnabled then
-	return
-end
-
-if notifSoundMuted then
-	return
-end	
+		if not lunarSettings.notificationsEnabled or notifSoundMuted then return end
 		local s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
 		s.Parent = SoundService; s:Play(); Debris:AddItem(s, 4)
 	end)
-
-local notifToggle = Instance.new("TextButton", mSection)
-notifToggle.Size = UDim2.new(0.4, 0, 0, math.floor(36 * scale))
-notifToggle.Position = UDim2.new(0.48, 0, 0, math.floor(272 * scale))
-notifToggle.BackgroundColor3 = notificationsEnabled
-	and Color3.fromRGB(60, 180, 80)
-	or Color3.fromRGB(200, 60, 60)
-notifToggle.Text = notificationsEnabled
-	and "🔔 Notifications: ON"
-	or "🔕 Notifications: OFF"
-notifToggle.Font = Enum.Font.Code
-notifToggle.TextSize = math.floor(13 * fontScale)
-notifToggle.TextColor3 = Color3.new(1, 1, 1)
-notifToggle.BorderSizePixel = 0
-notifToggle.ZIndex = 2147483647
-Instance.new("UICorner", notifToggle).CornerRadius = UDim.new(0, 6)
-
-notifToggle.MouseButton1Click:Connect(function()
-	notificationsEnabled = not notificationsEnabled
-
-	notifToggle.BackgroundColor3 = notificationsEnabled
-		and Color3.fromRGB(60, 180, 80)
-		or Color3.fromRGB(200, 60, 60)
-
-	notifToggle.Text = notificationsEnabled
-		and "🔔 Notifications: ON"
-		or "🔕 Notifications: OFF"
-
-	if not notificationsEnabled then
-		for i = #activeNotifications, 1, -1 do
-			local notification = activeNotifications[i]
-
-			if notification and notification.Parent then
-				notification:Destroy()
-			end
-
-			table.remove(activeNotifications, i)
-		end
-
-		for _, sound in ipairs(SoundService:GetChildren()) do
-			if sound:IsA("Sound") and sound.Name == "LunarNotificationSound" then
-				sound:Stop()
-				sound:Destroy()
-			end
-		end
-	else
-		notify("Notifications enabled", Color3.fromRGB(100, 255, 100))
-	end
-end)
 
 	local mc = Instance.new("Frame", mSection)
 	mc.Size = UDim2.new(0.9, 0, 0, math.floor(36*scale))
@@ -12693,6 +12838,150 @@ end)
 	end
 
 	mkMute(mc, 0, 0.48, soundMuted, "🔊 UI", "🔇 UI", true)
+	mkMute(mc, 0.52, 0.48, notifSoundMuted, "🔊 Notif", "🔇 Notif", false)
+end
+
+-- ========== LUNAR SETTINGS ==========
+do
+	local section = makeSection(setScroll, "LUNAR UI & BEHAVIOR", 0)
+	section.Size = UDim2.new(1, math.floor(-10 * scale), 0, math.floor(466 * scale))
+
+	local function stopActiveNotificationSounds()
+		for _, sound in ipairs(SoundService:GetChildren()) do
+			if sound:IsA("Sound") and sound.Name == "LunarNotificationSound" then
+				sound:Stop()
+				sound:Destroy()
+			end
+		end
+	end
+
+	local function addToggle(parent, y, label, key, callback)
+		local btn = Instance.new("TextButton", parent)
+		btn.Size = UDim2.new(0.9, 0, 0, math.floor(32 * scale))
+		btn.Position = UDim2.new(0.05, 0, 0, math.floor(y * scale))
+		btn.BackgroundColor3 = lunarSettings[key] and currentTheme.toggleOn or currentTheme.toggleOff
+		btn.Text = (lunarSettings[key] and "ON  " or "OFF ") .. label
+		btn.Font = Enum.Font.Code
+		btn.TextSize = math.floor(12 * fontScale)
+		btn.TextColor3 = currentTheme.text
+		btn.BorderSizePixel = 0
+		btn.AutoButtonColor = false
+		btn.ZIndex = 2147483647
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 7)
+		local function refresh()
+			btn.BackgroundColor3 = lunarSettings[key] and currentTheme.toggleOn or currentTheme.toggleOff
+			btn.Text = (lunarSettings[key] and "ON  " or "OFF ") .. label
+		end
+		btn.MouseButton1Click:Connect(function()
+			lunarSettings[key] = not lunarSettings[key]
+			refresh()
+			if callback then callback(lunarSettings[key], btn) end
+		end)
+		return btn
+	end
+
+	local function addSlider(parent, y, label, minValue, maxValue, value, formatter, callback)
+		local holder = Instance.new("Frame", parent)
+		holder.Size = UDim2.new(0.9,0,0,math.floor(54*scale))
+		holder.Position = UDim2.new(0.05,0,0,math.floor(y*scale))
+		holder.BackgroundTransparency=1
+		holder.ZIndex=2147483647
+		local text = Instance.new("TextLabel",holder)
+		text.Size=UDim2.new(1,0,0,18*scale);text.BackgroundTransparency=1;text.Font=Enum.Font.Code;text.TextSize=math.floor(11*fontScale);text.TextColor3=currentTheme.text;text.TextXAlignment=Enum.TextXAlignment.Left;text.ZIndex=2147483647
+		local track=Instance.new("Frame",holder);track.Size=UDim2.new(1,0,0,8*scale);track.Position=UDim2.new(0,0,0,30*scale);track.BackgroundColor3=currentTheme.sliderTrack;track.BorderSizePixel=0;track.ZIndex=2147483647;Instance.new("UICorner",track).CornerRadius=UDim.new(1,0)
+		local fill=Instance.new("Frame",track);fill.Size=UDim2.new((value-minValue)/(maxValue-minValue),0,1,0);fill.BackgroundColor3=currentTheme.accent;fill.BorderSizePixel=0;fill.ZIndex=2147483647;Instance.new("UICorner",fill).CornerRadius=UDim.new(1,0)
+		local knob=Instance.new("Frame",track);knob.Size=UDim2.fromOffset(math.floor(14*scale),math.floor(14*scale));knob.Position=UDim2.new(fill.Size.X.Scale,math.floor(-7*scale),0.5,math.floor(-7*scale));knob.BackgroundColor3=Color3.new(1,1,1);knob.BorderSizePixel=0;knob.ZIndex=2147483647;Instance.new("UICorner",knob).CornerRadius=UDim.new(1,0)
+		local dragging=false
+		local function setFromX(x)
+			local pct=math.clamp((x-track.AbsolutePosition.X)/math.max(track.AbsoluteSize.X,1),0,1)
+			local val=minValue+(maxValue-minValue)*pct
+			fill.Size=UDim2.new(pct,0,1,0);knob.Position=UDim2.new(pct,math.floor(-7*scale),0.5,math.floor(-7*scale))
+			text.Text=label..": "..(formatter and formatter(val) or tostring(val))
+			if callback then callback(val) end
+		end
+		text.Text=label..": "..(formatter and formatter(value) or tostring(value))
+		track.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging=true;setFromX(input.Position.X) end end)
+		UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then setFromX(input.Position.X) end end)
+		UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
+	end
+
+	addToggle(section, 44, "Notifications (toast + sound)", "notificationsEnabled", function(enabled)
+		if not enabled then
+			for i=#activeNotifications,1,-1 do
+				local n=activeNotifications[i]
+				if n and n.Parent then n:Destroy() end
+				table.remove(activeNotifications,i)
+			end
+			stopActiveNotificationSounds()
+		end
+	end)
+	addSlider(section, 86, "UI Transparency", 0, 0.75, globalConfig.uiTransparency, function(v)
+		globalConfig.uiTransparency = v
+		for _,obj in ipairs(lunarGui:GetDescendants()) do
+			if (obj:IsA("Frame") or obj:IsA("TextButton") or obj:IsA("TextBox") or obj:IsA("ImageLabel") or obj:IsA("ImageButton")) and obj:GetAttribute("LunarKeepTransparency") ~= true then
+				local base = obj:GetAttribute("LunarBaseTransparency")
+				if base == nil then base=obj.BackgroundTransparency;obj:SetAttribute("LunarBaseTransparency",base) end
+				obj.BackgroundTransparency=math.clamp(base+v,0,0.97)
+			end
+		end
+	end)
+	addSlider(section, 142, "UI Scale", 0.65, 1.4, lunarSettings.uiScale, function(v) lunarSettings.uiScale=v;updateLunarUIScale() end)
+	addSlider(section, 198, "Mobile UI Scale", 0.65, 1.35, lunarSettings.mobileUIScale, function(v)
+		lunarSettings.mobileUIScale=v
+		MOBILE_SCALE=0.55*v
+		updateLunarUIScale()
+		for _,gui in ipairs(client.PlayerGui:GetChildren()) do
+			local sc=gui:FindFirstChild("MobileUIScale")
+			if sc and sc:IsA("UIScale") then sc.Scale=MOBILE_SCALE end
+		end
+	end)
+	addToggle(section, 254, "Animated UI", "animatedUI")
+	addToggle(section, 292, "Watermark", "watermarkEnabled", function(enabled)
+		local gui=game:GetService("CoreGui"):FindFirstChild("LunarWatermark")
+		if gui and gui:IsA("ScreenGui") then gui.Enabled=enabled end
+	end)
+	addToggle(section, 330, "Reduce notification animations", "reduceNotificationAnimations")
+	addToggle(section, 368, "Entity ESP (NPCs / non-player humanoids)", "entityESPEnabled", function(enabled) setEntityESPEnabled(enabled) end)
+	local note=Instance.new("TextLabel",section);note.Size=UDim2.new(0.9,0,0,42*scale);note.Position=UDim2.new(0.05,0,0,408*scale);note.BackgroundTransparency=1;note.Text="Entity ESP only activates while !esp all is active and skips player characters.";note.Font=Enum.Font.Code;note.TextSize=math.floor(9*fontScale);note.TextColor3=Color3.fromRGB(130,130,140);note.TextWrapped=true;note.TextXAlignment=Enum.TextXAlignment.Left;note.ZIndex=2147483647
+end
+
+-- ========== COMMAND SETTINGS ==========
+do
+	local section=makeSection(setScroll,"COMMAND SETTINGS",0)
+	section.Size=UDim2.new(1,math.floor(-10*scale),0,math.floor(306*scale))
+	local function addToggle(parent,y,label,key)
+		local btn=Instance.new("TextButton",parent);btn.Size=UDim2.new(0.9,0,0,30*scale);btn.Position=UDim2.new(0.05,0,0,y*scale);btn.BackgroundColor3=lunarSettings[key] and currentTheme.toggleOn or currentTheme.toggleOff;btn.Text=(lunarSettings[key] and "ON  " or "OFF ")..label;btn.Font=Enum.Font.Code;btn.TextSize=math.floor(11*fontScale);btn.TextColor3=currentTheme.text;btn.BorderSizePixel=0;btn.AutoButtonColor=false;btn.ZIndex=2147483647;Instance.new("UICorner",btn).CornerRadius=UDim.new(0,6)
+		btn.MouseButton1Click:Connect(function() lunarSettings[key]=not lunarSettings[key];btn.BackgroundColor3=lunarSettings[key] and currentTheme.toggleOn or currentTheme.toggleOff;btn.Text=(lunarSettings[key] and "ON  " or "OFF ")..label;if key=="commandSuggestionsEnabled" then updateDropdown() end end)
+	end
+	addToggle(section,44,"Command notifications","commandNotificationsEnabled")
+	addToggle(section,80,"Command success messages","commandSuccessMessagesEnabled")
+	addToggle(section,116,"Command error messages","commandErrorMessagesEnabled")
+	addToggle(section,152,"Command history","commandHistoryEnabled")
+	addToggle(section,188,"Auto-focus command bar","autoFocusCommandBar")
+	addToggle(section,224,"Command suggestions","commandSuggestionsEnabled")
+	addToggle(section,260,"Confirm potentially disruptive commands","confirmDisruptiveCommands")
+end
+
+-- ========== KEYBIND SETTINGS ==========
+do
+	local section=makeSection(setScroll,"KEYBIND SETTINGS",0)
+	section.Size=UDim2.new(1,math.floor(-10*scale),0,156*scale)
+	local function actionButton(x,text,callback)
+		local b=Instance.new("TextButton",section);b.Size=UDim2.new(0.43,0,0,34*scale);b.Position=UDim2.new(x,0,0,46*scale);b.BackgroundColor3=currentTheme.btn;b.Text=text;b.Font=Enum.Font.Code;b.TextSize=math.floor(11*fontScale);b.TextColor3=currentTheme.text;b.BorderSizePixel=0;b.ZIndex=2147483647;Instance.new("UICorner",b).CornerRadius=UDim.new(0,6);b.MouseButton1Click:Connect(callback);return b
+	end
+	actionButton(0.05,"RESET ALL KEYBINDS",function()
+		for _,item in ipairs(keybindCommands) do keybindData[item[2]]=nil end
+		local defaults=_G.LunarDefaultKeybinds or {}
+		for command,key in pairs(defaults) do keybindData[command]=key end
+		for _,r in ipairs(keybindRows or {}) do r.button.Text=keybindData[r.command] or "None" end
+		if lunarSettings.keybindNotificationsEnabled then notify("Keybinds reset",currentTheme.accent) end
+	end)
+	actionButton(0.52,"CLEAR ALL KEYBINDS",function()
+		for _,item in ipairs(keybindCommands) do keybindData[item[2]]=nil end
+		for _,r in ipairs(keybindRows or {}) do r.button.Text="None" end
+		if lunarSettings.keybindNotificationsEnabled then notify("All keybinds cleared",currentTheme.warning) end
+	end)
+	local b=Instance.new("TextButton",section);b.Size=UDim2.new(0.9,0,0,30*scale);b.Position=UDim2.new(0.05,0,0,90*scale);b.BackgroundColor3=lunarSettings.keybindNotificationsEnabled and currentTheme.toggleOn or currentTheme.toggleOff;b.Text=(lunarSettings.keybindNotificationsEnabled and "ON  " or "OFF ").."Keybind notifications";b.Font=Enum.Font.Code;b.TextSize=math.floor(11*fontScale);b.TextColor3=currentTheme.text;b.BorderSizePixel=0;b.ZIndex=2147483647;Instance.new("UICorner",b).CornerRadius=UDim.new(0,6);b.MouseButton1Click:Connect(function() lunarSettings.keybindNotificationsEnabled=not lunarSettings.keybindNotificationsEnabled;b.BackgroundColor3=lunarSettings.keybindNotificationsEnabled and currentTheme.toggleOn or currentTheme.toggleOff;b.Text=(lunarSettings.keybindNotificationsEnabled and "ON  " or "OFF ").."Keybind notifications" end)
 end
 
 -- ========== THEME SELECTOR SECTION (BEAUTIFUL) ==========
@@ -12988,6 +13277,8 @@ keyInfo.TextColor3=Color3.fromRGB(185,185,185)
 keyInfo.TextXAlignment=Enum.TextXAlignment.Left;keyInfo.TextYAlignment=Enum.TextYAlignment.Center
 keyInfo.BorderSizePixel=0;keyInfo.LayoutOrder=1;keyInfo.ZIndex=2147483647
 keybindData=_G.LunarKeybinds or {};_G.LunarKeybinds=keybindData
+_G.LunarDefaultKeybinds={}
+for command,key in pairs(keybindData) do _G.LunarDefaultKeybinds[command]=key end
 keybindCapture=nil
 keybindCommands={{"Sit","!sit"},{"Fly","!fly"},{"Fling","!fling"},{"Vehicle Fly","!vehiclefly"},{"Crosshair","!crosshair"},{"First Person","!firstp"},{"Third Person","!thirdp"},{"Server Hop","!serverhop"},{"Rejoin","!rejoin"},{"Noclip","!noclip"},{"Infinite Jump","!infjump"},{"Aimbot","!aimbot"},{"Freecam","!freecam"},{"Flashlight","!flashlight"},{"Super Jump","!superjump"},{"Walk On Water","!walkonwater"},{"Tracers","!tracers"},{"X-Ray","!xray"},{"Stopwatch","!stopwatch"},{"Console","!console"},{"Join Logs","!joinlogs"},{"MM2","!mm2"}}
 keybindRows={}
@@ -13018,7 +13309,9 @@ end
 for i,item in ipairs(keybindCommands) do makeKeybindRow(item[1],item[2],i+1) end
 function executeKeybind(command)
 	if not command or UserInputService:GetFocusedTextBox() then return end
+	if lunarSettings.keybindNotificationsEnabled then notify("Keybind executed: " .. tostring(command), currentTheme.accent) end
 	local ok,err=pcall(processCmd,command)
+	commandExecutionContext=false
 	if not ok and LunarTerminal_addLine then LunarTerminal_addLine("[ERROR] "..tostring(err),currentTheme.danger,false,0.002) end
 	if ok and LunarTerminal_addLine then LunarTerminal_addLine("C:\\LUNAR> "..command,currentTheme.accent,false,0.002) end
 end
@@ -13229,7 +13522,7 @@ UserInputService.InputBegan:Connect(function(input,gameProcessed)
 		if input.UserInputType==Enum.UserInputType.Keyboard then
 			capturedCommand=keybindCapture
 			if input.KeyCode==Enum.KeyCode.Escape then keybindCapture=nil;for _,r in ipairs(keybindRows) do if r.command==capturedCommand and r.button then r.button.Text=keybindData[capturedCommand] and tostring(keybindData[capturedCommand]) or "None" end end;return end
-			keybindData[capturedCommand]=input.KeyCode.Name;for _,r in ipairs(keybindRows) do if r.command==capturedCommand and r.button then r.button.Text=input.KeyCode.Name;break end end;keybindCapture=nil;_G.LunarKeybinds=keybindData
+			keybindData[capturedCommand]=input.KeyCode.Name;for _,r in ipairs(keybindRows) do if r.command==capturedCommand and r.button then r.button.Text=input.KeyCode.Name;break end end;keybindCapture=nil;_G.LunarKeybinds=keybindData;if lunarSettings.keybindNotificationsEnabled then notify("Bound "..capturedCommand.." to "..input.KeyCode.Name,currentTheme.success) end
 		end
 		return
 	end
@@ -13241,7 +13534,7 @@ UserInputService.InputBegan:Connect(function(input,gameProcessed)
 	if UserInputService:GetFocusedTextBox() then return end
 	for _,r in ipairs(keybindRows) do if keybindData[r.command] and input.KeyCode.Name==keybindData[r.command] then executeKeybind(r.command);return end end
 end)
-cmdInput.InputBegan:Connect(function(input) if input.KeyCode==Enum.KeyCode.Tab then if suggestionMatches[1] then cmdInput.Text=suggestionMatches[1].command;suggestionFrame.Visible=false end elseif input.KeyCode==Enum.KeyCode.Down then if #suggestionMatches>0 then suggestionIndex=math.clamp((suggestionIndex or 1)+1,1,#suggestionMatches);cmdInput.Text=suggestionMatches[suggestionIndex].command end elseif input.KeyCode==Enum.KeyCode.Up then if #terminalHistory>0 then terminalHistoryIndex=math.clamp((terminalHistoryIndex or #terminalHistory+1)-1,1,#terminalHistory);cmdInput.Text=terminalHistory[terminalHistoryIndex] end elseif input.KeyCode==Enum.KeyCode.Escape then suggestionFrame.Visible=false end end)
+cmdInput.InputBegan:Connect(function(input) if input.KeyCode==Enum.KeyCode.Tab then if lunarSettings.commandSuggestionsEnabled and suggestionMatches[1] then cmdInput.Text=suggestionMatches[1].command;suggestionFrame.Visible=false end elseif input.KeyCode==Enum.KeyCode.Down then if #suggestionMatches>0 then suggestionIndex=math.clamp((suggestionIndex or 1)+1,1,#suggestionMatches);cmdInput.Text=suggestionMatches[suggestionIndex].command end elseif input.KeyCode==Enum.KeyCode.Up then if lunarSettings.commandHistoryEnabled and #terminalHistory>0 then terminalHistoryIndex=math.clamp((terminalHistoryIndex or #terminalHistory+1)-1,1,#terminalHistory);cmdInput.Text=terminalHistory[terminalHistoryIndex] end elseif input.KeyCode==Enum.KeyCode.Escape then suggestionFrame.Visible=false end end)
 cmdInput.FocusLost:Connect(function(enterPressed) if enterPressed then executeTerminalCommand(cmdInput.Text) end end)
 
 function applyModernControlStyles()
@@ -13268,14 +13561,18 @@ function applyModernControlStyles()
 		stroke(btn,Color3.fromRGB(70,70,78),0.35,1)
 		btn.MouseEnter:Connect(function()
 			local b=base or currentTheme.btn
-			TweenService:Create(btn,TweenInfo.new(0.12,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{BackgroundColor3=Color3.fromRGB(math.min(255,b.R*255+14),math.min(255,b.G*255+14),math.min(255,b.B*255+14))}):Play()
+			if lunarSettings.animatedUI then
+				TweenService:Create(btn,TweenInfo.new(0.12,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{BackgroundColor3=Color3.fromRGB(math.min(255,b.R*255+14),math.min(255,b.G*255+14),math.min(255,b.B*255+14))}):Play()
+			else
+				btn.BackgroundColor3=Color3.fromRGB(math.min(255,b.R*255+14),math.min(255,b.G*255+14),math.min(255,b.B*255+14))
+			end
 			local st=btn:FindFirstChildOfClass("UIStroke")
-			if st then TweenService:Create(st,TweenInfo.new(0.12),{Transparency=0.05,Thickness=1.5}):Play() end
+			if st then if lunarSettings.animatedUI then TweenService:Create(st,TweenInfo.new(0.12),{Transparency=0.05,Thickness=1.5}):Play() else st.Transparency=0.05;st.Thickness=1.5 end end
 		end)
 		btn.MouseLeave:Connect(function()
-			TweenService:Create(btn,TweenInfo.new(0.16,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{BackgroundColor3=base or currentTheme.btn}):Play()
+			if lunarSettings.animatedUI then TweenService:Create(btn,TweenInfo.new(0.16,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{BackgroundColor3=base or currentTheme.btn}):Play() else btn.BackgroundColor3=base or currentTheme.btn end
 			local st=btn:FindFirstChildOfClass("UIStroke")
-			if st then TweenService:Create(st,TweenInfo.new(0.16),{Transparency=0.35,Thickness=1}):Play() end
+			if st then if lunarSettings.animatedUI then TweenService:Create(st,TweenInfo.new(0.16),{Transparency=0.35,Thickness=1}):Play() else st.Transparency=0.35;st.Thickness=1 end end
 		end)
 	end
 	if setScroll then
@@ -13374,8 +13671,19 @@ end
 
 applyModernControlStyles()
 
--- Final visual setup is intentionally lightweight so a cosmetic error cannot prevent the main GUI from appearing.
+-- Final visual setup: apply the selected radius to every eligible background frame,
+-- and apply the UI-only glass transparency to all eligible backgrounds created above.
+applyCornerRadius(globalConfig.cornerRadius or 2)
+applyGlassBackgrounds()
+
 -- Startup
+updateLunarUIScale()
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		local center=getLunarCenter()
+		if center then setLunarCenter(center) end
+	end)
+end
 lunarGui.Enabled=true;playOpen();notify("Project Lunar• Remastered",Color3.fromRGB(120,220,255));setupButtonSounds()
 
 -- Keep the command input alive without adding another background function.
@@ -13384,7 +13692,8 @@ cmdInput.PlaceholderText = "type a command..."
 -- Single chat command listener
 client.Chatted:Connect(function(msg)
 	local ok, err = pcall(processCmd, msg)
-	if not ok and LunarTerminal_addLine then
+	commandExecutionContext=false
+	if not ok and lunarSettings.commandErrorMessagesEnabled and LunarTerminal_addLine then
 		LunarTerminal_addLine("[ERROR] " .. tostring(err), currentTheme.danger, false, 0.002)
 	end
 end)
