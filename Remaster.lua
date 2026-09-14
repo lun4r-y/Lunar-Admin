@@ -1549,8 +1549,10 @@ if isMobile then
 	end
 end
 
+local notificationsEnabled = true
+
 local function playNotifSound()
-	if notifSoundMuted then
+	if not notificationsEnabled or notifSoundMuted then
 		return
 	end
 
@@ -1559,7 +1561,7 @@ local function playNotifSound()
 
 	local s = Instance.new("Sound")
 	s.Name = "LunarNotificationSound"
-	s.SoundId = "rbxassetid://97643101798871"
+	s.SoundId = _G.customNotifId or "rbxassetid://97643101798871"
 	s.Volume = math.clamp(0.42 * volumeMultiplier, 0, 1)
 	s.PlaybackSpeed = 1
 	s.Looped = false
@@ -1583,6 +1585,10 @@ local function repositionAll()
 end
 
 local function notify(text, col)
+	if not notificationsEnabled then
+		return
+	end
+
 	col = col or currentTheme.accent or Color3.fromRGB(147,112,219)
 	text = tostring(text or "")
 	if LunarTerminal_addLine then LunarTerminal_addLine("[User] "..text,col,true) end
@@ -12587,10 +12593,65 @@ do
 	Instance.new("UICorner", test).CornerRadius = UDim.new(0, 6)
 
 	test.MouseButton1Click:Connect(function()
-		if notifSoundMuted then notify("Notif sounds muted!", Color3.fromRGB(255, 100, 100)); return end
+		if not notificationsEnabled then
+	return
+end
+
+if notifSoundMuted then
+	return
+end	
 		local s = Instance.new("Sound"); s.SoundId = _G.customNotifId; s.Volume = _G.notifSoundVol
 		s.Parent = SoundService; s:Play(); Debris:AddItem(s, 4)
 	end)
+
+local notifToggle = Instance.new("TextButton", mSection)
+notifToggle.Size = UDim2.new(0.4, 0, 0, math.floor(36 * scale))
+notifToggle.Position = UDim2.new(0.48, 0, 0, math.floor(272 * scale))
+notifToggle.BackgroundColor3 = notificationsEnabled
+	and Color3.fromRGB(60, 180, 80)
+	or Color3.fromRGB(200, 60, 60)
+notifToggle.Text = notificationsEnabled
+	and "🔔 Notifications: ON"
+	or "🔕 Notifications: OFF"
+notifToggle.Font = Enum.Font.Code
+notifToggle.TextSize = math.floor(13 * fontScale)
+notifToggle.TextColor3 = Color3.new(1, 1, 1)
+notifToggle.BorderSizePixel = 0
+notifToggle.ZIndex = 2147483647
+Instance.new("UICorner", notifToggle).CornerRadius = UDim.new(0, 6)
+
+notifToggle.MouseButton1Click:Connect(function()
+	notificationsEnabled = not notificationsEnabled
+
+	notifToggle.BackgroundColor3 = notificationsEnabled
+		and Color3.fromRGB(60, 180, 80)
+		or Color3.fromRGB(200, 60, 60)
+
+	notifToggle.Text = notificationsEnabled
+		and "🔔 Notifications: ON"
+		or "🔕 Notifications: OFF"
+
+	if not notificationsEnabled then
+		for i = #activeNotifications, 1, -1 do
+			local notification = activeNotifications[i]
+
+			if notification and notification.Parent then
+				notification:Destroy()
+			end
+
+			table.remove(activeNotifications, i)
+		end
+
+		for _, sound in ipairs(SoundService:GetChildren()) do
+			if sound:IsA("Sound") and sound.Name == "LunarNotificationSound" then
+				sound:Stop()
+				sound:Destroy()
+			end
+		end
+	else
+		notify("Notifications enabled", Color3.fromRGB(100, 255, 100))
+	end
+end)
 
 	local mc = Instance.new("Frame", mSection)
 	mc.Size = UDim2.new(0.9, 0, 0, math.floor(36*scale))
@@ -12632,7 +12693,6 @@ do
 	end
 
 	mkMute(mc, 0, 0.48, soundMuted, "🔊 UI", "🔇 UI", true)
-	mkMute(mc, 0.52, 0.48, notifSoundMuted, "🔊 Notif", "🔇 Notif", false)
 end
 
 -- ========== THEME SELECTOR SECTION (BEAUTIFUL) ==========
