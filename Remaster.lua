@@ -28,7 +28,6 @@ if not hrp or not hum then
 	return
 end
 
--- Chat is connected after processCmd is defined.
 -- =============================================================
 -- Mobile autoresize 
 -- =============================================================
